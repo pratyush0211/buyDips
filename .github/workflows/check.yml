@@ -35,12 +35,6 @@ jobs:
 
       - name: Check indexes and send alerts
         env:
-          WHATSAPP_PROVIDER: meta
-          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
-          META_PHONE_NUMBER_ID: ${{ secrets.META_PHONE_NUMBER_ID }}
-          META_TO: ${{ secrets.META_TO }}
-          META_TEMPLATE_NAME: ${{ vars.META_TEMPLATE_NAME }}
-          META_TEMPLATE_LANG: ${{ vars.META_TEMPLATE_LANG }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}

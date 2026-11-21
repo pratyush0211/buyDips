@@ -1,4 +1,4 @@
-"""buyDips: watches major stock indexes and sends a WhatsApp message when one dips."""
+"""buyDips: watches major stock indexes and sends an email alert when one dips."""
 
 import json
 import logging
@@ -17,7 +17,6 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("buyDips")
-logging.getLogger("twilio").setLevel(logging.WARNING)
 
 DIP_THRESHOLD_PCT = float(os.getenv("DIP_THRESHOLD_PCT", "1.0"))
 CHECK_INTERVAL_SECONDS = int(os.getenv("CHECK_INTERVAL_SECONDS", "300"))
@@ -65,10 +64,8 @@ alert_state = load_state()
 # ---------- notifications ----------
 
 def notify(body: str) -> bool:
-    """Send to every configured channel. True if at least one succeeded."""
-    sent_whatsapp = send_whatsapp(body)
-    sent_email = send_email(body)
-    return sent_whatsapp or sent_email
+    """Send an alert. Returns True if it was delivered."""
+    return send_email(body)
 
 
 def send_email(body: str) -> bool:
@@ -96,102 +93,6 @@ def send_email(body: str) -> bool:
         return True
     except Exception as exc:  # noqa: BLE001
         log.error("Email send failed: %s", exc)
-        return False
-
-
-# ---------- WhatsApp ----------
-
-def send_whatsapp(body: str) -> bool:
-    provider = os.getenv("WHATSAPP_PROVIDER", "callmebot").lower()
-    if provider == "meta":
-        return send_via_meta(body)
-    if provider == "callmebot":
-        return send_via_callmebot(body)
-    return send_via_twilio(body)
-
-
-def send_via_meta(body: str) -> bool:
-    """WhatsApp Cloud API (Meta). Uses an approved template if META_TEMPLATE_NAME is set,
-    otherwise free-form text (which only works within 24h of you messaging the number)."""
-    token = os.getenv("META_ACCESS_TOKEN")
-    phone_id = os.getenv("META_PHONE_NUMBER_ID")
-    to = (os.getenv("META_TO") or "").lstrip("+").replace(" ", "")
-    template = os.getenv("META_TEMPLATE_NAME")
-    lang = os.getenv("META_TEMPLATE_LANG", "en")
-    version = os.getenv("META_API_VERSION", "v23.0")
-    if not token or not phone_id or not to or token == "your_access_token":
-        log.warning("Meta WhatsApp not configured; would have sent: %s", body)
-        return False
-
-    payload = {"messaging_product": "whatsapp", "to": to}
-    if template:
-        tpl = {"name": template, "language": {"code": lang}}
-        if template != "hello_world":  # hello_world has no variables
-            # Template parameters may not contain newlines or tabs.
-            text = " ".join(body.split())
-            tpl["components"] = [{"type": "body", "parameters": [{"type": "text", "text": text}]}]
-        payload.update(type="template", template=tpl)
-    else:
-        payload.update(type="text", text={"body": body})
-
-    try:
-        import requests
-
-        r = requests.post(
-            f"https://graph.facebook.com/{version}/{phone_id}/messages",
-            headers={"Authorization": f"Bearer {token}"},
-            json=payload,
-            timeout=30,
-        )
-        if r.ok:
-            log.info("WhatsApp sent via Meta: %s", body)
-            return True
-        log.error("Meta send failed (%s): %s", r.status_code, r.text[:500])
-    except Exception as exc:  # noqa: BLE001
-        log.error("Meta send failed: %s", exc)
-    return False
-
-
-def send_via_callmebot(body: str) -> bool:
-    phone = os.getenv("CALLMEBOT_PHONE")
-    apikey = os.getenv("CALLMEBOT_APIKEY")
-    if not phone or not apikey or apikey == "your_api_key":
-        log.warning("CallMeBot not configured; would have sent: %s", body)
-        return False
-    try:
-        import requests
-
-        r = requests.get(
-            "https://api.callmebot.com/whatsapp.php",
-            params={"phone": phone, "text": body, "apikey": apikey},
-            timeout=30,
-        )
-        text = r.text.lower()
-        if r.ok and "error" not in text and "invalid" not in text:
-            log.info("WhatsApp sent via CallMeBot: %s", body)
-            return True
-        log.error("CallMeBot send failed (%s): %s", r.status_code, r.text[:300])
-    except Exception as exc:  # noqa: BLE001
-        log.error("CallMeBot send failed: %s", exc)
-    return False
-
-
-def send_via_twilio(body: str) -> bool:
-    sid = os.getenv("TWILIO_ACCOUNT_SID")
-    token = os.getenv("TWILIO_AUTH_TOKEN")
-    sender = os.getenv("TWILIO_WHATSAPP_FROM")
-    to = os.getenv("WHATSAPP_TO")
-    if not all([sid, token, sender, to]) or "xxxx" in sid or to.endswith("+10000000000"):
-        log.warning("Twilio not configured; would have sent: %s", body)
-        return False
-    try:
-        from twilio.rest import Client
-
-        Client(sid, token).messages.create(body=body, from_=sender, to=to)
-        log.info("WhatsApp sent: %s", body)
-        return True
-    except Exception as exc:  # noqa: BLE001
-        log.error("WhatsApp send failed: %s", exc)
         return False
 
 
