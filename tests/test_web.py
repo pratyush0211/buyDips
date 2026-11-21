@@ -162,3 +162,37 @@ def test_old_go_links_still_sign_you_in(client):
     code = db.create_login_code("a@x.com", 15)
     assert client.get(f"/go/{code}").status_code == 302
     assert client.get(f"/signin/{code}").status_code == 302
+
+
+def test_owner_is_told_once_when_someone_signs_in_for_the_first_time(client, monkeypatch):
+    from buydips import config
+    monkeypatch.setattr(config, "ADMIN_EMAIL", "owner@x.com")
+    monkeypatch.setattr(web, "_background", lambda fn, *a: fn(*a))  # run inline, not in a thread
+    client.sent.clear()
+    for _ in range(2):  # second sign-in must not notify again
+        sign_in(client, "newbie@x.com")
+    notices = [m for m in client.sent if m[0] == "owner@x.com"]
+    assert len(notices) == 1
+    assert "newbie@x.com" in notices[0][2] and "signin" not in notices[0][2]  # says who, leaks no link
+
+
+def test_no_notice_when_admin_email_not_set(client, monkeypatch):
+    from buydips import config
+    monkeypatch.setattr(config, "ADMIN_EMAIL", "")
+    monkeypatch.setattr(web, "_background", lambda fn, *a: fn(*a))
+    client.sent.clear()
+    sign_in(client, "newbie@x.com")
+    assert all(m[1] == "Your buyDips sign-in link" for m in client.sent)
+
+
+def test_failed_notice_never_breaks_sign_in(client, monkeypatch):
+    from buydips import config
+    monkeypatch.setattr(config, "ADMIN_EMAIL", "owner@x.com")
+    monkeypatch.setattr(web, "_background", lambda fn, *a: fn(*a))
+    def boom(to, *a, **k):
+        if to == "owner@x.com":
+            raise RuntimeError("mail down")
+        return True
+    monkeypatch.setattr(web, "send_email", boom)
+    code = db.create_login_code("newbie@x.com", 15)
+    assert client.get(f"/signin/{code}").status_code == 302

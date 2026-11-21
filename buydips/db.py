@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import (
     Boolean, Column, DateTime, Float, ForeignKey, Integer, MetaData, PrimaryKeyConstraint,
-    String, Table, create_engine, delete, insert, select, update,
+    String, Table, create_engine, delete, func, insert, inspect, select, text, update,
 )
 
 from . import config
@@ -22,6 +22,7 @@ users = Table(
     Column("active", Boolean, nullable=False, default=True),
     Column("created_at", DateTime, nullable=False),
     Column("last_login_sent_at", DateTime),
+    Column("first_signin_at", DateTime),  # set once, when the person first clicks a sign-in link
 )
 
 subscriptions = Table(
@@ -68,6 +69,21 @@ def reset_engine(url: Optional[str] = None) -> None:
 
 def init_db() -> None:
     metadata.create_all(engine())
+    _migrate()
+
+
+def _migrate() -> None:
+    """Add columns introduced after the first deploy (create_all never alters existing tables)."""
+    if "first_signin_at" in {c["name"] for c in inspect(engine()).get_columns("users")}:
+        return
+    try:
+        with engine().begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN first_signin_at TIMESTAMP"))
+            # Everyone who already exists counts as already welcomed, so they don't trigger notices.
+            conn.execute(text("UPDATE users SET first_signin_at = created_at WHERE first_signin_at IS NULL"))
+    except Exception:  # noqa: BLE001  (another worker may have added it at the same moment)
+        if "first_signin_at" not in {c["name"] for c in inspect(engine()).get_columns("users")}:
+            raise
 
 
 def _now() -> datetime:
@@ -91,6 +107,21 @@ def get_or_create_user(email: str) -> dict:
             conn.execute(update(users).where(users.c.id == row["id"]).values(active=True))
             row = conn.execute(select(users).where(users.c.id == row["id"])).mappings().first()
         return dict(row)
+
+
+def mark_first_signin(user_id: int) -> bool:
+    """True exactly once per user: the first time they sign in (safe if two workers race)."""
+    with engine().begin() as conn:
+        result = conn.execute(
+            update(users).where((users.c.id == user_id) & (users.c.first_signin_at.is_(None)))
+            .values(first_signin_at=_now())
+        )
+    return result.rowcount == 1
+
+
+def user_count() -> int:
+    with engine().connect() as conn:
+        return conn.execute(select(func.count()).select_from(users)).scalar()
 
 
 def get_user(user_id: int) -> Optional[dict]:

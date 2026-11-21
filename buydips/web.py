@@ -3,6 +3,7 @@
 import logging
 import re
 import secrets
+import threading
 from datetime import datetime
 
 from flask import Flask, abort, redirect, render_template, request, session, url_for
@@ -17,6 +18,26 @@ CSP = (
     "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; "
     "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
 )
+
+
+def _background(fn, *args) -> None:
+    threading.Thread(target=fn, args=args, daemon=True).start()
+
+
+def _announce_new_user(email: str) -> None:
+    """Tell the site owner someone new has signed in. Never lets a failure affect the new user."""
+    if not config.ADMIN_EMAIL:
+        return
+    try:
+        send_email(
+            config.ADMIN_EMAIL,
+            "buyDips: a new user just joined",
+            f"{email} just signed in to buyDips for the first time.\n\n"
+            f"People with an account: {db.user_count()}\n\n"
+            "See everyone: the users table in Supabase, or run admin_users.py on your Mac.",
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.error("Could not send new-user notice: %s", exc)
 
 
 def _presets() -> list:
@@ -148,6 +169,8 @@ def create_app() -> Flask:
         if not email:
             return page("Link expired", "That sign-in link is invalid or has expired. Request a new one.", 400)
         user = db.get_or_create_user(email)
+        if db.mark_first_signin(user["id"]):
+            _background(_announce_new_user, email)
         session.clear()
         session["uid"] = user["id"]
         return redirect(url_for("watchlist"))

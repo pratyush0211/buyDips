@@ -58,6 +58,9 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 # Address shown in the From header (defaults to the SMTP login)
 MAIL_FROM = os.getenv("MAIL_FROM", "") or SMTP_USER
 
+# Where "a new user joined" notices go (leave empty to disable).
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip()
+
 # Optional public contact address shown in the footer and privacy page.
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "").strip()
 
