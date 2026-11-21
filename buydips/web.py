@@ -14,8 +14,12 @@ EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 
 
 def create_app() -> Flask:
-    if config.SECRET_KEY == "dev-only-change-me" and not config.BASE_URL.startswith("http://127.0.0.1"):
-        raise RuntimeError("Set SECRET_KEY to a long random value before running in production.")
+    local = config.BASE_URL.startswith("http://127.0.0.1")
+    if not local and (config.SECRET_KEY == "dev-only-change-me" or len(config.SECRET_KEY) < 32):
+        raise RuntimeError(
+            "SECRET_KEY is missing or too short. Set it to the same long random value (32+ characters) "
+            "used by the GitHub SECRET_KEY secret."
+        )
 
     app = Flask(__name__)
     app.secret_key = config.SECRET_KEY

@@ -85,3 +85,12 @@ def test_delete_account_removes_everything(client):
     client.post("/delete-account", data={"csrf": csrf(client, "/watchlist")})
     assert db.get_user(uid) is None
     assert db.get_subscriptions(uid) == {}
+
+
+def test_production_refuses_weak_secret_key(monkeypatch):
+    from buydips import config
+    monkeypatch.setattr(config, "BASE_URL", "https://example.com")
+    for bad in ("", "short", "dev-only-change-me"):
+        monkeypatch.setattr(config, "SECRET_KEY", bad)
+        with pytest.raises(RuntimeError):
+            web.create_app()
