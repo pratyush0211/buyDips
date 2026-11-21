@@ -58,7 +58,18 @@ def grouped() -> List[dict]:
         region = title.split(": ", 1)[1]
         return _GROUP_ORDER.index(region) if region in _GROUP_ORDER else len(_GROUP_ORDER)
 
+    def tab(title: str) -> str:
+        return "india" if title.startswith("Indian stocks") else "us" if title.startswith("US stocks") else "indexes"
+
     return [
-        {"title": t, "items": [{**i, "search": search_text(i)} for i in items]}
+        {"title": t, "tab": tab(t), "items": [{**i, "search": search_text(i)} for i in items]}
         for t, items in sorted(sections.items(), key=lambda kv: rank(kv[0]))
     ]
+
+
+def tab_totals() -> Dict[str, int]:
+    """How many items each tab of the watchlist page holds."""
+    totals = {"indexes": 0, "india": 0, "us": 0}
+    for sec in grouped():
+        totals[sec["tab"]] += len(sec["items"])
+    return totals

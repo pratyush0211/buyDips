@@ -52,3 +52,10 @@ def test_currency_symbols():
     assert catalog.currency_symbol("RELIANCE.NS") == "₹"
     assert catalog.currency_symbol("AAPL") == "$"
     assert catalog.currency_symbol("^NSEI") == "" and catalog.currency_symbol("nonsense") == ""
+
+
+def test_tab_totals_cover_every_item_once():
+    totals = catalog.tab_totals()
+    assert sum(totals.values()) == len(catalog.ITEMS)
+    assert totals["indexes"] == 12 and totals["india"] >= 450 and totals["us"] >= 95
+    assert {s["tab"] for s in catalog.grouped()} == {"indexes", "india", "us"}

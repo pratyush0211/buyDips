@@ -210,7 +210,7 @@ def create_app() -> Flask:
             return redirect(url_for("watchlist", saved=1))
 
         return render_template(
-            "watchlist.html", user=user, sections=catalog.grouped(), subs=db.get_subscriptions(user["id"]),
+            "watchlist.html", user=user, sections=catalog.grouped(), totals=catalog.tab_totals(), subs=db.get_subscriptions(user["id"]),
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
         )

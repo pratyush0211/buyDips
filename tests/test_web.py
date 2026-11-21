@@ -196,3 +196,12 @@ def test_failed_notice_never_breaks_sign_in(client, monkeypatch):
     monkeypatch.setattr(web, "send_email", boom)
     code = db.create_login_code("newbie@x.com", 15)
     assert client.get(f"/signin/{code}").status_code == 302
+
+
+def test_watchlist_page_has_tabs_for_each_market(client):
+    sign_in(client, "tabs@x.com")
+    html = client.get("/watchlist").get_data(as_text=True)
+    for tab in ("indexes", "india", "us", "selected"):
+        assert f'data-tab="{tab}"' in html
+    assert 'class="group" data-tab="india"' in html and 'class="group" data-tab="us"' in html
+    assert 'id="view-note"' in html and 'id="empty"' in html
