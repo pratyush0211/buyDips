@@ -2,18 +2,10 @@ name: buyDips check
 
 on:
   schedule:
-    # Every 20 minutes, Mon–Fri, 00:00–21:59 UTC (covers Asia, India, Europe and US hours).
+    # Every 20 minutes, Mon–Fri, 00:00–21:59 UTC (Asia, India, Europe and US hours).
     # GitHub can delay scheduled runs by several minutes.
     - cron: "*/20 0-21 * * 1-5"
-  workflow_dispatch:  # lets you run it manually from the Actions tab
-    inputs:
-      test_alert:
-        description: "Send a test alert instead of checking prices"
-        type: boolean
-        default: false
-
-permissions:
-  contents: write  # to save alerts_state.json back to the repo
+  workflow_dispatch:
 
 concurrency:
   group: buydips
@@ -33,21 +25,14 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Check indexes and send alerts
+      - name: Check prices and email subscribers
         env:
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
-          DIP_THRESHOLD_PCT: "1.0"
-          INDEXES: "^GSPC=S&P 500,^IXIC=Nasdaq Composite,^DJI=Dow Jones,^RUT=Russell 2000,^NSEI=Nifty 50,^BSESN=Sensex,^FTSE=FTSE 100,^N225=Nikkei 225"
-        run: python check.py ${{ inputs.test_alert && '--test' || '' }}
-
-      - name: Save alert state
-        run: |
-          if [[ -n "$(git status --porcelain alerts_state.json)" ]]; then
-            git config user.name "buyDips bot"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add alerts_state.json
-            git commit -m "Update alert state"
-            git push
-          fi
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          BASE_URL: https://buydips.in
+          SMTP_HOST: smtp.resend.com
+          SMTP_PORT: "465"
+          SMTP_USER: resend
+          SMTP_PASSWORD: ${{ secrets.RESEND_API_KEY }}
+          MAIL_FROM: alerts@buydips.in
+        run: python run_check.py
