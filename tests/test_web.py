@@ -94,3 +94,13 @@ def test_production_refuses_weak_secret_key(monkeypatch):
         monkeypatch.setattr(config, "SECRET_KEY", bad)
         with pytest.raises(RuntimeError):
             web.create_app()
+
+
+def test_login_reports_failure_when_email_cannot_be_sent(monkeypatch):
+    monkeypatch.setattr(web, "send_email", lambda *a, **k: False)
+    app = web.create_app(); app.testing = True
+    c = app.test_client()
+    r = c.post("/login", data={"email": "a@x.com", "csrf": csrf(c)})
+    assert r.status_code == 503 and "on our side" in r.get_data(as_text=True)
+    # a failed send must not start the 60-second cooldown
+    assert db.seconds_since_login_link("a@x.com") is None

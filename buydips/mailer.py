@@ -1,41 +1,86 @@
-"""Outgoing email. Falls back to printing the message when SMTP isn't configured, which is
-what makes sign-in links work during local development."""
+"""Outgoing email via SMTP or an HTTPS API. Falls back to printing the message when nothing is
+configured, which is what makes sign-in links work during local development."""
 
 import logging
 import smtplib
 from email.message import EmailMessage
 from typing import Optional
 
+import requests
+
 from . import config
 
 log = logging.getLogger("buyDips.mail")
+HTTP_TIMEOUT = 15
+API_PROVIDERS = ("brevo", "resend")
 
 
-def smtp_configured() -> bool:
+def configured() -> bool:
+    if config.EMAIL_PROVIDER in API_PROVIDERS:
+        return bool(config.EMAIL_API_KEY and config.MAIL_FROM)
     return bool(config.SMTP_USER and config.SMTP_PASSWORD)
 
 
 def send_email(to: str, subject: str, body: str, unsubscribe_url: Optional[str] = None) -> bool:
-    if not smtp_configured():
-        log.warning("SMTP not configured; email to %s not sent.\nSubject: %s\n%s", to, subject, body)
+    if not configured():
+        log.warning("Email not configured; email to %s not sent.\nSubject: %s\n%s", to, subject, body)
+        return False
+    try:
+        if config.EMAIL_PROVIDER == "brevo":
+            _send_brevo(to, subject, body, unsubscribe_url)
+        elif config.EMAIL_PROVIDER == "resend":
+            _send_resend(to, subject, body, unsubscribe_url)
+        else:
+            _send_smtp(to, subject, body, unsubscribe_url)
+        log.info("Email sent to %s: %s", to, subject)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("Email to %s failed (%s): %s", to, config.EMAIL_PROVIDER, exc)
         return False
 
+
+def _unsub_headers(unsubscribe_url: Optional[str]) -> dict:
+    # Required by Gmail/Yahoo for bulk senders: one-click unsubscribe.
+    if not unsubscribe_url:
+        return {}
+    return {"List-Unsubscribe": f"<{unsubscribe_url}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
+
+
+def _send_smtp(to, subject, body, unsubscribe_url) -> None:
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = f"buyDips <{config.MAIL_FROM}>"
     msg["To"] = to
-    if unsubscribe_url:
-        # Required by Gmail/Yahoo for bulk senders: one-click unsubscribe.
-        msg["List-Unsubscribe"] = f"<{unsubscribe_url}>"
-        msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+    for k, v in _unsub_headers(unsubscribe_url).items():
+        msg[k] = v
     msg.set_content(body)
+    with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=15) as smtp:
+        smtp.login(config.SMTP_USER, config.SMTP_PASSWORD.replace(" ", ""))
+        smtp.send_message(msg)
 
-    try:
-        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=30) as smtp:
-            smtp.login(config.SMTP_USER, config.SMTP_PASSWORD.replace(" ", ""))
-            smtp.send_message(msg)
-        log.info("Email sent to %s: %s", to, subject)
-        return True
-    except Exception as exc:  # noqa: BLE001
-        log.error("Email to %s failed: %s", to, exc)
-        return False
+
+def _send_brevo(to, subject, body, unsubscribe_url) -> None:
+    payload = {
+        "sender": {"name": "buyDips", "email": config.MAIL_FROM},
+        "to": [{"email": to}],
+        "subject": subject,
+        "textContent": body,
+    }
+    headers = _unsub_headers(unsubscribe_url)
+    if headers:
+        payload["headers"] = headers
+    r = requests.post("https://api.brevo.com/v3/smtp/email", json=payload, timeout=HTTP_TIMEOUT,
+                      headers={"api-key": config.EMAIL_API_KEY, "accept": "application/json"})
+    if not r.ok:
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")
+
+
+def _send_resend(to, subject, body, unsubscribe_url) -> None:
+    payload = {"from": f"buyDips <{config.MAIL_FROM}>", "to": [to], "subject": subject, "text": body}
+    headers = _unsub_headers(unsubscribe_url)
+    if headers:
+        payload["headers"] = headers
+    r = requests.post("https://api.resend.com/emails", json=payload, timeout=HTTP_TIMEOUT,
+                      headers={"Authorization": f"Bearer {config.EMAIL_API_KEY}"})
+    if not r.ok:
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")

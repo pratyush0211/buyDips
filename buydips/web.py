@@ -78,14 +78,18 @@ def create_app() -> Flask:
         wait = db.seconds_since_login_link(email)
         if wait is None or wait >= config.LOGIN_LINK_COOLDOWN_SECONDS:
             db.get_or_create_user(email)
-            db.mark_login_link_sent(email)
-            send_email(
+            sent = send_email(
                 email,
                 "Your buyDips sign-in link",
                 f"Click to sign in to buyDips (valid for {config.LOGIN_LINK_MINUTES} minutes):\n\n"
                 f"{links.login_url(email)}\n\n"
                 "If you didn't ask for this, ignore this email.",
             )
+            if not sent:
+                return page("Couldn't send the email",
+                            "Something went wrong on our side while sending your sign-in link. "
+                            "Please try again in a few minutes.", 503)
+            db.mark_login_link_sent(email)
         return page("Check your inbox", f"If {email} is valid, a sign-in link is on its way. It expires in "
                                         f"{config.LOGIN_LINK_MINUTES} minutes.")
 

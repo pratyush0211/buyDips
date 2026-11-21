@@ -46,6 +46,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
 # set BASE_URL explicitly once a custom domain is attached.
 BASE_URL = (os.getenv("BASE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "http://127.0.0.1:5000").rstrip("/")
 
+# How email is sent: "smtp" (Gmail etc.), or an HTTPS API: "brevo" / "resend".
+# HTTPS APIs are needed on hosts that block outgoing SMTP, such as Render's free plan.
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "smtp").strip().lower()
+EMAIL_API_KEY = os.getenv("EMAIL_API_KEY", "").strip()
+
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = os.getenv("SMTP_USER", "")
