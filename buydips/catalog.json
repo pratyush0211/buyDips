@@ -72,164 +72,68 @@
   "group": "Asia"
  },
  {
-  "symbol": "RELIANCE.NS",
-  "name": "Reliance Industries",
+  "symbol": "360ONE.NS",
+  "name": "360 ONE WAM",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TCS.NS",
-  "name": "Tata Consultancy Services",
+  "symbol": "AADHARHFC.NS",
+  "name": "Aadhar Housing Finance",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "HDFCBANK.NS",
-  "name": "HDFC Bank",
+  "symbol": "AARTIIND.NS",
+  "name": "Aarti Industries",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "INFY.NS",
-  "name": "Infosys",
+  "symbol": "AAVAS.NS",
+  "name": "Aavas Financiers",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "ICICIBANK.NS",
-  "name": "ICICI Bank",
+  "symbol": "ABB.NS",
+  "name": "ABB India",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "HINDUNILVR.NS",
-  "name": "Hindustan Unilever",
+  "symbol": "ABBOTINDIA.NS",
+  "name": "Abbott India",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "ITC.NS",
-  "name": "ITC",
+  "symbol": "ACC.NS",
+  "name": "ACC",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "SBIN.NS",
-  "name": "State Bank of India",
+  "symbol": "ACMESOLAR.NS",
+  "name": "ACME Solar Holdings",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "BHARTIARTL.NS",
-  "name": "Bharti Airtel",
+  "symbol": "ACE.NS",
+  "name": "Action Construction Equipment",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "KOTAKBANK.NS",
-  "name": "Kotak Mahindra Bank",
+  "symbol": "ACUTAAS.NS",
+  "name": "Acutaas Chemicals",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "LT.NS",
-  "name": "Larsen & Toubro",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "AXISBANK.NS",
-  "name": "Axis Bank",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "ASIANPAINT.NS",
-  "name": "Asian Paints",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "MARUTI.NS",
-  "name": "Maruti Suzuki",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "SUNPHARMA.NS",
-  "name": "Sun Pharma",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "TITAN.NS",
-  "name": "Titan",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "BAJFINANCE.NS",
-  "name": "Bajaj Finance",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "NESTLEIND.NS",
-  "name": "Nestle India",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "ULTRACEMCO.NS",
-  "name": "UltraTech Cement",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "WIPRO.NS",
-  "name": "Wipro",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "HCLTECH.NS",
-  "name": "HCL Technologies",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "NTPC.NS",
-  "name": "NTPC",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "POWERGRID.NS",
-  "name": "Power Grid",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "ONGC.NS",
-  "name": "ONGC",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "M&M.NS",
-  "name": "Mahindra & Mahindra",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "TATASTEEL.NS",
-  "name": "Tata Steel",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "JSWSTEEL.NS",
-  "name": "JSW Steel",
+  "symbol": "ADANIENSOL.NS",
+  "name": "Adani Energy Solutions",
   "type": "stock",
   "group": "India"
  },
@@ -240,74 +144,164 @@
   "group": "India"
  },
  {
+  "symbol": "ADANIGREEN.NS",
+  "name": "Adani Green Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
   "symbol": "ADANIPORTS.NS",
   "name": "Adani Ports",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "COALINDIA.NS",
-  "name": "Coal India",
+  "symbol": "ADANIPOWER.NS",
+  "name": "Adani Power",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TECHM.NS",
-  "name": "Tech Mahindra",
+  "symbol": "ATGL.NS",
+  "name": "Adani Total Gas",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "BAJAJFINSV.NS",
-  "name": "Bajaj Finserv",
+  "symbol": "ABCAPITAL.NS",
+  "name": "Aditya Birla Capital",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "INDUSINDBK.NS",
-  "name": "IndusInd Bank",
+  "symbol": "ABREL.NS",
+  "name": "Aditya Birla Real Estate",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "GRASIM.NS",
-  "name": "Grasim",
+  "symbol": "ABSLAMC.NS",
+  "name": "Aditya Birla Sun Life AMC",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "CIPLA.NS",
-  "name": "Cipla",
+  "symbol": "CPPLUS.NS",
+  "name": "Aditya Infotech",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "DRREDDY.NS",
-  "name": "Dr. Reddy's",
+  "symbol": "AEGISLOG.NS",
+  "name": "Aegis Logistics",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "EICHERMOT.NS",
-  "name": "Eicher Motors",
+  "symbol": "AEGISVOPAK.NS",
+  "name": "Aegis Vopak Terminals",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "HEROMOTOCO.NS",
-  "name": "Hero MotoCorp",
+  "symbol": "AETHER.NS",
+  "name": "Aether Industries",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "BPCL.NS",
-  "name": "BPCL",
+  "symbol": "AFCONS.NS",
+  "name": "Afcons Infrastructure",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "BRITANNIA.NS",
-  "name": "Britannia",
+  "symbol": "AFFLE.NS",
+  "name": "Affle 3i",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AIAENG.NS",
+  "name": "AIA Engineering",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AJANTPHARM.NS",
+  "name": "Ajanta Pharmaceuticals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ALKEM.NS",
+  "name": "Alkem Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ABDL.NS",
+  "name": "Allied Blenders and Distillers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ARE&M.NS",
+  "name": "Amara Raja Energy & Mobility",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AMBER.NS",
+  "name": "Amber Enterprises India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AMBUJACEM.NS",
+  "name": "Ambuja Cements",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ANANDRATHI.NS",
+  "name": "Anand Rathi Wealth",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ANANTRAJ.NS",
+  "name": "Anant Raj",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ANGELONE.NS",
+  "name": "Angel One",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ANTHEM.NS",
+  "name": "Anthem Biosciences",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ANURAS.NS",
+  "name": "Anupam Rasayan India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "APARINDS.NS",
+  "name": "Apar Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "APLAPOLLO.NS",
+  "name": "APL Apollo Tubes",
   "type": "stock",
   "group": "India"
  },
@@ -318,92 +312,80 @@
   "group": "India"
  },
  {
-  "symbol": "DIVISLAB.NS",
-  "name": "Divi's Laboratories",
+  "symbol": "APOLLOTYRE.NS",
+  "name": "Apollo Tyres",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "HDFCLIFE.NS",
-  "name": "HDFC Life",
+  "symbol": "APTUS.NS",
+  "name": "Aptus Value Housing Finance India",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "SBILIFE.NS",
-  "name": "SBI Life",
+  "symbol": "ASAHIINDIA.NS",
+  "name": "Asahi India Glass",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TATACONSUM.NS",
-  "name": "Tata Consumer",
+  "symbol": "ASHOKLEY.NS",
+  "name": "Ashok Leyland",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "HINDALCO.NS",
-  "name": "Hindalco",
+  "symbol": "ASIANPAINT.NS",
+  "name": "Asian Paints",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TRENT.NS",
-  "name": "Trent",
+  "symbol": "ASTERDM.NS",
+  "name": "Aster DM Quality Care",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "SHRIRAMFIN.NS",
-  "name": "Shriram Finance",
+  "symbol": "ASTRAL.NS",
+  "name": "Astral",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "BEL.NS",
-  "name": "Bharat Electronics",
+  "symbol": "ATHERENERG.NS",
+  "name": "Ather Energy",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "ETERNAL.NS",
-  "name": "Eternal (Zomato)",
+  "symbol": "ATUL.NS",
+  "name": "Atul",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "JIOFIN.NS",
-  "name": "Jio Financial",
+  "symbol": "AUBANK.NS",
+  "name": "AU Small Finance Bank",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TMPV.NS",
-  "name": "Tata Motors Passenger Vehicles",
+  "symbol": "AUROPHARMA.NS",
+  "name": "Aurobindo Pharma",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "TMCV.NS",
-  "name": "Tata Motors Commercial Vehicles",
+  "symbol": "AIIL.NS",
+  "name": "Authum Investment & Infrastructure",
   "type": "stock",
   "group": "India"
  },
  {
-  "symbol": "VEDL.NS",
-  "name": "Vedanta",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "IRCTC.NS",
-  "name": "IRCTC",
-  "type": "stock",
-  "group": "India"
- },
- {
-  "symbol": "HAL.NS",
-  "name": "Hindustan Aeronautics",
+  "symbol": "AVANTIFEED.NS",
+  "name": "Avanti Feeds",
   "type": "stock",
   "group": "India"
  },
@@ -414,8 +396,530 @@
   "group": "India"
  },
  {
-  "symbol": "PIDILITIND.NS",
-  "name": "Pidilite",
+  "symbol": "AWL.NS",
+  "name": "AWL Agri Business",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AXISBANK.NS",
+  "name": "Axis Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AZAD.NS",
+  "name": "Azad Engineering",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJAJ-AUTO.NS",
+  "name": "Bajaj Auto",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJFINANCE.NS",
+  "name": "Bajaj Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJAJFINSV.NS",
+  "name": "Bajaj Finserv",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJAJHLDNG.NS",
+  "name": "Bajaj Holdings & Investment",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJAJHFL.NS",
+  "name": "Bajaj Housing Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BALKRISIND.NS",
+  "name": "Balkrishna Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BALRAMCHIN.NS",
+  "name": "Balrampur Chini Mills",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BANDHANBNK.NS",
+  "name": "Bandhan Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BANKBARODA.NS",
+  "name": "Bank of Baroda",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BANKINDIA.NS",
+  "name": "Bank of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MAHABANK.NS",
+  "name": "Bank of Maharashtra",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BATAINDIA.NS",
+  "name": "Bata India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BELRISE.NS",
+  "name": "Belrise Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BEML.NS",
+  "name": "BEML",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BERGEPAINT.NS",
+  "name": "Berger Paints India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHARATCOAL.NS",
+  "name": "Bharat Coking Coal",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BDL.NS",
+  "name": "Bharat Dynamics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BEL.NS",
+  "name": "Bharat Electronics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHARATFORG.NS",
+  "name": "Bharat Forge",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHEL.NS",
+  "name": "Bharat Heavy Electricals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHARTIARTL.NS",
+  "name": "Bharti Airtel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHARTIHEXA.NS",
+  "name": "Bharti Hexacom",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GROWW.NS",
+  "name": "Billionbrains Garage Ventures",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BIOCON.NS",
+  "name": "Biocon",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BSOFT.NS",
+  "name": "Birlasoft",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BBOX.NS",
+  "name": "Black Box",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BLS.NS",
+  "name": "BLS International Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BLUESTARCO.NS",
+  "name": "Blue Star",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BOSCHLTD.NS",
+  "name": "Bosch",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BPCL.NS",
+  "name": "BPCL",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FIRSTCRY.NS",
+  "name": "Brainbees Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BRIGADE.NS",
+  "name": "Brigade Enterprises",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BRITANNIA.NS",
+  "name": "Britannia",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BSE.NS",
+  "name": "BSE",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CANFINHOME.NS",
+  "name": "Can Fin Homes",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CANBK.NS",
+  "name": "Canara Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CANHLIFE.NS",
+  "name": "Canara HSBC Life Insurance Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CAPLIPOINT.NS",
+  "name": "Caplin Point Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CGCL.NS",
+  "name": "Capri Global Capital",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CARBORUNIV.NS",
+  "name": "Carborundum Universal",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CARTRADE.NS",
+  "name": "Cartrade Tech",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CASTROLIND.NS",
+  "name": "Castrol India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CCL.NS",
+  "name": "CCL Products (I)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CEATLTD.NS",
+  "name": "Ceat",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CEMPRO.NS",
+  "name": "Cemindia Projects",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CENTRALBK.NS",
+  "name": "Central Bank of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CDSL.NS",
+  "name": "Central Depository Services (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CMPDI.NS",
+  "name": "Central Mine Planning & Design Institute",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CESC.NS",
+  "name": "CESC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CGPOWER.NS",
+  "name": "CG Power and Industrial Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CHAMBLFERT.NS",
+  "name": "Chambal Fertilizers & Chemicals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CHENNPETRO.NS",
+  "name": "Chennai Petroleum Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CHOICEIN.NS",
+  "name": "Choice International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CHOLAHLDNG.NS",
+  "name": "Cholamandalam Financial Holdings",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CHOLAFIN.NS",
+  "name": "Cholamandalam Investment and Finance Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CIEINDIA.NS",
+  "name": "CIE Automotive India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CIPLA.NS",
+  "name": "Cipla",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CUB.NS",
+  "name": "City Union Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CLEANMAX.NS",
+  "name": "Clean Max Enviro Energy Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CLEAN.NS",
+  "name": "Clean Science and Technology",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COALINDIA.NS",
+  "name": "Coal India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COCHINSHIP.NS",
+  "name": "Cochin Shipyard",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COFORGE.NS",
+  "name": "Coforge",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COHANCE.NS",
+  "name": "Cohance Lifesciences",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COLPAL.NS",
+  "name": "Colgate Palmolive (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CAMS.NS",
+  "name": "Computer Age Management Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CONCORDBIO.NS",
+  "name": "Concord Biotech",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CONCOR.NS",
+  "name": "Container Corporation of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COROMANDEL.NS",
+  "name": "Coromandel International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CRAFTSMAN.NS",
+  "name": "Craftsman Automation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CREDITACC.NS",
+  "name": "CreditAccess Grameen",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CRISIL.NS",
+  "name": "CRISIL",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CROMPTON.NS",
+  "name": "Crompton Greaves Consumer Electricals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CUMMINSIND.NS",
+  "name": "Cummins India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CUPID.NS",
+  "name": "Cupid",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CYIENT.NS",
+  "name": "Cyient",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DABUR.NS",
+  "name": "Dabur India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DALBHARAT.NS",
+  "name": "Dalmia Bharat",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DATAPATTNS.NS",
+  "name": "Data Patterns (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DEEPAKFERT.NS",
+  "name": "Deepak Fertilisers & Petrochemicals Corp.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DEEPAKNTR.NS",
+  "name": "Deepak Nitrite",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DELHIVERY.NS",
+  "name": "Delhivery",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DEVYANI.NS",
+  "name": "Devyani International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DIVISLAB.NS",
+  "name": "Divi's Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DIXON.NS",
+  "name": "Dixon Technologies (India)",
   "type": "stock",
   "group": "India"
  },
@@ -426,8 +930,2114 @@
   "group": "India"
  },
  {
+  "symbol": "DOMS.NS",
+  "name": "DOMS Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LALPATHLAB.NS",
+  "name": "Dr. Lal Path Labs",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DRREDDY.NS",
+  "name": "Dr. Reddy's",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EIDPARRY.NS",
+  "name": "E.I.D. Parry (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ECLERX.NS",
+  "name": "eClerx Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EICHERMOT.NS",
+  "name": "Eicher Motors",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EIHOTEL.NS",
+  "name": "EIH",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ELECON.NS",
+  "name": "Elecon Engineering Co.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ELGIEQUIP.NS",
+  "name": "Elgi Equipments",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EMAMILTD.NS",
+  "name": "Emami",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EMCURE.NS",
+  "name": "Emcure Pharmaceuticals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EMMVEE.NS",
+  "name": "Emmvee Photovoltaic Power",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ENDURANCE.NS",
+  "name": "Endurance Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ENGINERSIN.NS",
+  "name": "Engineers India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ESCORTS.NS",
+  "name": "Escorts Kubota",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ETERNAL.NS",
+  "name": "Eternal (Zomato)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EXIDEIND.NS",
+  "name": "Exide Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FEDERALBNK.NS",
+  "name": "Federal Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FACT.NS",
+  "name": "Fertilisers and Chemicals Travancore",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FINCABLES.NS",
+  "name": "Finolex Cables",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FSL.NS",
+  "name": "Firstsource Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FIVESTAR.NS",
+  "name": "Five-Star Business Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FORCEMOT.NS",
+  "name": "Force Motors",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FORTIS.NS",
+  "name": "Fortis Healthcare",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FRACTAL.NS",
+  "name": "Fractal Analytics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NYKAA.NS",
+  "name": "FSN E-Commerce Ventures",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GABRIEL.NS",
+  "name": "Gabriel India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GAIL.NS",
+  "name": "GAIL (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GALLANTT.NS",
+  "name": "Gallantt Ispat",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRSE.NS",
+  "name": "Garden Reach Shipbuilders & Engineers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GVT&D.NS",
+  "name": "GE Vernova T&D India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GICRE.NS",
+  "name": "General Insurance Corporation of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GILLETTE.NS",
+  "name": "Gillette India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GLAND.NS",
+  "name": "Gland Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GLAXO.NS",
+  "name": "Glaxosmithkline Pharmaceuticals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GLENMARK.NS",
+  "name": "Glenmark Pharmaceuticals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MEDANTA.NS",
+  "name": "Global Health",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GMRAIRPORT.NS",
+  "name": "GMR Airports",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GPIL.NS",
+  "name": "Godawari Power & Ispat",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GODFRYPHLP.NS",
+  "name": "Godfrey Phillips India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GODREJCP.NS",
+  "name": "Godrej Consumer Products",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GODREJIND.NS",
+  "name": "Godrej Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GODREJPROP.NS",
+  "name": "Godrej Properties",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRANULES.NS",
+  "name": "Granules India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRAPHITE.NS",
+  "name": "Graphite India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRASIM.NS",
+  "name": "Grasim",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRAVITA.NS",
+  "name": "Gravita India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GESHIP.NS",
+  "name": "Great Eastern Shipping Co.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "FLUOROCHEM.NS",
+  "name": "Gujarat Fluorochemicals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GMDCLTD.NS",
+  "name": "Gujarat Mineral Development Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HAVELLS.NS",
+  "name": "Havells India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HBLENGINE.NS",
+  "name": "HBL Engineering",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HCLTECH.NS",
+  "name": "HCL Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDBFS.NS",
+  "name": "HDB Financial Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDFCAMC.NS",
+  "name": "HDFC Asset Management Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDFCBANK.NS",
+  "name": "HDFC Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDFCLIFE.NS",
+  "name": "HDFC Life",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HEGAM.NS",
+  "name": "HEG Advanced Materials",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HEROMOTOCO.NS",
+  "name": "Hero MotoCorp",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HEXT.NS",
+  "name": "Hexaware Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HSCL.NS",
+  "name": "Himadri Speciality Chemical",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDALCO.NS",
+  "name": "Hindalco",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HAL.NS",
+  "name": "Hindustan Aeronautics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDCOPPER.NS",
+  "name": "Hindustan Copper",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDPETRO.NS",
+  "name": "Hindustan Petroleum Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDUNILVR.NS",
+  "name": "Hindustan Unilever",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDZINC.NS",
+  "name": "Hindustan Zinc",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POWERINDIA.NS",
+  "name": "Hitachi Energy India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HOMEFIRST.NS",
+  "name": "Home First Finance Company India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HONASA.NS",
+  "name": "Honasa Consumer",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HONAUT.NS",
+  "name": "Honeywell Automation India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HUDCO.NS",
+  "name": "Housing & Urban Development Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HYUNDAI.NS",
+  "name": "Hyundai Motor India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ICICIBANK.NS",
+  "name": "ICICI Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ICICILIFE.NS",
+  "name": "ICICI Life Insurance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ICICIGI.NS",
+  "name": "ICICI Lombard General Insurance Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ICICIAMC.NS",
+  "name": "ICICI Prudential Asset Management Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IDBI.NS",
+  "name": "IDBI Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IDFCFIRSTB.NS",
+  "name": "IDFC First Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IFCI.NS",
+  "name": "IFCI",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IIFL.NS",
+  "name": "IIFL Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDIACEM.NS",
+  "name": "India Cements",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDIAMART.NS",
+  "name": "Indiamart Intermesh",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDIANB.NS",
+  "name": "Indian Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IEX.NS",
+  "name": "Indian Energy Exchange",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDHOTEL.NS",
+  "name": "Indian Hotels Co.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IOC.NS",
+  "name": "Indian Oil Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IOB.NS",
+  "name": "Indian Overseas Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IRFC.NS",
+  "name": "Indian Railway Finance Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IREDA.NS",
+  "name": "Indian Renewable Energy Development Agency",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IGL.NS",
+  "name": "Indraprastha Gas",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDUSTOWER.NS",
+  "name": "Indus Towers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDUSINDBK.NS",
+  "name": "IndusInd Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NAUKRI.NS",
+  "name": "Info Edge (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INFY.NS",
+  "name": "Infosys",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INOXINDIA.NS",
+  "name": "INOX India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INOXWIND.NS",
+  "name": "Inox Wind",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INTELLECT.NS",
+  "name": "Intellect Design Arena",
+  "type": "stock",
+  "group": "India"
+ },
+ {
   "symbol": "INDIGO.NS",
   "name": "InterGlobe Aviation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IGIL.NS",
+  "name": "International Gemological Institute",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IKS.NS",
+  "name": "Inventurus Knowledge Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IPCALAB.NS",
+  "name": "Ipca Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IRB.NS",
+  "name": "IRB Infrastructure Developers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IRCON.NS",
+  "name": "IRCON International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IRCTC.NS",
+  "name": "IRCTC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ITC.NS",
+  "name": "ITC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ITCHOTELS.NS",
+  "name": "ITC Hotels",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ITI.NS",
+  "name": "ITI",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JKCEMENT.NS",
+  "name": "J.K. Cement",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JAINREC.NS",
+  "name": "Jain Resource Recycling",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JPPOWER.NS",
+  "name": "Jaiprakash Power Ventures",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "J&KBANK.NS",
+  "name": "Jammu & Kashmir Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JBMA.NS",
+  "name": "JBM Auto",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JINDALSAW.NS",
+  "name": "Jindal Saw",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSL.NS",
+  "name": "Jindal Stainless",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JINDALSTEL.NS",
+  "name": "Jindal Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JIOFIN.NS",
+  "name": "Jio Financial",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JKTYRE.NS",
+  "name": "JK Tyre & Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JMFINANCIL.NS",
+  "name": "JM Financial",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSWCEMENT.NS",
+  "name": "JSW Cement",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSWENERGY.NS",
+  "name": "JSW Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSWINFRA.NS",
+  "name": "JSW Infrastructure",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSWSTEEL.NS",
+  "name": "JSW Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JUBLFOOD.NS",
+  "name": "Jubilant Foodworks",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JUBLINGREA.NS",
+  "name": "Jubilant Ingrevia",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JWL.NS",
+  "name": "Jupiter Wagons",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JYOTICNC.NS",
+  "name": "Jyoti CNC Automation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KPRMILL.NS",
+  "name": "K.P.R. Mill",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KAJARIACER.NS",
+  "name": "Kajaria Ceramics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KPIL.NS",
+  "name": "Kalpataru Projects International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KALYANKJIL.NS",
+  "name": "Kalyan Jewellers India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KARURVYSYA.NS",
+  "name": "Karur Vysya Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KAYNES.NS",
+  "name": "Kaynes Technology India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KEC.NS",
+  "name": "Kec International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KEI.NS",
+  "name": "KEI Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KFINTECH.NS",
+  "name": "Kfin Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KIRLOSBROS.NS",
+  "name": "Kirloskar Brothers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KIRLOSENG.NS",
+  "name": "Kirloskar Oil Eng",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KOTAKBANK.NS",
+  "name": "Kotak Mahindra Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KPITTECH.NS",
+  "name": "KPIT Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KIMS.NS",
+  "name": "Krishna Institute of Medical Sciences",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KSB.NS",
+  "name": "KSB",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LTF.NS",
+  "name": "L&T Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LTTS.NS",
+  "name": "L&T Technology Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LT.NS",
+  "name": "Larsen & Toubro",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LAURUSLABS.NS",
+  "name": "Laurus Labs",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LEMONTREE.NS",
+  "name": "Lemon Tree Hotels",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LENSKART.NS",
+  "name": "Lenskart Solutions",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LGEINDIA.NS",
+  "name": "LG Electronics India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LICHSGFIN.NS",
+  "name": "LIC Housing Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LICI.NS",
+  "name": "Life Insurance Corporation of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LINDEINDIA.NS",
+  "name": "Linde India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LLOYDSME.NS",
+  "name": "Lloyds Metals And Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LODHA.NS",
+  "name": "Lodha Developers",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LTFOODS.NS",
+  "name": "LT Foods",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LTM.NS",
+  "name": "LTM",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LUPIN.NS",
+  "name": "Lupin",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MGL.NS",
+  "name": "Mahanagar Gas",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "M&M.NS",
+  "name": "Mahindra & Mahindra",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "M&MFIN.NS",
+  "name": "Mahindra & Mahindra Financial Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MANAPPURAM.NS",
+  "name": "Manappuram Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MRPL.NS",
+  "name": "Mangalore Refinery & Petrochemicals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MANKIND.NS",
+  "name": "Mankind Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MARICO.NS",
+  "name": "Marico",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MARUTI.NS",
+  "name": "Maruti Suzuki",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MFSL.NS",
+  "name": "Max Financial Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MAXHEALTH.NS",
+  "name": "Max Healthcare Institute",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MAZDOCK.NS",
+  "name": "Mazagoan Dock Shipbuilders",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MEESHO.NS",
+  "name": "Meesho",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MINDACORP.NS",
+  "name": "Minda Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MMTC.NS",
+  "name": "MMTC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MSUMI.NS",
+  "name": "Motherson Sumi Wiring India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MOTILALOFS.NS",
+  "name": "Motilal Oswal Financial Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MPHASIS.NS",
+  "name": "MphasiS",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MRF.NS",
+  "name": "MRF",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MTARTECH.NS",
+  "name": "MTAR Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MCX.NS",
+  "name": "Multi Commodity Exchange of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MUTHOOTFIN.NS",
+  "name": "Muthoot Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NH.NS",
+  "name": "Narayana Hrudayalaya",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NATCOPHARM.NS",
+  "name": "NATCO Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NATIONALUM.NS",
+  "name": "National Aluminium Co.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NAVA.NS",
+  "name": "Nava",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NAVINFLUOR.NS",
+  "name": "Navin Fluorine International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NBCC.NS",
+  "name": "NBCC (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NCC.NS",
+  "name": "NCC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NESTLEIND.NS",
+  "name": "Nestle India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NETWEB.NS",
+  "name": "Netweb Technologies India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NEULANDLAB.NS",
+  "name": "Neuland Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NHPC.NS",
+  "name": "NHPC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NAM-INDIA.NS",
+  "name": "Nippon Life India Asset Management",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NLCINDIA.NS",
+  "name": "NLC India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NMDC.NS",
+  "name": "NMDC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NSLNISP.NS",
+  "name": "NMDC Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NTPC.NS",
+  "name": "NTPC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NTPCGREEN.NS",
+  "name": "NTPC Green Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NUVAMA.NS",
+  "name": "Nuvama Wealth Management",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NUVOCO.NS",
+  "name": "Nuvoco Vistas Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "OBEROIRLTY.NS",
+  "name": "Oberoi Realty",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "OIL.NS",
+  "name": "Oil India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "OLAELEC.NS",
+  "name": "Ola Electric Mobility",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "OLECTRA.NS",
+  "name": "Olectra Greentech",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PAYTM.NS",
+  "name": "One 97 Communications",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ONESOURCE.NS",
+  "name": "Onesource Specialty Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ONGC.NS",
+  "name": "ONGC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "OFSS.NS",
+  "name": "Oracle Financial Services Software",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PAGEIND.NS",
+  "name": "Page Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PARADEEP.NS",
+  "name": "Paradeep Phosphates",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PATANJALI.NS",
+  "name": "Patanjali Foods",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POLICYBZR.NS",
+  "name": "PB Fintech",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PCBL.NS",
+  "name": "PCBL Chemical",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PERSISTENT.NS",
+  "name": "Persistent Systems",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PETRONET.NS",
+  "name": "Petronet LNG",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PGEL.NS",
+  "name": "PG Electroplast",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PHOENIXLTD.NS",
+  "name": "Phoenix Mills",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PWL.NS",
+  "name": "Physicswallah",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PIIND.NS",
+  "name": "PI Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PIDILITIND.NS",
+  "name": "Pidilite",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PINELABS.NS",
+  "name": "Pine Labs",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PIRAMALFIN.NS",
+  "name": "Piramal Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PPLPHARMA.NS",
+  "name": "Piramal Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PNBHOUSING.NS",
+  "name": "PNB Housing Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POLYMED.NS",
+  "name": "Poly Medicure",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POLYCAB.NS",
+  "name": "Polycab India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POONAWALLA.NS",
+  "name": "Poonawalla Fincorp",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PFC.NS",
+  "name": "Power Finance Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POWERGRID.NS",
+  "name": "Power Grid",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PREMIERENE.NS",
+  "name": "Premier Energies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PRESTIGE.NS",
+  "name": "Prestige Estates Projects",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PFOCUS.NS",
+  "name": "Prime Focus",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PRIVISCL.NS",
+  "name": "Privi Speciality Chemicals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PTCIL.NS",
+  "name": "PTC Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PNB.NS",
+  "name": "Punjab National Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PVRINOX.NS",
+  "name": "PVR INOX",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RRKABEL.NS",
+  "name": "R R Kabel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RADICO.NS",
+  "name": "Radico Khaitan",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RVNL.NS",
+  "name": "Rail Vikas Nigam",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RAILTEL.NS",
+  "name": "Railtel Corporation Of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RAINBOW.NS",
+  "name": "Rainbow Childrens Medicare",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RKFORGE.NS",
+  "name": "Ramkrishna Forgings",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RBLBANK.NS",
+  "name": "RBL Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RECLTD.NS",
+  "name": "REC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "REDINGTON.NS",
+  "name": "Redington",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RELIANCE.NS",
+  "name": "Reliance Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RPOWER.NS",
+  "name": "Reliance Power",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RHIM.NS",
+  "name": "RHI MAGNESITA INDIA",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RITES.NS",
+  "name": "RITES",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RUBICON.NS",
+  "name": "Rubicon Research",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SAGILITY.NS",
+  "name": "Sagility",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SAILIFE.NS",
+  "name": "Sai Life Sciences",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SAMMAANCAP.NS",
+  "name": "Sammaan Capital",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MOTHERSON.NS",
+  "name": "Samvardhana Motherson International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SANSERA.NS",
+  "name": "Sansera Engineering",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SARDAEN.NS",
+  "name": "Sarda Energy and Minerals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SBICARD.NS",
+  "name": "SBI Cards and Payment Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SBILIFE.NS",
+  "name": "SBI Life",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SCHAEFFLER.NS",
+  "name": "Schaeffler India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SCHNEIDER.NS",
+  "name": "Schneider Electric Infrastructure",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SCI.NS",
+  "name": "Shipping Corporation of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SHREECEM.NS",
+  "name": "Shree Cement",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SHRIRAMFIN.NS",
+  "name": "Shriram Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SHYAMMETL.NS",
+  "name": "Shyam Metalics and Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SIEMENS.NS",
+  "name": "Siemens",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ENRIN.NS",
+  "name": "Siemens Energy India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SIGNATURE.NS",
+  "name": "Signatureglobal (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SJVN.NS",
+  "name": "SJVN",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SOBHA.NS",
+  "name": "Sobha",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SOLARINDS.NS",
+  "name": "Solar Industries India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SONACOMS.NS",
+  "name": "Sona BLW Precision Forgings",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SHRIPISTON.NS",
+  "name": "SPR Auto Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SRF.NS",
+  "name": "SRF",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "STARHEALTH.NS",
+  "name": "Star Health and Allied Insurance Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SBIN.NS",
+  "name": "State Bank of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SAIL.NS",
+  "name": "Steel Authority of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUMICHEM.NS",
+  "name": "Sumitomo Chemical India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUNPHARMA.NS",
+  "name": "Sun Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUNTV.NS",
+  "name": "Sun TV Network",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUNDARMFIN.NS",
+  "name": "Sundaram Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUPREMEIND.NS",
+  "name": "Supreme Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUZLON.NS",
+  "name": "Suzlon Energy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SWANCORP.NS",
+  "name": "Swan Corp",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SWIGGY.NS",
+  "name": "Swiggy",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SYNGENE.NS",
+  "name": "Syngene International",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SYRMA.NS",
+  "name": "Syrma SGS Technology",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATACAP.NS",
+  "name": "Tata Capital",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATACHEM.NS",
+  "name": "Tata Chemicals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATACOMM.NS",
+  "name": "Tata Communications",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TCS.NS",
+  "name": "Tata Consultancy Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATACONSUM.NS",
+  "name": "Tata Consumer",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATAELXSI.NS",
+  "name": "Tata Elxsi",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATAINVEST.NS",
+  "name": "Tata Investment Corporation",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TMCV.NS",
+  "name": "Tata Motors Commercial Vehicles",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TMPV.NS",
+  "name": "Tata Motors Passenger Vehicles",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATAPOWER.NS",
+  "name": "Tata Power Co.",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATASTEEL.NS",
+  "name": "Tata Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATATECH.NS",
+  "name": "Tata Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TTML.NS",
+  "name": "Tata Teleservices (Maharashtra)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TBOTEK.NS",
+  "name": "TBO Tek",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TDPOWERSYS.NS",
+  "name": "TD Power Systems",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TECHM.NS",
+  "name": "Tech Mahindra",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TECHNOE.NS",
+  "name": "Techno Electric & Engineering Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TEGA.NS",
+  "name": "Tega Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TEJASNET.NS",
+  "name": "Tejas Networks",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TENNIND.NS",
+  "name": "Tenneco Clean Air India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "THANGAMAYL.NS",
+  "name": "Thangamayil Jewellery",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NIACL.NS",
+  "name": "The New India Assurance Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "RAMCOCEM.NS",
+  "name": "The Ramco Cements",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "THERMAX.NS",
+  "name": "Thermax",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TIMKEN.NS",
+  "name": "Timken India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TITAGARH.NS",
+  "name": "Titagarh Rail Systems",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TITAN.NS",
+  "name": "Titan",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TORNTPHARM.NS",
+  "name": "Torrent Pharmaceuticals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TORNTPOWER.NS",
+  "name": "Torrent Power",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TARIL.NS",
+  "name": "Transformers And Rectifiers (India)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TRENT.NS",
+  "name": "Trent",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TRIDENT.NS",
+  "name": "Trident",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TRITURBINE.NS",
+  "name": "Triveni Turbine",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TIINDIA.NS",
+  "name": "Tube Investments of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TVSMOTOR.NS",
+  "name": "TVS Motor Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UCOBANK.NS",
+  "name": "UCO Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ULTRACEMCO.NS",
+  "name": "UltraTech Cement",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UNIONBANK.NS",
+  "name": "Union Bank of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UBL.NS",
+  "name": "United Breweries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UNITDSPR.NS",
+  "name": "United Spirits",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UNOMINDA.NS",
+  "name": "UNO Minda",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UPL.NS",
+  "name": "UPL",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "URBANCO.NS",
+  "name": "Urban Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "USHAMART.NS",
+  "name": "Usha Martin",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "UTIAMC.NS",
+  "name": "UTI Asset Management Company",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VTL.NS",
+  "name": "Vardhman Textiles",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VBL.NS",
+  "name": "Varun Beverages",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VEDL.NS",
+  "name": "Vedanta",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VAML.NS",
+  "name": "Vedanta Aluminium Metal",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VISL.NS",
+  "name": "Vedanta Iron and Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VOGL.NS",
+  "name": "Vedanta Oil and Gas",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VEDPOWER.NS",
+  "name": "Vedanta Power",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VIJAYA.NS",
+  "name": "Vijaya Diagnostic Centre",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VMM.NS",
+  "name": "Vishal Mega Mart",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IDEA.NS",
+  "name": "Vodafone Idea",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VOLTAS.NS",
+  "name": "Voltas",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WAAREEENER.NS",
+  "name": "Waaree Energies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WELCORP.NS",
+  "name": "Welspun Corp",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WELSPUNLIV.NS",
+  "name": "Welspun Living",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WHIRLPOOL.NS",
+  "name": "Whirlpool of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WIPRO.NS",
+  "name": "Wipro",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WOCKPHARMA.NS",
+  "name": "Wockhardt",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "YESBANK.NS",
+  "name": "Yes Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZEEL.NS",
+  "name": "Zee Entertainment Enterprises",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZENTEC.NS",
+  "name": "Zen Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZENSARTECH.NS",
+  "name": "Zensar Technolgies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZFCVINDIA.NS",
+  "name": "ZF Commercial Vehicle Control Systems India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZYDUSLIFE.NS",
+  "name": "Zydus Lifesciences",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ZYDUSWELL.NS",
+  "name": "Zydus Wellness",
   "type": "stock",
   "group": "India"
  }
