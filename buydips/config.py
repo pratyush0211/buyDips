@@ -1,6 +1,7 @@
 """Settings, all read from environment variables (or a local .env file)."""
 
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -10,9 +11,9 @@ load_dotenv()
 def _db_url() -> str:
     # Tolerate stray whitespace/quotes from copy-paste.
     url = os.getenv("DATABASE_URL", "sqlite:///buydips.db").strip().strip("\"'").strip()
-    # Some hosts hand out "postgres://", which SQLAlchemy no longer accepts.
-    if url.startswith("postgres://"):
-        url = "postgresql://" + url[len("postgres://"):]
+    # Hosts hand out "postgres://" or "postgresql+psycopg://" (a driver we don't install); normalise
+    # every Postgres style to the psycopg2 driver we do install.
+    url = re.sub(r"^postgres(ql)?(\+\w+)?://", "postgresql+psycopg2://", url)
     _check_db_url(url)
     return url
 
