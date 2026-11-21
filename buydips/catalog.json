@@ -1,0 +1,434 @@
+[
+ {
+  "symbol": "^NSEI",
+  "name": "Nifty 50",
+  "type": "index",
+  "group": "India"
+ },
+ {
+  "symbol": "^BSESN",
+  "name": "Sensex",
+  "type": "index",
+  "group": "India"
+ },
+ {
+  "symbol": "^NSEBANK",
+  "name": "Nifty Bank",
+  "type": "index",
+  "group": "India"
+ },
+ {
+  "symbol": "^CNXIT",
+  "name": "Nifty IT",
+  "type": "index",
+  "group": "India"
+ },
+ {
+  "symbol": "^GSPC",
+  "name": "S&P 500",
+  "type": "index",
+  "group": "US"
+ },
+ {
+  "symbol": "^IXIC",
+  "name": "Nasdaq Composite",
+  "type": "index",
+  "group": "US"
+ },
+ {
+  "symbol": "^DJI",
+  "name": "Dow Jones",
+  "type": "index",
+  "group": "US"
+ },
+ {
+  "symbol": "^RUT",
+  "name": "Russell 2000",
+  "type": "index",
+  "group": "US"
+ },
+ {
+  "symbol": "^FTSE",
+  "name": "FTSE 100",
+  "type": "index",
+  "group": "Europe"
+ },
+ {
+  "symbol": "^GDAXI",
+  "name": "DAX",
+  "type": "index",
+  "group": "Europe"
+ },
+ {
+  "symbol": "^N225",
+  "name": "Nikkei 225",
+  "type": "index",
+  "group": "Asia"
+ },
+ {
+  "symbol": "^HSI",
+  "name": "Hang Seng",
+  "type": "index",
+  "group": "Asia"
+ },
+ {
+  "symbol": "RELIANCE.NS",
+  "name": "Reliance Industries",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TCS.NS",
+  "name": "Tata Consultancy Services",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDFCBANK.NS",
+  "name": "HDFC Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INFY.NS",
+  "name": "Infosys",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ICICIBANK.NS",
+  "name": "ICICI Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDUNILVR.NS",
+  "name": "Hindustan Unilever",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ITC.NS",
+  "name": "ITC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SBIN.NS",
+  "name": "State Bank of India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BHARTIARTL.NS",
+  "name": "Bharti Airtel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "KOTAKBANK.NS",
+  "name": "Kotak Mahindra Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "LT.NS",
+  "name": "Larsen & Toubro",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "AXISBANK.NS",
+  "name": "Axis Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ASIANPAINT.NS",
+  "name": "Asian Paints",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "MARUTI.NS",
+  "name": "Maruti Suzuki",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SUNPHARMA.NS",
+  "name": "Sun Pharma",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TITAN.NS",
+  "name": "Titan",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJFINANCE.NS",
+  "name": "Bajaj Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NESTLEIND.NS",
+  "name": "Nestle India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ULTRACEMCO.NS",
+  "name": "UltraTech Cement",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "WIPRO.NS",
+  "name": "Wipro",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HCLTECH.NS",
+  "name": "HCL Technologies",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "NTPC.NS",
+  "name": "NTPC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "POWERGRID.NS",
+  "name": "Power Grid",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ONGC.NS",
+  "name": "ONGC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "M&M.NS",
+  "name": "Mahindra & Mahindra",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATASTEEL.NS",
+  "name": "Tata Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JSWSTEEL.NS",
+  "name": "JSW Steel",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ADANIENT.NS",
+  "name": "Adani Enterprises",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ADANIPORTS.NS",
+  "name": "Adani Ports",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "COALINDIA.NS",
+  "name": "Coal India",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TECHM.NS",
+  "name": "Tech Mahindra",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BAJAJFINSV.NS",
+  "name": "Bajaj Finserv",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDUSINDBK.NS",
+  "name": "IndusInd Bank",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "GRASIM.NS",
+  "name": "Grasim",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "CIPLA.NS",
+  "name": "Cipla",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DRREDDY.NS",
+  "name": "Dr. Reddy's",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "EICHERMOT.NS",
+  "name": "Eicher Motors",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HEROMOTOCO.NS",
+  "name": "Hero MotoCorp",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BPCL.NS",
+  "name": "BPCL",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BRITANNIA.NS",
+  "name": "Britannia",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "APOLLOHOSP.NS",
+  "name": "Apollo Hospitals",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DIVISLAB.NS",
+  "name": "Divi's Laboratories",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HDFCLIFE.NS",
+  "name": "HDFC Life",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SBILIFE.NS",
+  "name": "SBI Life",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TATACONSUM.NS",
+  "name": "Tata Consumer",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HINDALCO.NS",
+  "name": "Hindalco",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TRENT.NS",
+  "name": "Trent",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "SHRIRAMFIN.NS",
+  "name": "Shriram Finance",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "BEL.NS",
+  "name": "Bharat Electronics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "ETERNAL.NS",
+  "name": "Eternal (Zomato)",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "JIOFIN.NS",
+  "name": "Jio Financial",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TMPV.NS",
+  "name": "Tata Motors Passenger Vehicles",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "TMCV.NS",
+  "name": "Tata Motors Commercial Vehicles",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "VEDL.NS",
+  "name": "Vedanta",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "IRCTC.NS",
+  "name": "IRCTC",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "HAL.NS",
+  "name": "Hindustan Aeronautics",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DMART.NS",
+  "name": "Avenue Supermarts",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "PIDILITIND.NS",
+  "name": "Pidilite",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "DLF.NS",
+  "name": "DLF",
+  "type": "stock",
+  "group": "India"
+ },
+ {
+  "symbol": "INDIGO.NS",
+  "name": "InterGlobe Aviation",
+  "type": "stock",
+  "group": "India"
+ }
+]

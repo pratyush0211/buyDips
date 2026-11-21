@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Don't watch the market.<br>Know when it matters.</h1>
+<p>Pick the indexes and Indian stocks you care about, set how far they have to fall, and buyDips emails you when they do. Free, no password, no spam.</p>
+
+{% if user %}
+<p><a href="/watchlist"><button>Open my watchlist</button></a></p>
+{% else %}
+<form class="card" method="post" action="/login">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label for="email"><strong>Your email</strong></label><br><br>
+  <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+  <button>Email me a sign-in link</button>
+  <p style="margin:12px 0 0;font-size:14px">We'll email you a one-time link. That's all the signing up there is.</p>
+</form>
+{% endif %}
+
+<h2>How it works</h2>
+<p>1. Choose from Nifty 50, Sensex, S&amp;P 500, Nasdaq and more, plus 60 large Indian stocks.<br>
+2. Set an alert level for each, like 1% for an index or 3% for a stock.<br>
+3. Get one email when something drops past your level, at most once per trading day per item.</p>
+{% endblock %}

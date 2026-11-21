@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Unsubscribe · buyDips{% endblock %}
+{% block body %}
+<h1>Unsubscribe from buyDips?</h1>
+<p>You'll stop getting alert emails. Your watchlist is kept, and you can turn alerts back on any time by signing in again.</p>
+<form method="post" action="/unsubscribe/{{ token }}">
+  <button>Yes, unsubscribe me</button>
+</form>
+{% endblock %}
