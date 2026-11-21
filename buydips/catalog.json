@@ -3040,5 +3040,611 @@
   "name": "Zydus Wellness",
   "type": "stock",
   "group": "India"
+ },
+ {
+  "symbol": "ADBE",
+  "name": "Adobe",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AMD",
+  "name": "Advanced Micro Devices",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ABNB",
+  "name": "Airbnb",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ALNY",
+  "name": "Alnylam Pharmaceuticals",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "GOOGL",
+  "name": "Alphabet (Class A)",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "GOOG",
+  "name": "Alphabet (Class C)",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AMZN",
+  "name": "Amazon.com",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AEP",
+  "name": "American Electric Power",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AMGN",
+  "name": "Amgen",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ADI",
+  "name": "Analog Devices",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AAPL",
+  "name": "Apple",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AMAT",
+  "name": "Applied Materials",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "APP",
+  "name": "Applovin",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ARM",
+  "name": "Arm Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ASML",
+  "name": "ASML Holding",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ALAB",
+  "name": "Astera Labs",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ADSK",
+  "name": "Autodesk",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ADP",
+  "name": "Automatic Data Processing",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AXON",
+  "name": "Axon Enterprise",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "BKR",
+  "name": "Baker Hughes",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "BKNG",
+  "name": "Booking Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "AVGO",
+  "name": "Broadcom",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CDNS",
+  "name": "Cadence Design Systems",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CTAS",
+  "name": "Cintas",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CSCO",
+  "name": "Cisco Systems",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CCEP",
+  "name": "Coca-Cola Europacific Partners",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CMCSA",
+  "name": "Comcast",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CEG",
+  "name": "Constellation Energy",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CPRT",
+  "name": "Copart",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CRWV",
+  "name": "CoreWeave",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "COST",
+  "name": "Costco Wholesale",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CRWD",
+  "name": "CrowdStrike Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "CSX",
+  "name": "CSX",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "DDOG",
+  "name": "Datadog",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "DXCM",
+  "name": "DexCom",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "FANG",
+  "name": "Diamondback Energy",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "DASH",
+  "name": "DoorDash",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "EXC",
+  "name": "Exelon",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "FAST",
+  "name": "Fastenal",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "FER",
+  "name": "Ferrovial",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "FTNT",
+  "name": "Fortinet",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "GEHC",
+  "name": "GE HealthCare Technologies",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "GILD",
+  "name": "Gilead Sciences",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "HONA",
+  "name": "Honeywell Aerospace",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "HON",
+  "name": "Honeywell International",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "IDXX",
+  "name": "IDEXX Laboratories",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "INTC",
+  "name": "Intel",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "INTU",
+  "name": "Intuit",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ISRG",
+  "name": "Intuitive Surgical",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "KDP",
+  "name": "Keurig Dr Pepper",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "KLAC",
+  "name": "KLA",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "LRCX",
+  "name": "Lam Research",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "LIN",
+  "name": "Linde",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "LITE",
+  "name": "Lumentum Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MAR",
+  "name": "Marriott International",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MRVL",
+  "name": "Marvell Technology",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MELI",
+  "name": "MercadoLibre",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "META",
+  "name": "Meta Platforms",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MCHP",
+  "name": "Microchip Technology",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MU",
+  "name": "Micron Technology",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MSFT",
+  "name": "Microsoft",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MRNA",
+  "name": "Moderna",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MDLZ",
+  "name": "Mondelez International",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MPWR",
+  "name": "Monolithic Power Systems",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MNST",
+  "name": "Monster Beverage",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "NBIS",
+  "name": "Nebius Group",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "NFLX",
+  "name": "Netflix",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "NVDA",
+  "name": "NVIDIA",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "NXPI",
+  "name": "NXP Semiconductors",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ORLY",
+  "name": "O'Reilly Automotive",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ODFL",
+  "name": "Old Dominion Freight Line",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PCAR",
+  "name": "PACCAR",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PLTR",
+  "name": "Palantir Technologies",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PANW",
+  "name": "Palo Alto Networks",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PAYX",
+  "name": "Paychex",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PYPL",
+  "name": "PayPal Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PDD",
+  "name": "PDD Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "PEP",
+  "name": "PepsiCo",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "QCOM",
+  "name": "QUALCOMM",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "REGN",
+  "name": "Regeneron Pharmaceuticals",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "RKLB",
+  "name": "Rocket Lab",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ROP",
+  "name": "Roper Technologies",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "ROST",
+  "name": "Ross Stores",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "SNDK",
+  "name": "Sandisk",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "STX",
+  "name": "Seagate Technology Holdings",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "SHOP",
+  "name": "Shopify",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "SPCX",
+  "name": "Space Exploration Technologies",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "SBUX",
+  "name": "Starbucks",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "MSTR",
+  "name": "Strategy",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "SNPS",
+  "name": "Synopsys",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TMUS",
+  "name": "T-Mobile US",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TTWO",
+  "name": "Take-Two Interactive Software",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TER",
+  "name": "Teradyne",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TSLA",
+  "name": "Tesla",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TXN",
+  "name": "Texas Instruments",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "TRI",
+  "name": "Thomson Reuters",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "VRTX",
+  "name": "Vertex Pharmaceuticals",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "WMT",
+  "name": "Walmart",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "WDC",
+  "name": "Western Digital",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "WDAY",
+  "name": "Workday",
+  "type": "stock",
+  "group": "US"
+ },
+ {
+  "symbol": "XEL",
+  "name": "Xcel Energy",
+  "type": "stock",
+  "group": "US"
  }
 ]

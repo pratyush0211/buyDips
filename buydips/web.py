@@ -130,10 +130,11 @@ def create_app() -> Flask:
     @app.route("/")
     def index():
         indexes = [i for i in catalog.ITEMS if i["type"] == "index"]
-        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys"]
+        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft"]
         return render_template(
             "index.html", user=safe_user(), n_indexes=len(indexes),
-            n_stocks=len(catalog.ITEMS) - len(indexes), examples=examples,
+            n_india=sum(i["type"] == "stock" and i["group"] == "India" for i in catalog.ITEMS),
+            n_us=sum(i["type"] == "stock" and i["group"] == "US" for i in catalog.ITEMS), examples=examples,
         )
 
     @app.route("/privacy")

@@ -1,6 +1,6 @@
 # buyDips 📉
 
-Pick the indexes and Indian stocks you follow, set how far they must fall, and get an email when they do.
+Pick the indexes and stocks you follow (Nifty 500 and Nasdaq-100), set how far they must fall, and get an email when they do.
 
 ## How it works
 

@@ -7,7 +7,7 @@
     <div>
       <span class="eyebrow">Free during beta</span>
       <h1>Don't watch the market. Know when it matters.</h1>
-      <p class="lead">Choose the indexes and Indian stocks you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
+      <p class="lead">Choose the indexes and stocks you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
       {% if user %}
         <a class="btn btn-primary btn-lg" href="/watchlist">Open my watchlist</a>
       {% else %}
@@ -39,7 +39,7 @@
     <h2>How it works</h2>
     <p class="section-lead">Three steps, about a minute. No app to install and no password to remember.</p>
     <ol class="steps">
-      <li class="step"><span class="step-n">1</span><h3>Pick what to follow</h3><p>Choose from major indexes and large Indian stocks. Search, or start from a preset.</p></li>
+      <li class="step"><span class="step-n">1</span><h3>Pick what to follow</h3><p>Choose from major indexes, the Nifty 500 and the Nasdaq-100. Search, or start from a preset.</p></li>
       <li class="step"><span class="step-n">2</span><h3>Set your alert level</h3><p>Decide how far each one must fall from its previous close, like 1% for an index or 3% for a stock.</p></li>
       <li class="step"><span class="step-n">3</span><h3>Get one email when it happens</h3><p>Prices are checked about every 20 minutes on weekdays. Each item alerts at most once per trading day.</p></li>
     </ol>
@@ -49,10 +49,11 @@
 <section class="section">
   <div class="container">
     <h2>What you can follow</h2>
-    <p class="section-lead">A curated list, so every symbol is checked and working.</p>
+    <p class="section-lead">Every symbol is checked against live prices, so nothing on the list is dead.</p>
     <div class="stats">
       <div class="stat"><b>{{ n_indexes }}</b><span>indexes worldwide</span></div>
-      <div class="stat"><b>{{ n_stocks }}</b><span>Indian stocks (NSE)</span></div>
+      <div class="stat"><b>{{ n_india }}</b><span>Indian stocks (Nifty 500)</span></div>
+      <div class="stat"><b>{{ n_us }}</b><span>US stocks (Nasdaq-100)</span></div>
     </div>
     <ul class="chips">
       {% for name in examples %}<li>{{ name }}</li>{% endfor %}

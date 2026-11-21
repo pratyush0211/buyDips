@@ -25,15 +25,20 @@ _GROUP_ORDER = ["India", "US", "Europe", "Asia"]
 
 
 def grouped() -> List[dict]:
-    """Sections for the watchlist page: indexes by region (India first), then stocks."""
+    """Sections for the watchlist page: indexes by region (India first), then Indian stocks, then US stocks."""
     sections: Dict[str, List[dict]] = {}
     for item in ITEMS:
-        title = f"Indexes: {item['group']}" if item["type"] == "index" else "Indian stocks (NSE)"
+        if item["type"] == "index":
+            title = f"Indexes: {item['group']}"
+        else:
+            title = "Indian stocks (NSE)" if item["group"] == "India" else "US stocks (Nasdaq-100)"
         sections.setdefault(title, []).append(item)
 
     def rank(title: str) -> int:
         if title.startswith("Indian stocks"):
             return len(_GROUP_ORDER) + 1
+        if title.startswith("US stocks"):
+            return len(_GROUP_ORDER) + 2
         region = title.split(": ", 1)[1]
         return _GROUP_ORDER.index(region) if region in _GROUP_ORDER else len(_GROUP_ORDER)
 

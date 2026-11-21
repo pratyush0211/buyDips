@@ -1,5 +1,6 @@
-"""Rebuild the NSE stock part of buydips/catalog.json from NSE's official Nifty 500 list,
-keeping only symbols that currently return prices on Yahoo. Indexes are never touched.
+"""Rebuild the stock parts of buydips/catalog.json: the Nifty 500 (from NSE's official list) and the
+Nasdaq-100 (from Nasdaq's). Only symbols that currently return prices on Yahoo are kept.
+Indexes are never touched.
 
     .venv/bin/python tools/refresh_catalog.py            # preview what would change
     .venv/bin/python tools/refresh_catalog.py --write    # update catalog.json
@@ -23,8 +24,17 @@ warnings.filterwarnings("ignore")
 logging.disable(logging.CRITICAL)
 
 LIST_URL = "https://archives.nseindia.com/content/indices/ind_nifty500list.csv"
+NASDAQ_URL = "https://api.nasdaq.com/api/quote/list-type/nasdaq100"
 CATALOG = Path(__file__).resolve().parent.parent / "buydips" / "catalog.json"
 SUFFIX = re.compile(r"\s+(Ltd\.?|Limited)$", re.I)
+# Share-type wording on Nasdaq's names ("Apple Inc. Common Stock", "ASML ... New York Registry Shares").
+US_NOISE = re.compile(
+    r"\s*[-,]?\s*(Common (Stock|Shares)|Ordinary Shares?|New York Registry Shares|"
+    r"American Depositary (Shares|Receipts?)|Capital Stock)\b.*$", re.I
+)
+US_SUFFIX = re.compile(
+    r"[\s,]+(Inc\.?|Incorporated|Corporation|Corp\.?|Company|plc|N\.V\.|Ltd\.?|Limited|\(DE\))$", re.I
+)
 
 
 def nifty500() -> dict:
@@ -38,6 +48,28 @@ def nifty500() -> dict:
             continue
         out[f"{sym}.NS"] = SUFFIX.sub("", r["Company Name"].strip())
     return out
+
+
+def clean_us_name(raw: str) -> tuple:
+    """(plain company name, share class or None)."""
+    name = raw.strip()
+    cls = re.search(r"\b(Class [A-C])\b", name)
+    name = US_NOISE.sub("", name).strip(" ,-")
+    name = re.sub(r"\s*[-,]?\s*Class [A-C]\b.*$", "", name).strip(" ,-")
+    while US_SUFFIX.search(name):
+        name = US_SUFFIX.sub("", name).strip(" ,")
+    return name, (cls.group(1) if cls else None)
+
+
+def nasdaq100() -> dict:
+    resp = requests.get(NASDAQ_URL, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, timeout=30)
+    resp.raise_for_status()
+    parsed = {r["symbol"].strip(): clean_us_name(r["companyName"])
+              for r in resp.json()["data"]["data"]["rows"] if r["symbol"].strip()}
+    bases = [base for base, _ in parsed.values()]
+    # Show the share class only where two listings share a company name (Alphabet's A and C).
+    return {sym: f"{base} ({cls})" if cls and bases.count(base) > 1 else base
+            for sym, (base, cls) in parsed.items()}
 
 
 def has_prices(symbols: list) -> set:
@@ -54,31 +86,37 @@ def has_prices(symbols: list) -> set:
     return ok
 
 
-def main(write: bool) -> None:
-    current = json.loads(CATALOG.read_text(encoding="utf-8"))
-    indexes = [i for i in current if i["type"] == "index"]
-    old_names = {i["symbol"]: i["name"] for i in current if i["type"] == "stock"}
-
-    wanted = nifty500()
-    for sym, name in old_names.items():          # keep anything we already offer, if it still has prices
+def build(current: list, wanted: dict, group: str) -> tuple:
+    """Stocks for one market: what the official list says, plus anything we already offer that still trades."""
+    old = {i["symbol"]: i["name"] for i in current if i["type"] == "stock" and i["group"] == group}
+    wanted = dict(wanted)
+    for sym, name in old.items():
         wanted.setdefault(sym, name)
     live = has_prices(sorted(wanted))
     if len(live) < 0.8 * len(wanted):
-        sys.exit(f"Only {len(live)} of {len(wanted)} symbols returned prices; Yahoo looks unhealthy. Not changing anything.")
+        sys.exit(f"{group}: only {len(live)} of {len(wanted)} symbols returned prices; Yahoo looks unhealthy. "
+                 "Not changing anything.")
+    stocks = [{"symbol": s, "name": old.get(s, wanted[s]), "type": "stock", "group": group}
+              for s in sorted(live, key=lambda s: old.get(s, wanted[s]).lower())]
+    added = sorted(set(live) - set(old))
+    gone = sorted(set(old) - set(live))
+    print(f"{group}: {len(stocks)} stocks | added {len(added)} | removed {len(gone)} {gone} | "
+          f"no prices: {sorted(set(wanted) - live)}")
+    return stocks
 
-    stocks = [
-        {"symbol": s, "name": old_names.get(s, wanted[s]), "type": "stock", "group": "India"}
-        for s in sorted(live, key=lambda s: old_names.get(s, wanted[s]).lower())
-    ]
-    dropped = sorted(set(wanted) - live)
-    added = sorted(set(s["symbol"] for s in stocks) - set(old_names))
-    gone = sorted(set(old_names) - set(s["symbol"] for s in stocks))
-    print(f"{len(indexes)} indexes + {len(stocks)} stocks | added {len(added)} | removed {len(gone)} {gone} | no prices: {dropped}")
+
+def main(write: bool) -> None:
+    current = json.loads(CATALOG.read_text(encoding="utf-8"))
+    indexes = [i for i in current if i["type"] == "index"]
+    india = build(current, nifty500(), "India")
+    us = build(current, nasdaq100(), "US")
+    print(f"{len(indexes)} indexes + {len(india)} Indian + {len(us)} US stocks")
     if write:
-        CATALOG.write_text(json.dumps(indexes + stocks, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        CATALOG.write_text(json.dumps(indexes + india + us, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         print("catalog.json updated")
     else:
         print("(preview only; use --write to save)")
+        print("US names:", ", ".join(f"{s['symbol']}={s['name']}" for s in us))
 
 
 if __name__ == "__main__":
