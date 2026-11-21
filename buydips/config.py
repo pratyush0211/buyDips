@@ -8,11 +8,35 @@ load_dotenv()
 
 
 def _db_url() -> str:
-    url = os.getenv("DATABASE_URL", "sqlite:///buydips.db")
+    # Tolerate stray whitespace/quotes from copy-paste.
+    url = os.getenv("DATABASE_URL", "sqlite:///buydips.db").strip().strip("\"'").strip()
     # Some hosts hand out "postgres://", which SQLAlchemy no longer accepts.
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://"):]
+    _check_db_url(url)
     return url
+
+
+def _check_db_url(url: str) -> None:
+    """Fail at startup with a plain-English reason (never echoing the URL, which holds a password)."""
+    from sqlalchemy.engine import make_url
+
+    problem = None
+    if "[" in url or "]" in url or "YOUR-" in url.upper():
+        problem = "it still contains the [YOUR-PASSWORD] placeholder (remove the square brackets and use your real password)"
+    elif not url.startswith(("postgresql://", "postgresql+", "sqlite:")):
+        problem = "it must start with postgresql://"
+    else:
+        try:
+            make_url(url)
+        except Exception:  # noqa: BLE001
+            problem = ("it can't be parsed; a password containing @ / # ? or % must be URL-encoded, or reset to "
+                       "letters and numbers only")
+    if problem:
+        raise RuntimeError(
+            "DATABASE_URL is invalid: " + problem + ". It should look like "
+            "postgresql://USER:PASSWORD@HOST:5432/postgres"
+        )
 
 
 DATABASE_URL = _db_url()
