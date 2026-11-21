@@ -1,6 +1,8 @@
 """Database layer (SQLAlchemy Core). SQLite locally, Postgres in production, same code."""
 
-from datetime import datetime
+import hashlib
+import secrets
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from sqlalchemy import (
@@ -36,6 +38,13 @@ alerts_sent = Table(
     Column("session", String(10), nullable=False),
     Column("sent_at", DateTime, nullable=False),
     PrimaryKeyConstraint("user_id", "symbol", "session"),
+)
+
+login_codes = Table(
+    "login_codes", metadata,
+    Column("code_hash", String(64), primary_key=True),  # SHA-256 of the code; the code itself is never stored
+    Column("email", String(320), nullable=False),
+    Column("expires_at", DateTime, nullable=False),
 )
 
 _engine = None
@@ -182,3 +191,30 @@ def record_alerts(user_id: int, pairs: List[tuple]) -> None:
                     )
                 )
 
+
+# ---------- sign-in codes ----------
+
+def _hash(code: str) -> str:
+    return hashlib.sha256(code.encode()).hexdigest()
+
+
+def create_login_code(email: str, minutes: int) -> str:
+    """A short random code for a sign-in link, valid for `minutes`."""
+    code = secrets.token_urlsafe(9)  # 12 characters, 72 bits of randomness
+    with engine().begin() as conn:
+        conn.execute(delete(login_codes).where(login_codes.c.expires_at < _now()))  # tidy up
+        conn.execute(insert(login_codes).values(
+            code_hash=_hash(code), email=normalize_email(email), expires_at=_now() + timedelta(minutes=minutes)
+        ))
+    return code
+
+
+def email_for_login_code(code: str) -> Optional[str]:
+    """The email a valid, unexpired sign-in code belongs to, else None."""
+    with engine().connect() as conn:
+        row = conn.execute(
+            select(login_codes.c.email, login_codes.c.expires_at).where(login_codes.c.code_hash == _hash(code))
+        ).first()
+    if not row or row[1] < _now():
+        return None
+    return row[0]

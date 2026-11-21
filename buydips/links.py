@@ -1,6 +1,7 @@
-"""Signed, tamper-proof tokens for sign-in links and unsubscribe links (no extra DB tables)."""
+"""Links in emails. Sign-in links use short database-backed codes; unsubscribe links are signed tokens
+that never expire and need no database lookup."""
 
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from . import config
 
@@ -9,20 +10,8 @@ def _ser(salt: str) -> URLSafeTimedSerializer:
     return URLSafeTimedSerializer(config.SECRET_KEY, salt=salt)
 
 
-def login_token(email: str) -> str:
-    return _ser("login").dumps(email)
-
-
-def read_login_token(token: str):
-    """The email in a valid, unexpired sign-in token, else None."""
-    try:
-        return _ser("login").loads(token, max_age=config.LOGIN_LINK_MINUTES * 60)
-    except (BadSignature, SignatureExpired):
-        return None
-
-
-def login_url(email: str) -> str:
-    return f"{config.BASE_URL}/auth/{login_token(email)}"
+def login_url(code: str) -> str:
+    return f"{config.BASE_URL}/go/{code}"
 
 
 def unsubscribe_url(user_id: int) -> str:

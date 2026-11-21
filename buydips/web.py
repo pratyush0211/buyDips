@@ -130,11 +130,12 @@ def create_app() -> Flask:
         wait = db.seconds_since_login_link(email)
         if wait is None or wait >= config.LOGIN_LINK_COOLDOWN_SECONDS:
             db.get_or_create_user(email)
+            code = db.create_login_code(email, config.LOGIN_LINK_MINUTES)
             sent = send_email(
                 email,
                 "Your buyDips sign-in link",
                 f"Click to sign in to buyDips (valid for {config.LOGIN_LINK_MINUTES} minutes):\n\n"
-                f"{links.login_url(email)}\n\n"
+                f"{links.login_url(code)}\n\n"
                 "If you didn't ask for this, ignore this email.",
             )
             if not sent:
@@ -145,15 +146,19 @@ def create_app() -> Flask:
         return page("Check your inbox", f"If {email} is valid, a sign-in link is on its way. It expires in "
                                         f"{config.LOGIN_LINK_MINUTES} minutes.", icon="✉")
 
-    @app.route("/auth/<token>")
-    def auth(token):
-        email = links.read_login_token(token)
+    @app.route("/go/<code>")
+    def go(code):
+        email = db.email_for_login_code(code)
         if not email:
             return page("Link expired", "That sign-in link is invalid or has expired. Request a new one.", 400)
         user = db.get_or_create_user(email)
         session.clear()
         session["uid"] = user["id"]
         return redirect(url_for("watchlist"))
+
+    @app.route("/auth/<token>")
+    def legacy_auth(token):  # long-format links from before 22 Nov 2026; they expire in 15 minutes anyway
+        return page("Link expired", "That sign-in link is out of date. Request a new one.", 400)
 
     @app.route("/watchlist", methods=["GET", "POST"])
     def watchlist():

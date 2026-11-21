@@ -24,7 +24,8 @@ def csrf(client, path="/"):
 def sign_in(client, email="a@x.com"):
     token = csrf(client)
     client.post("/login", data={"email": email, "csrf": token})
-    client.get(links.login_url(email).split("http://127.0.0.1:5000")[1])
+    code = db.create_login_code(email, 15)
+    client.get(links.login_url(code).split("http://127.0.0.1:5000")[1])
 
 
 def test_login_requires_csrf(client):
@@ -36,7 +37,7 @@ def test_login_sends_link_and_rate_limits(client):
     client.post("/login", data={"email": "a@x.com", "csrf": t})
     client.post("/login", data={"email": "a@x.com", "csrf": t})
     assert len(client.sent) == 1
-    assert "/auth/" in client.sent[0][2]
+    assert "/go/" in client.sent[0][2]
 
 
 def test_invalid_email_rejected(client):
@@ -44,8 +45,27 @@ def test_invalid_email_rejected(client):
     assert r.status_code == 400
 
 
-def test_bad_login_token_rejected(client):
-    assert client.get("/auth/garbage").status_code == 400
+def test_bad_login_code_rejected(client):
+    assert client.get("/go/garbage").status_code == 400
+    assert client.get("/auth/anything").status_code == 400  # old long-format links
+
+
+def test_login_link_is_short_and_reveals_nothing(client):
+    client.post("/login", data={"email": "secret.person@x.com", "csrf": csrf(client)})
+    link = re.search(r"http://127\.0\.0\.1:5000/go/(\S+)", client.sent[0][2]).group(0)
+    assert len(link) < 50
+    assert "secret" not in link and "x.com" not in link
+
+
+def test_login_code_expires_and_is_not_stored_in_clear(client):
+    code = db.create_login_code("a@x.com", 15)
+    assert db.email_for_login_code(code) == "a@x.com"
+    from sqlalchemy import select
+    with db.engine().connect() as c:
+        stored = [r[0] for r in c.execute(select(db.login_codes.c.code_hash))]
+    assert code not in stored
+    expired = db.create_login_code("a@x.com", -1)
+    assert db.email_for_login_code(expired) is None
 
 
 def test_watchlist_requires_login(client):
