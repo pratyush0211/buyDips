@@ -11,7 +11,7 @@ def _ser(salt: str) -> URLSafeTimedSerializer:
 
 
 def login_url(code: str) -> str:
-    return f"{config.BASE_URL}/go/{code}"
+    return f"{config.BASE_URL}/signin/{code}"
 
 
 def unsubscribe_url(user_id: int) -> str:

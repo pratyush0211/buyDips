@@ -146,8 +146,9 @@ def create_app() -> Flask:
         return page("Check your inbox", f"If {email} is valid, a sign-in link is on its way. It expires in "
                                         f"{config.LOGIN_LINK_MINUTES} minutes.", icon="✉")
 
-    @app.route("/go/<code>")
-    def go(code):
+    @app.route("/signin/<code>")
+    @app.route("/go/<code>")  # earlier short-link format; kept so links already emailed still work
+    def signin(code):
         email = db.email_for_login_code(code)
         if not email:
             return page("Link expired", "That sign-in link is invalid or has expired. Request a new one.", 400)

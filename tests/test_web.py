@@ -37,7 +37,7 @@ def test_login_sends_link_and_rate_limits(client):
     client.post("/login", data={"email": "a@x.com", "csrf": t})
     client.post("/login", data={"email": "a@x.com", "csrf": t})
     assert len(client.sent) == 1
-    assert "/go/" in client.sent[0][2]
+    assert "/signin/" in client.sent[0][2]
 
 
 def test_invalid_email_rejected(client):
@@ -46,14 +46,15 @@ def test_invalid_email_rejected(client):
 
 
 def test_bad_login_code_rejected(client):
+    assert client.get("/signin/garbage").status_code == 400
     assert client.get("/go/garbage").status_code == 400
     assert client.get("/auth/anything").status_code == 400  # old long-format links
 
 
 def test_login_link_is_short_and_reveals_nothing(client):
     client.post("/login", data={"email": "secret.person@x.com", "csrf": csrf(client)})
-    link = re.search(r"http://127\.0\.0\.1:5000/go/(\S+)", client.sent[0][2]).group(0)
-    assert len(link) < 50
+    link = re.search(r"http://127\.0\.0\.1:5000/signin/(\S+)", client.sent[0][2]).group(0)
+    assert len(link) < 50 and re.fullmatch(r"http://127\.0\.0\.1:5000/signin/[a-z2-7]{16}", link)
     assert "secret" not in link and "x.com" not in link
 
 
@@ -155,3 +156,9 @@ def test_home_page_declares_its_canonical_address(client, monkeypatch):
     from buydips import config
     html = client.get("/").get_data(as_text=True)
     assert f'<link rel="canonical" href="{config.BASE_URL}/">' in html
+
+
+def test_old_go_links_still_sign_you_in(client):
+    code = db.create_login_code("a@x.com", 15)
+    assert client.get(f"/go/{code}").status_code == 302
+    assert client.get(f"/signin/{code}").status_code == 302

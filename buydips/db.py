@@ -1,5 +1,6 @@
 """Database layer (SQLAlchemy Core). SQLite locally, Postgres in production, same code."""
 
+import base64
 import hashlib
 import secrets
 from datetime import datetime, timedelta
@@ -200,7 +201,8 @@ def _hash(code: str) -> str:
 
 def create_login_code(email: str, minutes: int) -> str:
     """A short random code for a sign-in link, valid for `minutes`."""
-    code = secrets.token_urlsafe(9)  # 12 characters, 72 bits of randomness
+    # 16 lowercase letters/digits (a-z, 2-7): easy to read, 80 bits of randomness.
+    code = base64.b32encode(secrets.token_bytes(10)).decode().lower()
     with engine().begin() as conn:
         conn.execute(delete(login_codes).where(login_codes.c.expires_at < _now()))  # tidy up
         conn.execute(insert(login_codes).values(
