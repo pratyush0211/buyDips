@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}My watchlist · buyDips{% endblock %}
 {% block body %}
-<div class="container">
+<div class="container wl">
   <div class="page-head">
     <h1>My watchlist</h1>
-    <p>Switch on what you want to follow, then set how far it must fall (from the previous close) before you're emailed.</p>
+    <p>Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
   </div>
 
   {% if saved %}<div class="notice" role="status">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
@@ -45,13 +45,13 @@
             <span class="item-text"><span class="item-name">{{ it.name }}</span><span class="item-sym">{{ it.symbol }}</span></span>
           </label>
           <div class="thr">
-            <span class="thr-label">Alert at −</span>
+            <span class="thr-label">Alert at &minus;</span>
             <button type="button" class="stepper" data-step="-0.5" aria-label="Lower alert level for {{ it.name }}">−</button>
             <input type="number" name="th_{{ it.symbol }}" min="0.5" max="20" step="0.1" inputmode="decimal"
                    aria-label="Alert level in percent for {{ it.name }}"
                    value="{{ '%g' % (subs[it.symbol] if on else default_threshold(it.symbol)) }}">
             <button type="button" class="stepper" data-step="0.5" aria-label="Raise alert level for {{ it.name }}">+</button>
-            <span>%</span>
+            <span class="thr-pct">%</span>
           </div>
         </div>
         {% endfor %}

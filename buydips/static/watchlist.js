@@ -87,6 +87,11 @@
     });
     tabs.forEach(function (t) { t.setAttribute("aria-selected", q === "" && t.dataset.tab === current ? "true" : "false"); });
     buildJump(q === "");
+    var active = tabs.filter(function (t) { return t.getAttribute("aria-selected") === "true"; })[0];
+    if (active) {  // on a narrow screen, bring the chosen tab into view inside the tab bar
+      var bar = active.parentElement;
+      bar.scrollTo({ left: Math.max(0, active.offsetLeft - (bar.clientWidth - active.offsetWidth) / 2), behavior: reduceMotion() ? "auto" : "smooth" });
+    }
     note.hidden = q === "";
     note.textContent = q === "" ? "" : shown + (shown === 1 ? " match" : " matches") + " across all lists for \u201c" + filterEl.value.trim() + "\u201d";
     empty.hidden = shown !== 0;
