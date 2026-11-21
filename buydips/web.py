@@ -7,7 +7,7 @@ from datetime import datetime
 
 from flask import Flask, abort, redirect, render_template, request, session, url_for
 
-from . import catalog, config, db, links
+from . import catalog, config, db, emails, links
 from .mailer import send_email
 
 log = logging.getLogger("buyDips.web")
@@ -131,13 +131,8 @@ def create_app() -> Flask:
         if wait is None or wait >= config.LOGIN_LINK_COOLDOWN_SECONDS:
             db.get_or_create_user(email)
             code = db.create_login_code(email, config.LOGIN_LINK_MINUTES)
-            sent = send_email(
-                email,
-                "Your buyDips sign-in link",
-                f"Click to sign in to buyDips (valid for {config.LOGIN_LINK_MINUTES} minutes):\n\n"
-                f"{links.login_url(code)}\n\n"
-                "If you didn't ask for this, ignore this email.",
-            )
+            subject, text, html = emails.signin(links.login_url(code), config.LOGIN_LINK_MINUTES)
+            sent = send_email(email, subject, text, html=html)
             if not sent:
                 return page("Couldn't send the email",
                             "Something went wrong on our side while sending your sign-in link. "

@@ -51,3 +51,12 @@ def test_unconfigured_sends_nothing(monkeypatch, calls):
     monkeypatch.setattr(config, "SMTP_USER", "")
     assert mailer.send_email("u@x.com", "Hi", "Body") is False
     assert calls == []
+
+
+def test_html_part_is_sent_to_api_providers(monkeypatch, calls):
+    use(monkeypatch, "brevo")
+    mailer.send_email("u@x.com", "Hi", "Body", html="<b>Hi</b>")
+    assert calls[-1][1]["json"]["htmlContent"] == "<b>Hi</b>" and calls[-1][1]["json"]["textContent"] == "Body"
+    use(monkeypatch, "resend")
+    mailer.send_email("u@x.com", "Hi", "Body", html="<b>Hi</b>")
+    assert calls[-1][1]["json"]["html"] == "<b>Hi</b>" and calls[-1][1]["json"]["text"] == "Body"

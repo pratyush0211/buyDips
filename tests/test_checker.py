@@ -23,8 +23,9 @@ class Outbox:
     def __init__(self, ok=True):
         self.sent, self.ok = [], ok
 
-    def __call__(self, to, subject, body, unsubscribe_url=None):
+    def __call__(self, to, subject, body, unsubscribe_url=None, html=None):
         self.sent.append((to, subject, body, unsubscribe_url))
+        self.html = html
         return self.ok
 
 
