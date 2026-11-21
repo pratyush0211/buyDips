@@ -1,36 +1,36 @@
 # buyDips 📉
 
-Tracks major stock indexes and emails you when one falls 1% or more from its previous close.
-
-## Run in the cloud (GitHub Actions)
-
-`.github/workflows/check.yml` runs `check.py` every 20 minutes, Mon–Fri, 00:00–21:59 UTC.
-
-1. Add repository secrets (**Settings → Secrets and variables → Actions**): `SMTP_USER`, `SMTP_PASSWORD`, and optionally `EMAIL_TO`.
-2. Test it: **Actions → buyDips check → Run workflow**, tick **Send a test alert**.
-
-Alert state (`alerts_state.json`) is committed back to the repo after each alert so the next run doesn't repeat it.
-
-## Run locally (with dashboard)
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env   # then edit .env
-.venv/bin/python app.py
-```
-
-Open http://127.0.0.1:5000.
-
-## Email (Gmail, free)
-
-1. Turn on 2-Step Verification for your Google account.
-2. Create an app password at https://myaccount.google.com/apppasswords (name it "buyDips").
-3. Set `SMTP_USER` to your Gmail address and `SMTP_PASSWORD` to the 16-character app password.
+Pick the indexes and Indian stocks you follow, set how far they must fall, and get an email when they do.
 
 ## How it works
 
-- Prices come from Yahoo Finance (latest daily close vs. the previous one).
-- If an index is down `DIP_THRESHOLD_PCT` (default 1%) or more, it sends an email alert.
-- At most one alert per index per trading session.
-- Edit `INDEXES` to change which indexes are tracked (Yahoo Finance symbols).
+- **Website** (`buydips/web.py`, Flask): passwordless sign-in by emailed link, a watchlist page, one-click unsubscribe, account deletion.
+- **Scheduled job** (`run_check.py`, run by `.github/workflows/check.yml` every 20 minutes, Mon–Fri): fetches each distinct watched symbol once, then emails every user whose alert level was crossed. Each (user, symbol, trading session) alerts at most once. The run fails loudly if most prices can't be fetched.
+- **Data** (`buydips/data.py`): Yahoo Finance via `yfinance`, behind a small provider interface so it can be swapped for a licensed source.
+- **Catalog** (`buydips/catalog.json`): the curated, Yahoo-verified list users can choose from.
+- **Storage**: Postgres (Supabase) in production, SQLite locally. Tables: `users`, `subscriptions`, `alerts_sent`.
+- **Email** (`buydips/mailer.py`): Resend/Brevo over HTTPS, or SMTP.
+
+## Run locally
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+cp .env.example .env
+.venv/bin/flask --app wsgi run --port 5000     # http://127.0.0.1:5000
+.venv/bin/python run_check.py                  # one alert run
+.venv/bin/python -m pytest                     # tests
+```
+
+With no email configured, sign-in links are printed to the server log instead of sent.
+
+## Deploy
+
+- **Website**: Render (`render.yaml`). Set `DATABASE_URL`, `SECRET_KEY`, `EMAIL_API_KEY`, `MAIL_FROM`, `EMAIL_PROVIDER`.
+- **Scheduled job**: GitHub Actions. Secrets: `DATABASE_URL`, `SECRET_KEY`, `EMAIL_API_KEY`. Repository variable: `BASE_URL`.
+- `SECRET_KEY` must be **identical** in both places: it signs the unsubscribe links in emails.
+
+## Notes
+
+- Alerts are for information only, not investment advice. Prices come from a third-party source and may be delayed.
+- Yahoo data is unofficial and fine for a small beta; use a licensed provider before a wide public launch.
