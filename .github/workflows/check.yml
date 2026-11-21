@@ -41,8 +41,8 @@ jobs:
           META_TO: ${{ secrets.META_TO }}
           META_TEMPLATE_NAME: ${{ vars.META_TEMPLATE_NAME }}
           META_TEMPLATE_LANG: ${{ vars.META_TEMPLATE_LANG }}
-          SMTP_USER: ${{ secrets.BUYDIPSEMAIL }}
-          SMTP_PASSWORD: ${{ secrets.BUYDIPSPASSWORD }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           DIP_THRESHOLD_PCT: "1.0"
           INDEXES: "^GSPC=S&P 500,^IXIC=Nasdaq Composite,^DJI=Dow Jones,^RUT=Russell 2000,^NSEI=Nifty 50,^BSESN=Sensex,^FTSE=FTSE 100,^N225=Nikkei 225"
