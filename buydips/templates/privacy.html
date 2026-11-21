@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Privacy · buyDips{% endblock %}
+{% block body %}
+<div class="container narrow prose">
+  <h1>Privacy</h1>
+  <p>A plain-language summary of what buyDips does with your information. Last updated 21 November 2026.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Your email address</strong>, to sign you in and send alerts.</li>
+    <li><strong>Your watchlist</strong>: the items you follow and your alert levels.</li>
+    <li><strong>A record of alerts sent</strong>, so you aren't emailed twice for the same drop.</li>
+  </ul>
+  <p>We don't collect your name, phone number, location or payment details. There is no advertising and no analytics or tracking scripts.</p>
+
+  <h2>Cookies</h2>
+  <p>One cookie keeps you signed in. That's all.</p>
+
+  <h2>How it's used</h2>
+  <p>Only to run buyDips: signing you in and sending the alerts you asked for. We don't sell your data or share it for marketing.</p>
+
+  <h2>Services we rely on</h2>
+  <p>Running buyDips involves these providers, which handle data on our behalf:</p>
+  <ul>
+    <li><strong>Render</strong>: hosts the website.</li>
+    <li><strong>Supabase</strong>: stores accounts and watchlists (database region: Seoul, South Korea).</li>
+    <li><strong>GitHub</strong>: runs the scheduled price check.</li>
+    <li><strong>Email delivery</strong>: currently Brevo and Google Mail.</li>
+    <li><strong>Yahoo Finance</strong>: source of market prices. No personal data is sent to it.</li>
+  </ul>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li><strong>Unsubscribe</strong> with the link at the bottom of every alert email.</li>
+    <li><strong>Delete everything</strong> with the "Delete my account" button on your watchlist page. It permanently removes your email, watchlist and alert history.</li>
+  </ul>
+  {% if contact_email %}<p>Questions? Email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>{% endif %}
+
+  <h2>Not investment advice</h2>
+  <p>buyDips sends automated price alerts for information only. Prices come from a third-party source and may be delayed or inaccurate. Nothing here is a recommendation to buy or sell.</p>
+</div>
+{% endblock %}

@@ -58,6 +58,9 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 # Address shown in the From header (defaults to the SMTP login)
 MAIL_FROM = os.getenv("MAIL_FROM", "") or SMTP_USER
 
+# Optional public contact address shown in the footer and privacy page.
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "").strip()
+
 LOGIN_LINK_MINUTES = 15
 LOGIN_LINK_COOLDOWN_SECONDS = 60
 MAX_WATCHLIST_ITEMS = 25

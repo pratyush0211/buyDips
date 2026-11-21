@@ -3,6 +3,7 @@
 import logging
 import re
 import secrets
+from datetime import datetime
 
 from flask import Flask, abort, redirect, render_template, request, session, url_for
 
@@ -11,6 +12,18 @@ from .mailer import send_email
 
 log = logging.getLogger("buyDips.web")
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
+
+CSP = (
+    "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; "
+    "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+)
+
+
+def _presets() -> list:
+    """Quick-pick buttons on the watchlist page: (label, 'SYM|SYM|...')."""
+    india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India"]
+    world = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] != "India"]
+    return [("Indian indexes", "|".join(india)), ("Global indexes", "|".join(world))]
 
 
 def create_app() -> Flask:
@@ -46,26 +59,64 @@ def create_app() -> Flask:
         uid = session.get("uid")
         return db.get_user(uid) if uid else None
 
-    app.jinja_env.globals["csrf_token"] = csrf_token
+    def safe_user():
+        try:
+            return current_user()
+        except Exception:  # noqa: BLE001  (error pages must render even if the database is down)
+            return None
+
+    app.jinja_env.globals.update(
+        csrf_token=csrf_token, year=datetime.utcnow().year, contact_email=config.CONTACT_EMAIL
+    )
 
     @app.after_request
     def security_headers(resp):
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["X-Frame-Options"] = "DENY"
         resp.headers["Referrer-Policy"] = "same-origin"
-        resp.headers["Content-Security-Policy"] = (
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
-        )
+        resp.headers["Content-Security-Policy"] = CSP
         return resp
 
-    def page(title: str, message: str, status: int = 200):
-        return render_template("message.html", title=title, message=message, user=current_user()), status
+    def page(title: str, message: str, status: int = 200, icon: str = None):
+        bad = status >= 400
+        return render_template(
+            "message.html", title=title, message=message, bad=bad,
+            icon=icon or ("!" if bad else "✓"), user=safe_user(),
+        ), status
+
+    def error_page(code: int, title: str, message: str):
+        return render_template("error.html", code=code, title=title, message=message, user=safe_user()), code
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        return error_page(400, "Something went wrong", getattr(e, "description", "") or "Please go back and try again.")
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return error_page(404, "Page not found", "That page doesn't exist, or the link is out of date.")
+
+    @app.errorhandler(413)
+    def too_large(e):
+        return error_page(413, "Request too large", "That request was bigger than we accept.")
+
+    @app.errorhandler(500)
+    def server_error(e):
+        return error_page(500, "Something broke on our side", "We've been notified in the logs. Please try again in a moment.")
 
     # ---------- routes ----------
 
     @app.route("/")
     def index():
-        return render_template("index.html", user=current_user(), disclaimer=config.DISCLAIMER)
+        indexes = [i for i in catalog.ITEMS if i["type"] == "index"]
+        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys"]
+        return render_template(
+            "index.html", user=safe_user(), n_indexes=len(indexes),
+            n_stocks=len(catalog.ITEMS) - len(indexes), examples=examples,
+        )
+
+    @app.route("/privacy")
+    def privacy():
+        return render_template("privacy.html", user=safe_user())
 
     @app.route("/login", methods=["POST"])
     def login():
@@ -91,7 +142,7 @@ def create_app() -> Flask:
                             "Please try again in a few minutes.", 503)
             db.mark_login_link_sent(email)
         return page("Check your inbox", f"If {email} is valid, a sign-in link is on its way. It expires in "
-                                        f"{config.LOGIN_LINK_MINUTES} minutes.")
+                                        f"{config.LOGIN_LINK_MINUTES} minutes.", icon="✉")
 
     @app.route("/auth/<token>")
     def auth(token):
@@ -122,7 +173,7 @@ def create_app() -> Flask:
                     pct = catalog.default_threshold(symbol)
                 if not catalog.MIN_THRESHOLD <= pct <= catalog.MAX_THRESHOLD:
                     errors.append(f"{catalog.name_of(symbol)}: choose between {catalog.MIN_THRESHOLD:g}% and "
-                                  f"{catalog.MAX_THRESHOLD:g}%")
+                                  f"{catalog.MAX_THRESHOLD:g}%.")
                     continue
                 chosen[symbol] = round(pct, 2)
             if len(chosen) > config.MAX_WATCHLIST_ITEMS:
@@ -135,7 +186,7 @@ def create_app() -> Flask:
         return render_template(
             "watchlist.html", user=user, sections=catalog.grouped(), subs=db.get_subscriptions(user["id"]),
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
-            limit=config.MAX_WATCHLIST_ITEMS, active=user["active"],
+            limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
         )
 
     @app.route("/unsubscribe/<token>", methods=["GET", "POST"])

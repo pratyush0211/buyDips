@@ -3,46 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}buyDips{% endblock %}</title>
-  <style>
-    :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --text:#e6e6e6; --muted:#8a8f98; --accent:#4f8cff; --down:#ff5c5c; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-    .wrap { max-width:760px; margin:0 auto; padding:24px 16px 64px; }
-    header { display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; margin-bottom:24px; border-bottom:1px solid var(--line); }
-    header a.brand { color:var(--text); text-decoration:none; font-weight:700; font-size:20px; }
-    h1 { font-size:28px; line-height:1.2; margin:0 0 12px; }
-    h2 { font-size:18px; margin:28px 0 8px; }
-    p { color:var(--muted); margin:0 0 14px; }
-    a { color:var(--accent); }
-    form.inline { display:inline; margin:0; }
-    input[type=email], input[type=number], input[type=search] { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:16px; }
-    input[type=email], input[type=search] { width:100%; max-width:380px; }
-    button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 18px; font-size:16px; cursor:pointer; }
-    button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); padding:6px 12px; font-size:14px; }
-    button.danger { background:transparent; color:var(--down); border:1px solid var(--down); }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
-    .notice { background:#17301f; border:1px solid #245c37; color:#8fe0a8; padding:10px 14px; border-radius:8px; margin-bottom:16px; }
-    .warn { background:#33290f; border:1px solid #6b5517; color:#f0d27a; padding:10px 14px; border-radius:8px; margin-bottom:16px; }
-    footer { margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
-  </style>
+  <title>{% block title %}buyDips: dip alerts for indexes and Indian stocks{% endblock %}</title>
+  <meta name="description" content="{% block description %}Pick the indexes and Indian stocks you follow and get an email when they fall past your alert level. Free, no password.{% endblock %}">
+  <meta property="og:title" content="buyDips">
+  <meta property="og:description" content="Don't watch the market. Know when it matters.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <a class="brand" href="/">📉 buyDips</a>
-    {% if user %}
-    <span>
-      <span style="color:var(--muted);font-size:14px;margin-right:8px">{{ user.email }}</span>
-      <form class="inline" method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="ghost">Sign out</button></form>
-    </span>
-    {% endif %}
-  </header>
-  {% block body %}{% endblock %}
-  <footer>
-    buyDips sends automated price alerts for information only. It is not investment advice. Prices come from a
-    third-party source and may be delayed or inaccurate.
-  </footer>
-</div>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="/" aria-label="buyDips home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0f766e"/><path d="M6 10 13 22 18 15 26 8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      buyDips
+    </a>
+    <nav class="nav" aria-label="Main">
+      {% if user %}
+        <a href="/watchlist">Watchlist</a>
+        <span class="who">{{ user.email }}</span>
+        <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm">Sign out</button></form>
+      {% else %}
+        <a class="hide-sm" href="/#how">How it works</a>
+        <a class="hide-sm" href="/#faq">FAQ</a>
+        <a class="btn btn-primary btn-sm" href="/#signup">Get started</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<main>{% block body %}{% endblock %}</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="foot-links">
+      <a href="/privacy">Privacy</a>
+      {% if contact_email %}<a href="mailto:{{ contact_email }}">Contact</a>{% endif %}
+    </div>
+    <div>buyDips sends automated price alerts for information only. It is not investment advice. Prices come from a third-party source and may be delayed or inaccurate.</div>
+    <div>© {{ year }} buyDips</div>
+  </div>
+</footer>
+<script src="/static/site.js" defer></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

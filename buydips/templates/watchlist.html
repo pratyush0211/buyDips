@@ -1,72 +1,69 @@
 {% extends "base.html" %}
 {% block title %}My watchlist · buyDips{% endblock %}
 {% block body %}
-<style>
-  .sec { margin-top:24px; }
-  .row { display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--line); }
-  .row label { flex:1; cursor:pointer; }
-  .row .sym { color:var(--muted); font-size:12px; margin-left:6px; }
-  .row input[type=number] { width:76px; padding:6px 8px; }
-  .row.off input[type=number] { opacity:.35; }
-  .bar { position:sticky; bottom:0; background:var(--bg); padding:12px 0; border-top:1px solid var(--line); margin-top:16px; display:flex; gap:12px; align-items:center; }
-  #count { color:var(--muted); font-size:14px; }
-</style>
-<h1>My watchlist</h1>
-<p>Tick what you want to follow and set how far it must fall (from the previous close) before you're emailed.</p>
-{% if saved %}<div class="notice">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
-{% if not active %}<div class="warn">Alerts are paused because you unsubscribed. Saving your watchlist turns them back on.</div>{% endif %}
+<div class="container">
+  <div class="page-head">
+    <h1>My watchlist</h1>
+    <p>Switch on what you want to follow, then set how far it must fall (from the previous close) before you're emailed.</p>
+  </div>
 
-<input type="search" id="filter" placeholder="Search, e.g. Reliance or Nifty">
+  {% if saved %}<div class="notice" role="status">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
+  {% if not active %}<div class="warnbox">Alerts are paused because you unsubscribed. Saving your watchlist turns them back on.</div>{% endif %}
 
-<form method="post" action="/watchlist" id="wl">
-  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-  {% for sec in sections %}
-  <div class="sec">
-    <h2>{{ sec.title }}</h2>
-    {% for it in sec["items"] %}
-    {% set on = it.symbol in subs %}
-    <div class="row{% if not on %} off{% endif %}" data-name="{{ (it.name ~ ' ' ~ it.symbol)|lower }}">
-      <input type="checkbox" name="sym" value="{{ it.symbol }}" id="c_{{ loop.index0 }}_{{ sec.title|length }}_{{ it.symbol }}" {% if on %}checked{% endif %}>
-      <label for="c_{{ loop.index0 }}_{{ sec.title|length }}_{{ it.symbol }}">{{ it.name }}<span class="sym">{{ it.symbol }}</span></label>
-      <span style="color:var(--muted);font-size:13px">alert at −</span>
-      <input type="number" name="th_{{ it.symbol }}" min="0.5" max="20" step="0.1"
-             value="{{ '%g' % (subs[it.symbol] if on else default_threshold(it.symbol)) }}"> %
+  <form method="post" action="/watchlist" id="wl" data-limit="{{ limit }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+
+    <div class="toolbar">
+      <label class="sr-only" for="filter">Search</label>
+      <input type="search" id="filter" placeholder="Search, e.g. Reliance or Nifty" autocomplete="off">
+      {% for label, symbols in presets %}
+        <button type="button" class="btn btn-ghost btn-sm" data-symbols="{{ symbols }}">{{ label }}</button>
+      {% endfor %}
+      <button type="button" class="btn btn-ghost btn-sm" data-symbols="">Clear all</button>
     </div>
+
+    {% for sec in sections %}
+    <section class="group">
+      <h2>{{ sec.title }} <span class="n" data-total="{{ sec['items']|length }}">{{ sec['items']|length }} available</span></h2>
+      <div class="items">
+        {% for it in sec["items"] %}
+        {% set on = it.symbol in subs %}
+        <div class="item{% if on %} is-on{% endif %}" data-name="{{ (it.name ~ ' ' ~ it.symbol)|lower }}">
+          <label class="item-main">
+            <input type="checkbox" class="switch" name="sym" value="{{ it.symbol }}" {% if on %}checked{% endif %}>
+            <span class="item-text"><span class="item-name">{{ it.name }}</span><span class="item-sym">{{ it.symbol }}</span></span>
+          </label>
+          <div class="thr">
+            <span class="thr-label">Alert at −</span>
+            <button type="button" class="stepper" data-step="-0.5" aria-label="Lower alert level for {{ it.name }}">−</button>
+            <input type="number" name="th_{{ it.symbol }}" min="0.5" max="20" step="0.1" inputmode="decimal"
+                   aria-label="Alert level in percent for {{ it.name }}"
+                   value="{{ '%g' % (subs[it.symbol] if on else default_threshold(it.symbol)) }}">
+            <button type="button" class="stepper" data-step="0.5" aria-label="Raise alert level for {{ it.name }}">+</button>
+            <span>%</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
     {% endfor %}
-  </div>
-  {% endfor %}
-  <div class="bar">
-    <button>Save watchlist</button>
-    <span id="count"></span>
-  </div>
-</form>
 
-<h2>Your data</h2>
-<p>We store only your email address and your watchlist.</p>
-<form method="post" action="/delete-account" onsubmit="return confirm('Permanently delete your account and watchlist?')">
-  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-  <button class="danger">Delete my account</button>
-</form>
+    <div class="savebar">
+      <div class="container">
+        <span class="count" id="count" aria-live="polite"></span>
+        <button class="btn btn-primary" id="save">Save watchlist</button>
+      </div>
+    </div>
+  </form>
 
-<script>
-  var LIMIT = {{ limit }};
-  var rows = document.querySelectorAll('.row');
-  function refresh() {
-    var n = 0;
-    rows.forEach(function (r) {
-      var on = r.querySelector('input[type=checkbox]').checked;
-      r.classList.toggle('off', !on);
-      if (on) n++;
-    });
-    var c = document.getElementById('count');
-    c.textContent = n + ' of ' + LIMIT + ' selected';
-    c.style.color = n > LIMIT ? 'var(--down)' : '';
-  }
-  rows.forEach(function (r) { r.querySelector('input[type=checkbox]').addEventListener('change', refresh); });
-  document.getElementById('filter').addEventListener('input', function (e) {
-    var q = e.target.value.trim().toLowerCase();
-    rows.forEach(function (r) { r.style.display = r.dataset.name.indexOf(q) === -1 ? 'none' : ''; });
-  });
-  refresh();
-</script>
+  <section class="account">
+    <h2>Your data</h2>
+    <p>We store only your email address ({{ user.email }}) and this watchlist. Deleting your account removes both permanently.</p>
+    <form method="post" action="/delete-account" data-confirm="Permanently delete your account and watchlist?">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="btn btn-danger btn-sm">Delete my account</button>
+    </form>
+  </section>
+</div>
 {% endblock %}
+{% block scripts %}<script src="/static/watchlist.js" defer></script>{% endblock %}

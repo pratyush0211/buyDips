@@ -104,3 +104,28 @@ def test_login_reports_failure_when_email_cannot_be_sent(monkeypatch):
     assert r.status_code == 503 and "on our side" in r.get_data(as_text=True)
     # a failed send must not start the 60-second cooldown
     assert db.seconds_since_login_link("a@x.com") is None
+
+
+def test_pages_render_and_csp_forbids_inline_code(client):
+    for path in ("/", "/privacy"):
+        r = client.get(path)
+        assert r.status_code == 200
+        csp = r.headers["Content-Security-Policy"]
+        assert "unsafe-inline" not in csp and "script-src 'self'" in csp
+    assert client.get("/static/style.css").status_code == 200
+    assert client.get("/static/favicon.svg").status_code == 200
+
+
+def test_unknown_page_gets_a_styled_404(client):
+    r = client.get("/nope")
+    assert r.status_code == 404 and "Page not found" in r.get_data(as_text=True)
+
+
+def test_templates_have_no_inline_scripts_or_styles():
+    import pathlib
+    for f in pathlib.Path(web.__file__).parent.glob("templates/*.html"):
+        html = f.read_text()
+        assert " style=" not in html, f.name
+        assert "<style" not in html, f.name
+        assert " onsubmit=" not in html and " onclick=" not in html, f.name
+        assert "<script>" not in html, f.name

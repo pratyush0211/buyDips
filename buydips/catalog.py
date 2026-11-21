@@ -21,11 +21,20 @@ def default_threshold(symbol: str) -> float:
     return DEFAULT_THRESHOLD.get(BY_SYMBOL.get(symbol, {}).get("type", "stock"), 1.0)
 
 
+_GROUP_ORDER = ["India", "US", "Europe", "Asia"]
+
+
 def grouped() -> List[dict]:
-    """Sections for the watchlist page: indexes by region first, then stocks."""
+    """Sections for the watchlist page: indexes by region (India first), then stocks."""
     sections: Dict[str, List[dict]] = {}
     for item in ITEMS:
         title = f"Indexes: {item['group']}" if item["type"] == "index" else "Indian stocks (NSE)"
         sections.setdefault(title, []).append(item)
-    ordered = sorted(sections.items(), key=lambda kv: (kv[0].startswith("Indian stocks"), kv[0]))
-    return [{"title": t, "items": items} for t, items in ordered]
+
+    def rank(title: str) -> int:
+        if title.startswith("Indian stocks"):
+            return len(_GROUP_ORDER) + 1
+        region = title.split(": ", 1)[1]
+        return _GROUP_ORDER.index(region) if region in _GROUP_ORDER else len(_GROUP_ORDER)
+
+    return [{"title": t, "items": items} for t, items in sorted(sections.items(), key=lambda kv: rank(kv[0]))]

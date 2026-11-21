@@ -1,22 +1,84 @@
 {% extends "base.html" %}
 {% block body %}
-<h1>Don't watch the market.<br>Know when it matters.</h1>
-<p>Pick the indexes and Indian stocks you care about, set how far they have to fall, and buyDips emails you when they do. Free, no password, no spam.</p>
+<section class="hero">
+  <div class="container">
+    <div>
+      <span class="eyebrow">Free during beta</span>
+      <h1>Don't watch the market. Know when it matters.</h1>
+      <p class="lead">Choose the indexes and Indian stocks you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
+      {% if user %}
+        <a class="btn btn-primary btn-lg" href="/watchlist">Open my watchlist</a>
+      {% else %}
+        <form class="signup" id="signup" method="post" action="/login">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <label class="sr-only" for="email">Email address</label>
+          <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+          <button class="btn btn-primary btn-lg">Get alerts</button>
+        </form>
+        <p class="fineprint">No password. We email you a one-time sign-in link. Unsubscribe any time.</p>
+      {% endif %}
+    </div>
 
-{% if user %}
-<p><a href="/watchlist"><button>Open my watchlist</button></a></p>
-{% else %}
-<form class="card" method="post" action="/login">
-  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-  <label for="email"><strong>Your email</strong></label><br><br>
-  <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
-  <button>Email me a sign-in link</button>
-  <p style="margin:12px 0 0;font-size:14px">We'll email you a one-time link. That's all the signing up there is.</p>
-</form>
+    <div class="mail" role="img" aria-label="Example of a buyDips alert email">
+      <div class="mail-bar"><i></i><i></i><i></i><span class="mail-tag">Example alert</span></div>
+      <div class="mail-body">
+        <div class="mail-from">buyDips · to you</div>
+        <div class="mail-subject">buyDips: 2 of your watchlist are down</div>
+        <div class="mail-row"><div><b>Nifty Bank</b><small>Your alert level: 1%</small></div><span class="pill-down">−1.42%</span></div>
+        <div class="mail-row"><div><b>Reliance Industries</b><small>Your alert level: 3%</small></div><span class="pill-down">−3.10%</span></div>
+        <div class="mail-foot">Sample only, numbers are illustrative. One email per check, however many things dipped.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="how">
+  <div class="container">
+    <h2>How it works</h2>
+    <p class="section-lead">Three steps, about a minute. No app to install and no password to remember.</p>
+    <ol class="steps">
+      <li class="step"><span class="step-n">1</span><h3>Pick what to follow</h3><p>Choose from major indexes and large Indian stocks. Search, or start from a preset.</p></li>
+      <li class="step"><span class="step-n">2</span><h3>Set your alert level</h3><p>Decide how far each one must fall from its previous close, like 1% for an index or 3% for a stock.</p></li>
+      <li class="step"><span class="step-n">3</span><h3>Get one email when it happens</h3><p>Prices are checked about every 20 minutes on weekdays. Each item alerts at most once per trading day.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>What you can follow</h2>
+    <p class="section-lead">A curated list, so every symbol is checked and working.</p>
+    <div class="stats">
+      <div class="stat"><b>{{ n_indexes }}</b><span>indexes worldwide</span></div>
+      <div class="stat"><b>{{ n_stocks }}</b><span>Indian stocks (NSE)</span></div>
+    </div>
+    <ul class="chips">
+      {% for name in examples %}<li>{{ name }}</li>{% endfor %}
+      <li>and more</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section alt" id="faq">
+  <div class="container narrow faq">
+    <h2>Questions</h2>
+    <p class="section-lead">The short answers.</p>
+    <details><summary>Is it free?</summary><p>Yes, it's free while buyDips is in beta.</p></details>
+    <details><summary>How often are prices checked?</summary><p>About every 20 minutes on weekdays, covering Asian, Indian, European and US market hours. Prices can be delayed, so treat alerts as a heads-up, not a trading signal.</p></details>
+    <details><summary>How many emails will I get?</summary><p>At most one per check, grouping everything that dipped. Each item alerts once per trading day, even if it keeps falling.</p></details>
+    <details><summary>Where does the price data come from?</summary><p>A third-party source (Yahoo Finance). It can occasionally be wrong or unavailable, which is why alerts are for information only.</p></details>
+    <details><summary>Is this investment advice?</summary><p>No. buyDips only reports that a price moved. It doesn't recommend buying or selling anything.</p></details>
+    <details><summary>What do you store about me?</summary><p>Only your email address and your watchlist. You can delete both permanently from the watchlist page. See the <a href="/privacy">privacy page</a>.</p></details>
+  </div>
+</section>
+
+{% if not user %}
+<section class="cta">
+  <div class="container">
+    <h2>Never miss a dip again</h2>
+    <p>Set it up in a minute, then forget about it until it matters.</p>
+    <a class="btn btn-primary btn-lg" href="#signup">Get started</a>
+  </div>
+</section>
 {% endif %}
-
-<h2>How it works</h2>
-<p>1. Choose from Nifty 50, Sensex, S&amp;P 500, Nasdaq and more, plus 60 large Indian stocks.<br>
-2. Set an alert level for each, like 1% for an index or 3% for a stock.<br>
-3. Get one email when something drops past your level, at most once per trading day per item.</p>
 {% endblock %}
