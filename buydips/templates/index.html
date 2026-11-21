@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block canonical %}<link rel="canonical" href="{{ base_url }}/">
+  <meta property="og:url" content="{{ base_url }}/">{% endblock %}
 {% block body %}
 <section class="hero">
   <div class="container">

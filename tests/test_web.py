@@ -129,3 +129,9 @@ def test_templates_have_no_inline_scripts_or_styles():
         assert "<style" not in html, f.name
         assert " onsubmit=" not in html and " onclick=" not in html, f.name
         assert "<script>" not in html, f.name
+
+
+def test_home_page_declares_its_canonical_address(client, monkeypatch):
+    from buydips import config
+    html = client.get("/").get_data(as_text=True)
+    assert f'<link rel="canonical" href="{config.BASE_URL}/">' in html

@@ -66,7 +66,8 @@ def create_app() -> Flask:
             return None
 
     app.jinja_env.globals.update(
-        csrf_token=csrf_token, year=datetime.utcnow().year, contact_email=config.CONTACT_EMAIL
+        csrf_token=csrf_token, year=datetime.utcnow().year, contact_email=config.CONTACT_EMAIL,
+        base_url=config.BASE_URL
     )
 
     @app.after_request
