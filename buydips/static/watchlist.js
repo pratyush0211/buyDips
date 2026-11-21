@@ -13,6 +13,12 @@
   var note = document.getElementById("view-note");
   var empty = document.getElementById("empty");
   var current = "indexes";
+  var jump = document.getElementById("jump");
+  var navbar = form.querySelector(".navbar");
+  items.forEach(function (it) {  // first letter of each name; digits (like "360 ONE") go under "#"
+    var c = it.querySelector(".item-name").textContent.trim().charAt(0).toUpperCase();
+    it.dataset.initial = /[A-Z]/.test(c) ? c : "#";
+  });
 
   function box(item) { return item.querySelector("input.switch"); }
   function num(item) { return item.querySelector("input[type=number]"); }
@@ -80,6 +86,7 @@
       shown += any;
     });
     tabs.forEach(function (t) { t.setAttribute("aria-selected", q === "" && t.dataset.tab === current ? "true" : "false"); });
+    buildJump(q === "");
     note.hidden = q === "";
     note.textContent = q === "" ? "" : shown + (shown === 1 ? " match" : " matches") + " across all lists for \u201c" + filterEl.value.trim() + "\u201d";
     empty.hidden = shown !== 0;
@@ -88,6 +95,36 @@
                                    : "Nothing selected yet. Switch on items in the other tabs, or search for one.";
     }
   }
+
+  // The A-Z bar appears on the long stock tabs and only enables letters that have something under them.
+  function buildJump(on) {
+    var long = on && (current === "india" || current === "us");
+    jump.hidden = !long;
+    if (!long) { jump.textContent = ""; return; }
+    var have = {};
+    items.forEach(function (it) { if (it.closest(".group").dataset.tab === current) have[it.dataset.initial] = true; });
+    jump.textContent = "";
+    "#ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function (L) {
+      if (L === "#" && !have["#"]) return;
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = L; b.dataset.letter = L; b.disabled = !have[L];
+      b.setAttribute("aria-label", "Jump to names starting with " + L);
+      jump.appendChild(b);
+    });
+  }
+
+  function reduceMotion() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  jump.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-letter]");
+    if (!b || b.disabled) return;
+    var target = items.filter(function (it) {
+      return !it.hidden && it.dataset.initial === b.dataset.letter;
+    })[0];
+    if (target) window.scrollTo({ top: window.pageYOffset + target.getBoundingClientRect().top - navbar.offsetHeight - 6, behavior: reduceMotion() ? "auto" : "smooth" });
+  });
 
   function setTab(name) {
     current = name;

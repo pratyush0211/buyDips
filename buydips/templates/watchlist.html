@@ -22,11 +22,14 @@
       <button type="button" class="btn btn-ghost btn-sm" data-symbols="">Clear all</button>
     </div>
 
+    <div class="navbar">
     <div class="tabs" role="tablist" aria-label="What to browse">
       <button type="button" role="tab" class="tab" data-tab="indexes">Indexes <span class="tab-n">{{ totals.indexes }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="india">Indian stocks <span class="tab-n">{{ totals.india }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="us">US stocks <span class="tab-n">{{ totals.us }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="selected">Selected <span class="tab-sel-total" id="sel-total"></span></button>
+    </div>
+    <div class="jump" id="jump" role="navigation" aria-label="Jump to a letter" hidden></div>
     </div>
     <p class="view-note" id="view-note" hidden></p>
 

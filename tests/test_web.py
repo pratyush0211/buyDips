@@ -205,3 +205,4 @@ def test_watchlist_page_has_tabs_for_each_market(client):
         assert f'data-tab="{tab}"' in html
     assert 'class="group" data-tab="india"' in html and 'class="group" data-tab="us"' in html
     assert 'id="view-note"' in html and 'id="empty"' in html
+    assert 'id="jump"' in html and 'class="navbar"' in html  # A-Z bar, filled in by watchlist.js
