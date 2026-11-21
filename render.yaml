@@ -9,10 +9,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
-      - key: BASE_URL
-        value: https://buydips.in
+      # Must be the SAME value as the SECRET_KEY secret in GitHub (it signs unsubscribe links).
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: SMTP_HOST

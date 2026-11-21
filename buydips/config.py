@@ -17,7 +17,9 @@ def _db_url() -> str:
 
 DATABASE_URL = _db_url()
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
-BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+# Public address used in emailed links. On Render, RENDER_EXTERNAL_URL is set automatically;
+# set BASE_URL explicitly once a custom domain is attached.
+BASE_URL = (os.getenv("BASE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "http://127.0.0.1:5000").rstrip("/")
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
