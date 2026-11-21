@@ -25,3 +25,13 @@ def test_alert_email_html_and_text_agree():
 def test_html_is_escaped():
     _, _, html = emails.alert([item("<script>alert(1)</script>")], "https://buydips.in/u")
     assert "<script>" not in html and "&lt;script&gt;" in html
+
+
+def test_stock_prices_show_their_currency_but_index_levels_do_not():
+    inr = dict(item("Reliance"), symbol="RELIANCE.NS", price=1377.5, prev_close=1421.6)
+    usd = dict(item("Apple"), symbol="AAPL", price=342.56, prev_close=349.21)
+    idx = dict(item("Nifty 50"), symbol="^NSEI", price=24500.0, prev_close=25000.0)
+    _, text, html = emails.alert([inr, usd, idx], "https://buydips.in/u")
+    assert "₹1,377.50 vs previous close ₹1,421.60" in text and "₹1,377.50" in html
+    assert "$342.56 vs previous close $349.21" in text
+    assert "24,500.00 vs previous close 25,000.00" in text and "$24,500" not in text and "₹24,500" not in text

@@ -1,0 +1,23 @@
+{
+ "GOOGL": "google youtube",
+ "GOOG": "google youtube",
+ "META": "facebook instagram whatsapp",
+ "AMZN": "amazon aws",
+ "MSTR": "microstrategy",
+ "^GSPC": "s&p sp500 spx",
+ "^DJI": "dow",
+ "^IXIC": "nasdaq",
+ "^NSEI": "nifty",
+ "^BSESN": "bse",
+ "ETERNAL.NS": "zomato blinkit",
+ "PAYTM.NS": "paytm",
+ "NYKAA.NS": "nykaa",
+ "POLICYBZR.NS": "policybazaar",
+ "DMART.NS": "dmart d-mart",
+ "LICI.NS": "lic",
+ "SBIN.NS": "sbi",
+ "M&M.NS": "mahindra",
+ "HINDUNILVR.NS": "hul",
+ "TMPV.NS": "tata motors cars",
+ "TMCV.NS": "tata motors trucks"
+}

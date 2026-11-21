@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from . import config
+from . import catalog, config
 
 _env = Environment(
     loader=FileSystemLoader(Path(__file__).parent / "templates" / "email"),
@@ -36,10 +36,11 @@ def alert(items: List[dict], unsubscribe_url: str) -> Tuple[str, str, str]:
     )
     rows = []
     for i in items:
+        cur = catalog.currency_symbol(i.get("symbol", ""))
         day = datetime.fromisoformat(i["session"]).strftime("%a %d %b")
         rows.append({
             "name": i["name"], "drop": f"{abs(i['change_pct']):.2f}%", "day": day,
-            "price": f"{i['price']:,.2f}", "prev": f"{i['prev_close']:,.2f}", "level": f"{i['threshold']:g}%",
+            "price": f"{cur}{i['price']:,.2f}", "prev": f"{cur}{i['prev_close']:,.2f}", "level": f"{i['threshold']:g}%",
         })
     lines = ["These items on your watchlist have fallen past your alert level:", ""]
     for r in rows:

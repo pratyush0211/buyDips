@@ -36,3 +36,19 @@ def test_watchlist_sections_put_indian_stocks_before_us_stocks():
 
 def test_both_alphabet_share_classes_are_distinguishable():
     assert catalog.name_of("GOOGL") != catalog.name_of("GOOG")
+
+
+def test_search_text_includes_everyday_names():
+    by = {s["symbol"]: s for sec in catalog.grouped() for s in sec["items"]}
+    assert "google" in by["GOOGL"]["search"] and "facebook" in by["META"]["search"]
+    assert "zomato" in by["ETERNAL.NS"]["search"] and "reliance" in by["RELIANCE.NS"]["search"]
+
+
+def test_every_alias_points_at_a_real_symbol():
+    assert set(catalog.ALIASES) <= set(catalog.BY_SYMBOL)
+
+
+def test_currency_symbols():
+    assert catalog.currency_symbol("RELIANCE.NS") == "₹"
+    assert catalog.currency_symbol("AAPL") == "$"
+    assert catalog.currency_symbol("^NSEI") == "" and catalog.currency_symbol("nonsense") == ""

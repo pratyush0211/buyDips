@@ -15,7 +15,7 @@
 
     <div class="toolbar">
       <label class="sr-only" for="filter">Search</label>
-      <input type="search" id="filter" placeholder="Search, e.g. Reliance or Nifty" autocomplete="off">
+      <input type="search" id="filter" placeholder="Search, e.g. Reliance, Apple or Nifty" autocomplete="off">
       {% for label, symbols in presets %}
         <button type="button" class="btn btn-ghost btn-sm" data-symbols="{{ symbols }}">{{ label }}</button>
       {% endfor %}
@@ -28,7 +28,7 @@
       <div class="items">
         {% for it in sec["items"] %}
         {% set on = it.symbol in subs %}
-        <div class="item{% if on %} is-on{% endif %}" data-name="{{ (it.name ~ ' ' ~ it.symbol)|lower }}">
+        <div class="item{% if on %} is-on{% endif %}" data-name="{{ it.search }}">
           <label class="item-main">
             <input type="checkbox" class="switch" name="sym" value="{{ it.symbol }}" {% if on %}checked{% endif %}>
             <span class="item-text"><span class="item-name">{{ it.name }}</span><span class="item-sym">{{ it.symbol }}</span></span>
