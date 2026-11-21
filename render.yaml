@@ -14,11 +14,10 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "465"
-      - key: SMTP_USER
+      # Render's free plan blocks SMTP, so email goes through Resend's HTTPS API.
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_API_KEY
         sync: false
-      - key: SMTP_PASSWORD
-        sync: false
+      - key: MAIL_FROM
+        value: alerts@buydips.in

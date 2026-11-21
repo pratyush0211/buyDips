@@ -30,8 +30,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           BASE_URL: ${{ vars.BASE_URL }}
-          SMTP_HOST: smtp.gmail.com
-          SMTP_PORT: "465"
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_PROVIDER: resend
+          EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
+          MAIL_FROM: alerts@buydips.in
         run: python run_check.py
