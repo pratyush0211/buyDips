@@ -5,7 +5,12 @@ on:
     # Every 20 minutes, Mon–Fri, 00:00–21:59 UTC (covers Asia, India, Europe and US hours).
     # GitHub can delay scheduled runs by several minutes.
     - cron: "*/20 0-21 * * 1-5"
-  workflow_dispatch: {}  # lets you run it manually from the Actions tab
+  workflow_dispatch:  # lets you run it manually from the Actions tab
+    inputs:
+      test_alert:
+        description: "Send a test alert instead of checking prices"
+        type: boolean
+        default: false
 
 permissions:
   contents: write  # to save alerts_state.json back to the repo
@@ -41,7 +46,7 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           DIP_THRESHOLD_PCT: "1.0"
           INDEXES: "^GSPC=S&P 500,^IXIC=Nasdaq Composite,^DJI=Dow Jones,^RUT=Russell 2000,^NSEI=Nifty 50,^BSESN=Sensex,^FTSE=FTSE 100,^N225=Nikkei 225"
-        run: python check.py
+        run: python check.py ${{ inputs.test_alert && '--test' || '' }}
 
       - name: Save alert state
         run: |
