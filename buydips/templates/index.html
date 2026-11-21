@@ -4,10 +4,11 @@
 {% block body %}
 <section class="hero">
   <div class="container">
-    <div>
-      <span class="eyebrow">Free during beta</span>
-      <h1>Don't watch the market. Know when it matters.</h1>
-      <p class="lead">Choose the indexes and stocks you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
+    <div class="hero-copy">
+      <p class="kicker rise"><span class="dot"></span>Free during beta</p>
+      <h1 class="rise">Don&rsquo;t watch the market.<br><em>Know when it matters.</em></h1>
+      <p class="lead rise">Choose the indexes and stocks you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
+      <div class="rise">
       {% if user %}
         <a class="btn btn-primary btn-lg" href="/watchlist">Open my watchlist</a>
       {% else %}
@@ -15,72 +16,85 @@
           <input type="hidden" name="csrf" value="{{ csrf_token() }}">
           <label class="sr-only" for="email">Email address</label>
           <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
-          <button class="btn btn-primary btn-lg">Get alerts</button>
+          <button class="btn btn-primary btn-lg">Get alerts <span class="arrow" aria-hidden="true">&rarr;</span></button>
         </form>
         <p class="fineprint">No password. We email you a one-time sign-in link. Unsubscribe any time.</p>
       {% endif %}
-    </div>
-
-    <div class="mail" role="img" aria-label="Example of a buyDips alert email">
-      <div class="mail-bar"><i></i><i></i><i></i><span class="mail-tag">Example alert</span></div>
-      <div class="mail-body">
-        <div class="mail-from">buyDips · to you</div>
-        <div class="mail-subject">buyDips: 2 of your watchlist are down</div>
-        <div class="mail-row"><div><b>Nifty Bank</b><small>Your alert level: 1%</small></div><span class="pill-down">−1.42%</span></div>
-        <div class="mail-row"><div><b>Reliance Industries</b><small>Your alert level: 3%</small></div><span class="pill-down">−3.10%</span></div>
-        <div class="mail-foot">Sample only, numbers are illustrative. One email per check, however many things dipped.</div>
       </div>
     </div>
+
+    <figure class="fig" aria-label="Illustration: a price falls through the alert level you set, and buyDips sends an email">
+      <div class="fig-head"><b>Nifty Bank</b><span>Illustration</span></div>
+      <svg class="chart" viewBox="0 0 520 260" role="img" aria-hidden="true">
+        <defs>
+          <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop class="g0" offset="0"/><stop class="g1" offset="1"/></linearGradient>
+        </defs>
+        <line class="grid" x1="20" x2="500" y1="56" y2="56"/>
+        <line class="grid" x1="20" x2="500" y1="112" y2="112"/>
+        <line class="grid" x1="20" x2="500" y1="224" y2="224"/>
+        <line class="grid base" x1="20" x2="500" y1="250" y2="250"/>
+        <path class="area" d="M20.0 128.9 L28.7 116.7 L37.5 115.3 L46.2 130.0 L54.9 129.6 L63.6 116.4 L72.4 111.4 L81.1 112.6 L89.8 120.5 L98.5 116.3 L107.3 110.7 L116.0 101.2 L124.7 110.1 L133.5 110.5 L142.2 106.9 L150.9 100.5 L159.6 85.4 L168.4 93.8 L177.1 103.7 L185.8 96.9 L194.5 88.7 L203.3 87.8 L212.0 91.5 L220.7 101.2 L229.5 90.5 L238.2 77.6 L246.9 79.9 L255.6 85.0 L264.4 87.7 L273.1 72.4 L281.8 64.8 L290.5 66.0 L299.3 72.2 L308.0 84.4 L316.7 100.6 L325.5 116.5 L334.2 122.7 L342.9 136.7 L351.6 152.4 L360.4 167.8 L369.1 186.0 L377.8 200.8 L386.5 214.2 L395.3 228.9 L404.0 219.9 L412.7 222.2 L421.5 215.8 L430.2 219.2 L438.9 211.5 L447.6 211.1 L456.4 218.6 L465.1 214.7 L473.8 205.6 L482.5 208.8 L491.3 201.7 L500.0 206.4 L500.0 250 L20.0 250 Z"/>
+        <line class="thr" x1="20" x2="500" y1="168" y2="168"/>
+        <text class="thr-label" x="500" y="158" text-anchor="end">YOUR ALERT LEVEL &#8722;3%</text>
+        <path class="ln" pathLength="1" d="M20.0 128.9 L28.7 116.7 L37.5 115.3 L46.2 130.0 L54.9 129.6 L63.6 116.4 L72.4 111.4 L81.1 112.6 L89.8 120.5 L98.5 116.3 L107.3 110.7 L116.0 101.2 L124.7 110.1 L133.5 110.5 L142.2 106.9 L150.9 100.5 L159.6 85.4 L168.4 93.8 L177.1 103.7 L185.8 96.9 L194.5 88.7 L203.3 87.8 L212.0 91.5 L220.7 101.2 L229.5 90.5 L238.2 77.6 L246.9 79.9 L255.6 85.0 L264.4 87.7 L273.1 72.4 L281.8 64.8 L290.5 66.0 L299.3 72.2 L308.0 84.4 L316.7 100.6 L325.5 116.5 L334.2 122.7 L342.9 136.7 L351.6 152.4 L360.4 167.8 L369.1 186.0 L377.8 200.8 L386.5 214.2 L395.3 228.9 L404.0 219.9 L412.7 222.2 L421.5 215.8 L430.2 219.2 L438.9 211.5 L447.6 211.1 L456.4 218.6 L465.1 214.7 L473.8 205.6 L482.5 208.8 L491.3 201.7 L500.0 206.4"/>
+        <g class="mark"><circle class="ring" cx="360.5" cy="168" r="6"/><circle class="pt" cx="360.5" cy="168" r="5"/></g>
+      </svg>
+      <div class="toast" role="img" aria-label="Email notification: Nifty Bank is down 3.2 percent">
+        <span class="toast-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8 6 8-6M4 7v10h16V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+        <span class="toast-tx"><b>Nifty Bank is down 3.2%</b><small>buyDips &middot; just now</small></span>
+      </div>
+    </figure>
   </div>
 </section>
 
 <section class="section alt" id="how">
   <div class="container">
-    <h2>How it works</h2>
-    <p class="section-lead">Three steps, about a minute. No app to install and no password to remember.</p>
-    <ol class="steps">
-      <li class="step"><span class="step-n">1</span><h3>Pick what to follow</h3><p>Choose from major indexes, the Nifty 500 and the Nasdaq-100. Search, or start from a preset.</p></li>
-      <li class="step"><span class="step-n">2</span><h3>Set your alert level</h3><p>Decide how far each one must fall from its previous close, like 1% for an index or 3% for a stock.</p></li>
-      <li class="step"><span class="step-n">3</span><h3>Get one email when it happens</h3><p>Prices are checked about every 20 minutes on weekdays. Each item alerts at most once per trading day.</p></li>
+    <h2 class="reveal">How it works</h2>
+    <p class="section-lead reveal">Three steps, about a minute. No app to install and no password to remember.</p>
+    <ol class="process">
+      <li class="reveal"><span class="idx">01</span><h3>Pick what to follow</h3><p>Choose from major indexes, the Nifty 500 and the Nasdaq-100. Search, or start from a preset.</p></li>
+      <li class="reveal"><span class="idx">02</span><h3>Set your alert level</h3><p>Decide how far each one must fall from its previous close, like 1% for an index or 3% for a stock.</p></li>
+      <li class="reveal"><span class="idx">03</span><h3>Get one email when it happens</h3><p>Prices are checked about every 20 minutes on weekdays. Each item alerts at most once per trading day.</p></li>
     </ol>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
-    <h2>What you can follow</h2>
-    <p class="section-lead">Every symbol is checked against live prices, so nothing on the list is dead.</p>
-    <div class="stats">
-      <div class="stat"><b>{{ n_indexes }}</b><span>indexes worldwide</span></div>
-      <div class="stat"><b>{{ n_india }}</b><span>Indian stocks (Nifty 500)</span></div>
-      <div class="stat"><b>{{ n_us }}</b><span>US stocks (Nasdaq-100)</span></div>
+    <h2 class="reveal">What you can follow</h2>
+    <p class="section-lead reveal">Every symbol is checked against live prices, so nothing on the list is dead.</p>
+    <div class="ledger">
+      <div class="reveal"><b data-count="{{ n_indexes }}">{{ n_indexes }}</b><span>Indexes worldwide</span></div>
+      <div class="reveal"><b data-count="{{ n_india }}">{{ n_india }}</b><span>Indian stocks &middot; Nifty 500</span></div>
+      <div class="reveal"><b data-count="{{ n_us }}">{{ n_us }}</b><span>US stocks &middot; Nasdaq-100</span></div>
     </div>
-    <ul class="chips">
-      {% for name in examples %}<li>{{ name }}</li>{% endfor %}
-      <li>and more</li>
-    </ul>
+    <p class="also reveal">Including {{ examples|join(" · ") }} and more.</p>
   </div>
 </section>
 
 <section class="section alt" id="faq">
-  <div class="container narrow faq">
-    <h2>Questions</h2>
-    <p class="section-lead">The short answers.</p>
+  <div class="container faq">
+    <div class="faq-head">
+      <h2 class="reveal">Questions</h2>
+      <p class="section-lead reveal">The short answers.</p>
+    </div>
+    <div class="faq-list">
     <details><summary>Is it free?</summary><p>Yes, it's free while buyDips is in beta.</p></details>
     <details><summary>How often are prices checked?</summary><p>About every 20 minutes on weekdays, covering Asian, Indian, European and US market hours. Prices can be delayed, so treat alerts as a heads-up, not a trading signal.</p></details>
     <details><summary>How many emails will I get?</summary><p>At most one per check, grouping everything that dipped. Each item alerts once per trading day, even if it keeps falling.</p></details>
     <details><summary>Where does the price data come from?</summary><p>A third-party source (Yahoo Finance). It can occasionally be wrong or unavailable, which is why alerts are for information only.</p></details>
     <details><summary>Is this investment advice?</summary><p>No. buyDips only reports that a price moved. It doesn't recommend buying or selling anything.</p></details>
     <details><summary>What do you store about me?</summary><p>Only your email address and your watchlist. You can delete both permanently from the watchlist page. See the <a href="/privacy">privacy page</a>.</p></details>
+    </div>
   </div>
 </section>
 
 {% if not user %}
 <section class="cta">
   <div class="container">
-    <h2>Never miss a dip again</h2>
-    <p>Set it up in a minute, then forget about it until it matters.</p>
-    <a class="btn btn-primary btn-lg" href="#signup">Get started</a>
+    <h2 class="reveal">Never miss a dip again.</h2>
+    <p class="reveal">Set it up in a minute, then forget about it until it matters.</p>
+    <a class="btn btn-light btn-lg reveal" href="#signup">Get started <span class="arrow" aria-hidden="true">&rarr;</span></a>
   </div>
 </section>
 {% endif %}
