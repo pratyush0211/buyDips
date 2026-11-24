@@ -192,3 +192,11 @@ def test_every_holiday_is_a_real_weekday_date():
             assert date.fromisoformat(d).weekday() < 5, (market, d)
     assert markets.missing_holiday_year(utc(24, 5, 0)) is None
     assert markets.missing_holiday_year(datetime(2027, 1, 4, tzinfo=timezone.utc)) == 2027
+
+
+def test_unsupported_symbols_are_reported_not_silently_dropped():
+    user("a@x.com", {"^N225": 1.0, "^NSEI": 1.0})
+    p, out = FakeProvider({"^NSEI": q("^NSEI", -2)}), Outbox()
+    s = run_check(p, out, now=IN_OPEN)
+    assert s["unknown_symbols"] == ["^N225"] and s["skipped_closed"] == 0
+    assert p.requested == [["^NSEI"]] and len(out.sent) == 1

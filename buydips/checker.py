@@ -31,9 +31,12 @@ def run_check(
     # Only symbols whose own market is open right now (or just closed) are looked at.
     subs = [s for s in all_subs if markets.is_live(s["symbol"], now)]
     symbols = sorted({s["symbol"] for s in subs})
+    unknown = sorted({s["symbol"] for s in all_subs if markets.market_of(s["symbol"]) is None})
+    if unknown:
+        log.warning("Ignoring subscriptions to symbols that are not in the catalog: %s", ", ".join(unknown))
     summary = {"users": len({s["user_id"] for s in subs}), "symbols": len(symbols),
-               "fetched": 0, "emails": 0, "failed_symbols": [],
-               "skipped_closed": len({s["symbol"] for s in all_subs}) - len(symbols)}
+               "fetched": 0, "emails": 0, "failed_symbols": [], "unknown_symbols": unknown,
+               "skipped_closed": len({s["symbol"] for s in all_subs}) - len(symbols) - len(unknown)}
     if not symbols:
         log.info("No watched market is open right now; nothing to check.")
         return summary

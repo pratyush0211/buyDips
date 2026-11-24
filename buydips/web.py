@@ -43,8 +43,8 @@ def _announce_new_user(email: str) -> None:
 def _presets() -> list:
     """Quick-pick buttons on the watchlist page: (label, 'SYM|SYM|...')."""
     india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India"]
-    world = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] != "India"]
-    return [("Indian indexes", "|".join(india)), ("Global indexes", "|".join(world))]
+    us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US"]
+    return [("Indian indexes", "|".join(india)), ("US indexes", "|".join(us))]
 
 
 def create_app() -> Flask:
