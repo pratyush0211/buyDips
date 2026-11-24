@@ -71,7 +71,8 @@ MAX_WATCHLIST_ITEMS = 25
 MAX_FETCH_FAILURE_RATIO = 0.5
 
 DISCLAIMER = (
-    "This is an automated price alert for information only. It is not investment advice. "
+    "This is an automated price alert for information only. It is not investment advice or a recommendation to buy "
+    "or sell anything, and buyDips is not a SEBI-registered investment adviser or research analyst. "
     "Prices come from a third-party source and may be delayed or inaccurate."
 )
 

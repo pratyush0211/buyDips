@@ -26,7 +26,8 @@
     {% else %}<p class="fine">No stocks match &ldquo;{{ q }}&rdquo;, or they're already in this bucket.</p>{% endif %}
   {% endif %}
   {% if popular %}
-    <h3 class="lgroup-title sub">Popular picks</h3>
+    <h3 class="lgroup-title sub">Some large, widely held stocks</h3>
+    <p class="fine tight">A starting point for searching, not a recommendation.</p>
     <ul class="lrows">
       {% for it in popular %}
       <li class="lrow">
@@ -103,6 +104,7 @@
   {% endif %}
   {% if share_url %}
   <div class="sharebox">
+    <p class="sharewarn">Share it as something you follow, not as a tip. Telling others what to buy or sell, or showing returns to attract followers, can need SEBI registration.</p>
     <p class="sharenote">Anyone with this link can see the bucket's name and stocks{% if b.share_perf %} and its average since added{% endif %}. Never your email or your prices.</p>
     <input class="sharelink" id="sharelink" readonly value="{{ share_url }}" aria-label="Share link">
     <div class="sharebtns">
@@ -114,7 +116,7 @@
     <img class="sharepreview" src="/b/{{ b.share_token }}/story.png" width="540" height="675" alt="Preview of the share card" loading="lazy">
     <form method="post" action="/buckets/{{ b.id }}/share" class="rowform sharetoggle lrow">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="perf">
-      <label class="lmain" for="perf-on"><span class="lname">Include the average since added</span><span class="lsub">Off by default. Individual stock moves are never shared.</span></label>
+      <label class="lmain" for="perf-on"><span class="lname">Include the average since added</span><span class="lsub">Off by default. Keep it off if you share with people outside your own circle: showing returns publicly can count as advertising performance.</span></label>
       <input type="checkbox" class="switch" id="perf-on" name="perf" value="1" data-autosubmit {% if b.share_perf %}checked{% endif %}>
     </form>
     <form method="post" action="/buckets/{{ b.id }}/share" class="rowform">
@@ -125,6 +127,7 @@
   {% elif v.n %}
   <div class="sharebox">
     <p class="sharenote">Make a link and a picture to send on WhatsApp or post on Instagram. It shows the bucket's name and stocks only. You can stop sharing any time and the link stops working.</p>
+    <p class="sharewarn">Share it as something you follow, not as a tip. Telling others what to buy or sell, or showing returns to attract followers, can need SEBI registration.</p>
     <form method="post" action="/buckets/{{ b.id }}/share">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="on">
       <button class="btn btn-primary">Create share link</button>

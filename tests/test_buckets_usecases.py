@@ -137,7 +137,7 @@ def test_empty_bucket_leads_with_one_clear_next_step(client):
     bid = new_bucket(client, "Banks")
     html = client.get(f"/buckets/{bid}").get_data(as_text=True)
     assert "Add your first stock" in html and f'action="/buckets/{bid}/add"' in html
-    assert "Popular picks" in html and "Reliance" in html and "Apple" in html
+    assert "Some large, widely held stocks" in html and "Reliance" in html and "Apple" in html
     assert 'name="q"' in html                                # search is right there
     for absent in ("Average since added", "Create share link", "Share</h2>", "Waiting for the first prices"):
         assert absent not in html
@@ -149,7 +149,7 @@ def test_empty_bucket_search_and_one_tap_add(client):
     sign_in(client)
     bid = new_bucket(client)
     html = client.get(f"/buckets/{bid}?q=apple").get_data(as_text=True)
-    assert "AAPL" in html and "Popular picks" not in html     # results replace the suggestions
+    assert "AAPL" in html and "Some large, widely held stocks" not in html     # results replace the suggestions
     assert add(client, bid, "AAPL").status_code == 302
     page = client.get(f"/buckets/{bid}").get_data(as_text=True)
     assert "Add your first stock" not in page and "Average since added" in page and "1 of 25" in page
@@ -558,3 +558,29 @@ def test_a_big_run_streams_in_batches_and_still_flags_correctly(monkeypatch):
     out = Outbox()
     run_check(FakeProvider(quotes), out, now=IN_OPEN)
     assert len(out.sent) == 1
+
+
+# ---------------- wording (SEBI-sensitive) ----------------
+
+def test_user_facing_copy_is_informational_not_advice(client):
+    import re
+    sign_in(client)
+    bid = new_bucket(client)
+    pages = {"home": client.application.test_client().get("/").get_data(as_text=True),
+             "bucket": client.get(f"/buckets/{bid}").get_data(as_text=True),
+             "alerts": client.get("/alerts").get_data(as_text=True),
+             "settings": client.get("/settings").get_data(as_text=True)}
+    for name, html in pages.items():
+        text = re.sub(r"<[^>]+>", " ", html)
+        text = re.sub(r"buydips|buyDips", "", text)
+        assert not re.search(r"\bdips?\b|\bpicks?\b|\bbargain|\bopportunit|\bundervalued|\bguarantee", text, re.I), name
+    assert "not a recommendation" in pages["bucket"] and "SEBI-registered" in pages["home"]
+    add(client, bid, "TCS.NS")
+    share = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "not as a tip" in share and "SEBI registration" in share
+    from buydips import emails
+    for subject, text, html in (emails.alert([{"name": "N", "symbol": "TCS.NS", "change_pct": -3.0, "price": 1.0, "prev_close": 2.0,
+                                               "session": "2026-11-20", "threshold": 1.0}], "u"),
+                                emails.flagged([{"bucket": "B", "name": "N", "symbol": "TCS.NS", "pct": -12.0, "added_price": "1", "price": "2"}], "u")):
+        assert "SEBI-registered" in text and "SEBI-registered" in html
+        assert not re.search(r"\b(buy now|opportunity|bargain|good time)\b", subject + text, re.I)

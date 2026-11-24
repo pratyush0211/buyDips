@@ -15,7 +15,7 @@
     <li class="lrow">
       <form method="post" action="/settings/alerts" class="rowform">
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-        <label class="lmain" for="alerts-on"><span class="lname">Email alerts</span><span class="lsub">{{ "On: you'll be emailed when something dips." if active else "Paused: nothing will be sent." }}</span></label>
+        <label class="lmain" for="alerts-on"><span class="lname">Email alerts</span><span class="lsub">{{ "On: you'll be emailed when something falls past your level." if active else "Paused: nothing will be sent." }}</span></label>
         <input type="checkbox" class="switch" id="alerts-on" name="on" value="1" data-autosubmit {% if active %}checked{% endif %}>
         <noscript><button class="btn btn-ghost btn-sm">Save</button></noscript>
       </form>

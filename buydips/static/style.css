@@ -459,3 +459,5 @@ a.lval { color: var(--brand); }
 .emptybucket .empty-icon { width: 48px; height: 48px; margin-bottom: 8px; }
 .emptybucket h2 { margin: 0 0 4px; }
 .emptybucket p { margin: 0 auto; max-width: 340px; }
+.sharewarn { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2, var(--bg)); border: 1px solid var(--line); color: var(--text); font-size: 13.5px; line-height: 1.45; }
+.fine.tight { margin: -2px 0 8px; }

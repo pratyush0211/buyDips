@@ -4,7 +4,7 @@
 <div class="container app-page">
   <header class="large-head">
     <h1>Alerts</h1>
-    <p>Every dip we've emailed you about.</p>
+    <p>Every alert we've emailed you.</p>
   </header>
 
   {% if not active %}<div class="warnbox">Alerts are paused, so nothing new will be sent. <a href="/settings">Turn them back on in Settings.</a></div>{% endif %}
@@ -34,7 +34,7 @@
     {% if n_watched %}
       <p>You're watching {{ n_watched }} {{ "item" if n_watched == 1 else "items" }}. When one falls past your alert level, the email we send will appear here.</p>
     {% else %}
-      <p>You aren't watching anything yet. Pick a few stocks or indexes and we'll email you when they dip.</p>
+      <p>You aren't watching anything yet. Pick a few stocks or indexes and we'll email you when they fall past your level.</p>
       <a class="btn btn-primary" href="/watchlist">Choose what to watch</a>
     {% endif %}
   </div>
