@@ -490,3 +490,5 @@ a.lval { color: var(--brand); }
 .js .nojs-only { display: none; }
 #bsearch-results { margin-top: 10px; }
 #bsearch-results .btn[disabled] { opacity: .6; }
+.stage { margin-top: 14px; }
+.stage .btn-block { width: 100%; margin-top: 10px; }

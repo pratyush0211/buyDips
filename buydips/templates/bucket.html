@@ -5,13 +5,22 @@
   {% if full %}
     <p class="fine">This bucket is full ({{ max_items }} stocks). Remove one to add another.</p>
   {% else %}
-  <form class="newbucket" method="get" action="/buckets/{{ b.id }}" data-bucket-search data-add-url="/buckets/{{ b.id }}/add" data-csrf="{{ csrf_token() }}" data-have="{{ have_symbols }}">
+  <form class="newbucket" method="get" action="/buckets/{{ b.id }}" data-bucket-search data-add-url="/buckets/{{ b.id }}/add" data-csrf="{{ csrf_token() }}" data-have="{{ have_symbols }}" data-room="{{ max_items - v.n }}">
     <label class="sr-only" for="q">Search stocks</label>
     <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or Gold" autocomplete="off" autocapitalize="none" spellcheck="false">
     <button class="btn btn-ghost nojs-only">Search</button>
   </form>
   <ul class="lrows" id="bsearch-results" aria-live="polite" hidden></ul>
   <p class="fine" id="bsearch-empty" hidden>No match. Try part of the name or the ticker.</p>
+  <div id="stage" class="stage" hidden>
+    <h3 class="lgroup-title sub">Ready to add <span class="cap" id="stage-count"></span></h3>
+    <ul class="lrows" id="stage-list"></ul>
+    <form method="post" action="/buckets/{{ b.id }}/add" id="stage-form">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="btn btn-primary btn-block" id="stage-save">Save</button>
+      <p class="fine tight">Nothing is saved until you tap Save.</p>
+    </form>
+  </div>
   {% if q %}
     {% if results %}
     <ul class="lrows">
@@ -50,7 +59,7 @@
     <h1>{{ b.name }}</h1>
   </header>
 
-  {% if changed == "added" %}<div class="notice" role="status">Added. It's measured from today's price.</div>{% elif changed == "removed" %}<div class="notice" role="status">Removed.</div>{% elif changed == "renamed" %}<div class="notice" role="status">Renamed.</div>{% elif changed == "shared" %}<div class="notice" role="status">Sharing is on.</div>{% elif changed == "unshared" %}<div class="notice" role="status">Sharing stopped. The old link no longer works.</div>{% endif %}
+  {% if changed == "added" %}<div class="notice" role="status">{% if n_added and n_added > 1 %}Added {{ n_added }} stocks. They're measured from today's price.{% else %}Added. It's measured from today's price.{% endif %}</div>{% elif changed == "partial" %}<div class="notice" role="status">Added {{ n_added or 1 }}. The bucket is full, so the rest weren't added.</div>{% elif changed == "removed" %}<div class="notice" role="status">Removed.</div>{% elif changed == "renamed" %}<div class="notice" role="status">Renamed.</div>{% elif changed == "shared" %}<div class="notice" role="status">Sharing is on.</div>{% elif changed == "unshared" %}<div class="notice" role="status">Sharing stopped. The old link no longer works.</div>{% endif %}
 
   {% if v.n == 0 %}
   <section class="empty-state emptybucket">

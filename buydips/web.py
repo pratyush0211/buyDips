@@ -53,12 +53,13 @@ def _presets() -> list:
 _price_pool = ThreadPoolExecutor(2)
 
 
-def _fetch_quote(symbol: str):
-    """One live price for a newly added stock, or None if the provider is slow or down (the next sync fills it in)."""
+def _fetch_quotes(symbols: list) -> dict:
+    """Live prices for newly added stocks in one provider call: {symbol: Quote}. Empty if the provider is slow or down
+    (the next sync fills the prices in)."""
     try:
-        return _price_pool.submit(YahooProvider().fetch, [symbol]).result(timeout=6).get(symbol)
+        return _price_pool.submit(YahooProvider().fetch, symbols).result(timeout=8)
     except Exception:  # noqa: BLE001
-        return None
+        return {}
 
 
 def _build_catalog_json() -> bytes:
@@ -79,16 +80,24 @@ _CATALOG_JSON = _build_catalog_json()
 _POPULAR = ["RELIANCE.NS", "HDFCBANK.NS", "TCS.NS", "INFY.NS", "AAPL", "MSFT", "NVDA", "GOOGL"]
 
 
-def _starting_price(symbol: str):
-    """The price to measure a new bucket stock from: a recent synced price, else a live look, else unknown."""
-    cached = db.quotes_for([symbol]).get(symbol)
-    if cached and datetime.utcnow() - cached["updated_at"] < timedelta(hours=6):
-        return cached["price"]
-    q = _fetch_quote(symbol)
-    if q is None:
-        return None
-    db.save_quotes([q])
-    return q.price
+def _starting_prices(symbols: list) -> dict:
+    """The price to measure each new bucket stock from: a recent synced price, else one live look for all the ones
+    that lack it, else None (the next sync fills it in). One database read and at most one provider call."""
+    cached = db.quotes_for(symbols)
+    out, missing = {}, []
+    for s in symbols:
+        c = cached.get(s)
+        if c and datetime.utcnow() - c["updated_at"] < timedelta(hours=6):
+            out[s] = c["price"]
+        else:
+            missing.append(s)
+    if missing:
+        got = _fetch_quotes(missing)
+        if got:
+            db.save_quotes(list(got.values()))
+        for s in missing:
+            out[s] = got[s].price if s in got else None
+    return out
 
 
 def _synced_text(quotes: dict) -> str:
@@ -371,7 +380,7 @@ def create_app() -> Flask:
         return render_template("bucket.html", user=user, tab="buckets", b=b, popular=popular, have_symbols=" ".join(sorted(have)), v=bucketmath.view(items, quotes),
                                synced=_synced_text(quotes), q=q, results=results, flag_pct=f"{config.BUCKET_FLAG_PCT:g}",
                                full=len(items) >= config.MAX_BUCKET_ITEMS, max_items=config.MAX_BUCKET_ITEMS,
-                               changed=request.args.get("changed"),
+                               changed=request.args.get("changed"), n_added=request.args.get("n", type=int),
                                share_url=f"{config.BASE_URL}/b/{b['share_token']}" if b.get("share_token") else None)
 
     @app.route("/buckets/<int:bucket_id>/add", methods=["POST"])
@@ -381,20 +390,24 @@ def create_app() -> Flask:
             return redirect(url_for("index"))
         check_csrf()
         b = _bucket_or_404(user, bucket_id)
-        symbol = request.form.get("symbol", "")
-        item = catalog.BY_SYMBOL.get(symbol)
-        if not item or item["type"] not in catalog.TRADED:
+        wanted = list(dict.fromkeys(request.form.getlist("symbol")))[:config.MAX_BUCKET_ITEMS]   # in order, no repeats
+        if not wanted or any((catalog.BY_SYMBOL.get(s) or {}).get("type") not in catalog.TRADED for s in wanted):
             return page("Couldn't add that", "That stock isn't available.", 400)
-        have = db.bucket_items_for([b["id"]])[b["id"]]
-        if symbol in {i["symbol"] for i in have}:  # already there: nothing to do, and no price lookup
+        have = {i["symbol"] for i in db.bucket_items_for([b["id"]])[b["id"]]}
+        new = [s for s in wanted if s not in have]
+        if not new:  # all already there: nothing to do, and no price lookup
             return redirect(url_for("bucket_page", bucket_id=b["id"]))
         full = ("Bucket is full", f"A bucket can hold up to {config.MAX_BUCKET_ITEMS} stocks.", 400)
         if len(have) >= config.MAX_BUCKET_ITEMS:  # cheap early exit; the insert below re-checks atomically
             return page(*full)
-        outcome = db.add_bucket_item(b["id"], symbol, _starting_price(symbol), limit=config.MAX_BUCKET_ITEMS)
-        if outcome == "full":
+        prices = _starting_prices(new)
+        outcome = db.add_bucket_items(b["id"], [(s, prices[s]) for s in new], limit=config.MAX_BUCKET_ITEMS)
+        added = sum(v == "added" for v in outcome.values())
+        if not added and "full" in outcome.values():
             return page(*full)
-        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="added" if outcome == "added" else None))
+        partial = "full" in outcome.values()
+        return redirect(url_for("bucket_page", bucket_id=b["id"], n=added if added > 1 else None,
+                                changed=("partial" if partial else "added") if added else None))
 
     @app.route("/buckets/<int:bucket_id>/remove", methods=["POST"])
     def bucket_remove(bucket_id):

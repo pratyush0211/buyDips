@@ -457,27 +457,39 @@ def bucket_items_for(bucket_ids: List[int]) -> Dict[int, List[dict]]:
     return out
 
 
-def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float], limit: Optional[int] = None) -> str:
-    """"added", "exists" (already in the bucket) or "full" (already at `limit` stocks). The limit and duplicate checks
-    are part of the INSERT statement itself, and the bucket row is locked first on Postgres, so simultaneous adds
-    can't overshoot the limit or double up."""
+def add_bucket_items(bucket_id: int, items, limit: Optional[int] = None) -> Dict[str, str]:
+    """Add several stocks in ONE transaction. `items` is [(symbol, added_price)]. Returns {symbol: "added" | "exists" |
+    "full"}. Each limit and duplicate check is part of its INSERT statement, and the bucket row is locked first on
+    Postgres, so simultaneous requests can't overshoot the limit or double up."""
     cap = limit if limit is not None else 10 ** 9
     mine = bucket_items.c.bucket_id == bucket_id
+    out: Dict[str, str] = {}
     with engine().begin() as conn:
         conn.execute(select(buckets.c.id).where(buckets.c.id == bucket_id).with_for_update())
-        count = select(func.count()).select_from(bucket_items).where(mine).scalar_subquery()
-        dup = exists().where(mine & (bucket_items.c.symbol == symbol))
-        stmt = insert(bucket_items).from_select(
-            ["bucket_id", "symbol", "added_price", "added_at"],
-            select(literal(bucket_id, Integer), literal(symbol, String), literal(added_price, Float), literal(_now(), DateTime))
-            .where((count < cap) & ~dup))
-        try:
-            done = conn.execute(stmt).rowcount == 1
-        except IntegrityError:  # lost a race on the primary key: someone else added it a moment ago
-            return "exists"
-        if done:
-            return "added"
-        return "exists" if conn.execute(select(bucket_items.c.symbol).where(mine & (bucket_items.c.symbol == symbol))).first() else "full"
+        for symbol, added_price in items:
+            if symbol in out:
+                continue
+            count = select(func.count()).select_from(bucket_items).where(mine).scalar_subquery()
+            dup = exists().where(mine & (bucket_items.c.symbol == symbol))
+            stmt = insert(bucket_items).from_select(
+                ["bucket_id", "symbol", "added_price", "added_at"],
+                select(literal(bucket_id, Integer), literal(symbol, String), literal(added_price, Float), literal(_now(), DateTime))
+                .where((count < cap) & ~dup))
+            try:
+                done = conn.execute(stmt).rowcount == 1
+            except IntegrityError:  # lost a race on the primary key: someone else added it a moment ago
+                out[symbol] = "exists"
+                continue
+            if done:
+                out[symbol] = "added"
+            else:
+                out[symbol] = "exists" if conn.execute(select(bucket_items.c.symbol).where(mine & (bucket_items.c.symbol == symbol))).first() else "full"
+    return out
+
+
+def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float], limit: Optional[int] = None) -> str:
+    """One stock: "added", "exists" or "full" (see add_bucket_items)."""
+    return add_bucket_items(bucket_id, [(symbol, added_price)], limit)[symbol]
 
 
 def remove_bucket_item(bucket_id: int, symbol: str) -> None:

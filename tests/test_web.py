@@ -354,7 +354,7 @@ def test_bucket_name_rules_and_limit(client, monkeypatch):
 
 def test_adding_a_stock_records_its_starting_price_and_shows_performance(client, monkeypatch):
     sign_in(client)
-    monkeypatch.setattr(web, "_fetch_quote", lambda sym: Quote(sym, 100.0, 99.0, 1.0, "2026-11-20"))
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: {sym: Quote(sym, 100.0, 99.0, 1.0, "2026-11-20") for sym in syms})
     bid = new_bucket(client)
     t = csrf(client, f"/buckets/{bid}")
     assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "HDFCBANK.NS"}).status_code == 302
@@ -369,7 +369,7 @@ def test_adding_a_stock_records_its_starting_price_and_shows_performance(client,
 
 def test_adding_when_the_price_source_is_down_still_works_and_waits(client, monkeypatch):
     sign_in(client)
-    monkeypatch.setattr(web, "_fetch_quote", lambda sym: None)
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: {})
     bid = new_bucket(client)
     client.post(f"/buckets/{bid}/add", data={"csrf": csrf(client, f"/buckets/{bid}"), "symbol": "TCS.NS"})
     assert db.bucket_items_for([bid])[bid][0]["added_price"] is None
@@ -388,7 +388,7 @@ def test_average_is_equal_weighted(client):
 def test_only_real_stocks_can_be_added_and_bucket_size_is_limited(client, monkeypatch):
     from buydips import config
     sign_in(client)
-    monkeypatch.setattr(web, "_fetch_quote", lambda sym: None)
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: {})
     bid = new_bucket(client)
     t = csrf(client, f"/buckets/{bid}")
     assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "^NSEI"}).status_code == 400   # an index, not a stock

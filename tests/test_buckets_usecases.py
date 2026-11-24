@@ -22,7 +22,7 @@ IN_STOCKS = [s for s in STOCKS if s.endswith(".NS")]
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
     """Adding a stock normally takes one live price; tests answer it locally."""
-    monkeypatch.setattr(web, "_fetch_quote", lambda sym: Quote(sym, 100.0, 99.0, 1.0, "2026-11-20"))
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: {sym: Quote(sym, 100.0, 99.0, 1.0, "2026-11-20") for sym in syms})
 
 
 def add(client, bid, symbol):
@@ -318,7 +318,7 @@ def test_re_adding_a_removed_stock_starts_a_fresh_baseline(client, monkeypatch):
     client.post(f"/buckets/{bid}/remove", data={"csrf": csrf(client, f"/buckets/{bid}"), "symbol": "TCS.NS"})
     with db.engine().begin() as c:
         c.execute(text("delete from quotes_cache"))               # so the next add takes a fresh live price
-    monkeypatch.setattr(web, "_fetch_quote", lambda sym: Quote(sym, 150.0, 1, 0, "d"))
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: {sym: Quote(sym, 150.0, 1, 0, "d") for sym in syms})
     add(client, bid, "TCS.NS")
     assert db.bucket_items_for([bid])[bid][0]["added_price"] == 150.0
 
@@ -960,3 +960,85 @@ def test_a_new_person_cannot_add_a_retired_index_by_posting_it_directly(client):
                                         "th_^DJI": "1", "th_^NDX": "1"})
     assert r.status_code == 302
     assert set(db.get_subscriptions(db.get_or_create_user("a@x.com")["id"])) == {"^NDX"}
+
+
+# ---------------- adding several stocks with one Save ----------------
+
+def add_many(client, bid, symbols):
+    return client.post(f"/buckets/{bid}/add", data={"csrf": csrf(client, f"/buckets/{bid}"), "symbol": symbols})
+
+
+def test_one_save_adds_every_staged_stock_with_one_price_lookup(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(web, "_fetch_quotes", lambda syms: calls.append(list(syms)) or
+                        {s: Quote(s, 100.0, 99.0, 1.0, "2026-11-20") for s in syms})
+    sign_in(client)
+    bid = new_bucket(client)
+    r = add_many(client, bid, ["RELIANCE.NS", "TCS.NS", "AAPL", "GOLDBEES.NS"])
+    assert r.status_code == 302 and "n=4" in r.headers["Location"] and "changed=added" in r.headers["Location"]
+    assert calls == [["RELIANCE.NS", "TCS.NS", "AAPL", "GOLDBEES.NS"]]                    # ONE call for all four
+    items = db.bucket_items_for([bid])[bid]
+    assert {i["symbol"] for i in items} == {"RELIANCE.NS", "TCS.NS", "AAPL", "GOLDBEES.NS"}
+    assert all(i["added_price"] == 100.0 for i in items)
+    assert "Added 4 stocks" in client.get(r.headers["Location"]).get_data(as_text=True)
+
+
+def test_a_batch_costs_the_same_few_statements_whatever_its_size(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    with count_queries() as q1:
+        add_many(client, bid, ["RELIANCE.NS"])
+    bid2 = new_bucket(client, "Two")
+    with count_queries() as q6:
+        add_many(client, bid2, ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "AAPL", "MSFT"])
+    reads = lambda q: [s for s in q if "bucket_items" in s and s.lstrip().upper().startswith("SELECT") and "FOR UPDATE" not in s.upper()]
+    assert len(reads(q6)) <= len(reads(q1)) + 6          # one existence check per stock, inside its own INSERT, no more
+
+
+def test_a_batch_respects_the_limit_adds_what_fits_and_says_so(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    syms = [i["symbol"] for i in catalog.ITEMS if i["type"] == "stock" and i["group"] == "India"][:30]
+    add_many(client, bid, syms[:23])
+    r = add_many(client, bid, syms[23:30])                 # 7 more, room for 2
+    assert r.status_code == 302 and "changed=partial" in r.headers["Location"]
+    assert len(db.bucket_items_for([bid])[bid]) == config.MAX_BUCKET_ITEMS
+    assert "bucket is full" in client.get(r.headers["Location"]).get_data(as_text=True)
+    assert add_many(client, bid, [syms[29]]).status_code == 400                  # nothing fits any more: clear error
+
+
+def test_a_batch_ignores_repeats_and_stocks_already_there_but_rejects_anything_unknown(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    add(client, bid, "TCS.NS")
+    r = add_many(client, bid, ["TCS.NS", "AAPL", "AAPL", "INFY.NS"])
+    assert r.status_code == 302
+    assert sorted(i["symbol"] for i in db.bucket_items_for([bid])[bid]) == ["AAPL", "INFY.NS", "TCS.NS"]
+    assert add_many(client, bid, ["MSFT", "NOT-A-STOCK"]).status_code == 400
+    assert add_many(client, bid, ["MSFT", "^NSEI"]).status_code == 400            # indexes can't be in buckets
+    assert "MSFT" not in {i["symbol"] for i in db.bucket_items_for([bid])[bid]}   # all or nothing on bad input
+    assert add_many(client, bid, []).status_code == 400
+    assert add_many(client, bid, ["TCS.NS"]).status_code == 302                   # all already there: harmless
+
+
+def test_simultaneous_batches_never_exceed_the_limit_or_double_up():
+    import threading
+    u = db.get_or_create_user("race@x.com")
+    bid = db.create_bucket(u["id"], "R", 10)
+    syms = [i["symbol"] for i in catalog.ITEMS if i["type"] == "stock" and i["group"] == "India"][:40]
+    results = []
+    def go(chunk):
+        results.append(db.add_bucket_items(bid, [(s, 1.0) for s in chunk], limit=config.MAX_BUCKET_ITEMS))
+    threads = [threading.Thread(target=go, args=(syms[k * 5:k * 5 + 15],)) for k in range(6)]   # overlapping batches
+    [t.start() for t in threads]; [t.join() for t in threads]
+    rows = db.bucket_items_for([bid])[bid]
+    assert len(rows) <= config.MAX_BUCKET_ITEMS and len({r["symbol"] for r in rows}) == len(rows)
+
+
+def test_the_page_has_a_staging_area_that_only_saves_on_one_request(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    add(client, bid, "TCS.NS")
+    page = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert 'id="stage"' in page and 'id="stage-form"' in page and "Nothing is saved until you tap Save" in page
+    assert 'data-room="24"' in page
