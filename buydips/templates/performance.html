@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}How they've done · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <a class="backlink" href="/watchlist?start=india">Watchlist</a>
+  <header class="large-head">
+    <h1>How they've done</h1>
+    {% if m.as_of %}<p>Daily closing prices up to {{ m.as_of }}, adjusted for splits and dividends.</p>{% endif %}
+  </header>
+
+  {% if not m.n %}
+    <div class="warnbox">You aren't following anything yet. <a href="/watchlist?start=india">Choose what to follow</a> and its history appears here.</div>
+  {% elif not m.n_have %}
+    <div class="notice" role="status">We're gathering the price history for what you follow. It updates once a day, so check back tomorrow.</div>
+  {% else %}
+  {% if summary %}
+  <section class="sumcard" aria-label="Summary">
+    <p>{{ summary }}</p>
+    <p class="sumnote">{% if by_ai %}Written by AI from the figures below, which are the only facts it was given. {% endif %}Past performance says nothing about the future. For information only, not investment advice.</p>
+  </section>
+  {% endif %}
+
+  <h2 class="lgroup-title">Your list <span class="cap">best month first</span></h2>
+  <ul class="lrows perf">
+    {% for r in m.rows %}
+    <li class="lrow">
+      <div class="lident">{{ icon(r.symbol) }}<div class="lmain"><span class="lname">{{ r.name }}</span>
+        <span class="lsub">{% if r.r1w is none and r.r1m is none %}Not enough history yet{% else %}1W {{ pct(r.r1w) }} &middot; 3M {{ pct(r.r3m) }} &middot; 1Y {{ pct(r.r1y) }}{% endif %}</span>
+        {% if r.from_high is not none and r.from_high < -0.05 %}<span class="lsub">{{ "%.0f"|format(-r.from_high) }}% below its 1-year high</span>{% endif %}
+      </div></div>
+      <div class="lside">{% if r.r1m is not none %}<span class="bpct tone-{{ 'up' if r.r1m > 0 else 'down' if r.r1m < 0 else 'none' }}">{{ pct(r.r1m) }}</span><span class="lsub">1 month</span>{% else %}<span class="bpct tone-none">&ndash;</span>{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if m.bench %}
+  <h2 class="lgroup-title">For comparison <span class="cap">1 month</span></h2>
+  <ul class="lrows perf">
+    {% for market, b in m.bench.items() %}
+    <li class="lrow"><div class="lident">{{ icon(None, b.name) }}<div class="lmain"><span class="lname">{{ b.name }}</span><span class="lsub">1W {{ pct(b.r1w) }} &middot; 3M {{ pct(b.r3m) }} &middot; 1Y {{ pct(b.r1y) }}</span></div></div>
+      <div class="lside"><span class="bpct tone-{{ 'up' if b.r1m > 0 else 'down' if b.r1m < 0 else 'none' }}">{{ pct(b.r1m) }}</span></div></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p class="fine tight">Prices come from a third-party source and may be delayed or inaccurate. buyDips is not a SEBI-registered investment adviser or research analyst.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -56,6 +56,24 @@ class YahooProvider:
         series = yf.Ticker(symbol).splits
         return [(d.date(), float(v)) for d, v in series.items() if v and v == v and v > 0]
 
+    def _history_one(self, symbol: str):
+        try:
+            import yfinance as yf
+
+            # auto_adjust (the default) restates old prices for splits and dividends, so returns are like for like
+            closes = yf.Ticker(symbol).history(period="1y", interval="1d")["Close"].dropna()
+            return symbol, [(i.date().isoformat(), float(v)) for i, v in closes.items()]
+        except Exception as exc:  # noqa: BLE001
+            log.error("Failed to fetch history for %s: %s", symbol, exc)
+            return symbol, None
+
+    def history(self, symbols: Iterable[str]) -> Dict[str, list]:
+        """{symbol: [(YYYY-MM-DD, adjusted close), ...] oldest first} for roughly the last year. Failed symbols are absent."""
+        symbols = list(dict.fromkeys(symbols))
+        with ThreadPoolExecutor(self.workers) as pool:
+            results = list(pool.map(self._history_one, symbols))
+        return {s: rows for s, rows in results if rows}
+
     def fetch(self, symbols: Iterable[str]) -> Dict[str, Quote]:
         symbols = list(dict.fromkeys(symbols))
         with ThreadPoolExecutor(self.workers) as pool:

@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
-from . import buckets as bucketmath, catalog, config, db, emails, links, markets
+from . import buckets as bucketmath, catalog, config, db, emails, links, markets, performance
 from .data import Provider, YahooProvider
 from .mailer import send_email
 
@@ -17,12 +17,40 @@ class DataFetchError(RuntimeError):
     """Too many symbols failed to load; the run should be marked as failed."""
 
 
+PERF_MAX_PER_RUN = 120   # symbols whose price history is fetched in one run (the rest follow on the next run)
+
+
+def _refresh_performance(provider) -> int:
+    """Once a day, store 1-week/1-month/3-month/1-year figures for every followed symbol and the two index yardsticks.
+    Skipped for a provider with no history() (the tests' fake one)."""
+    fetch_history = getattr(provider, "history", None)
+    if fetch_history is None:
+        return 0
+    followed = {s["symbol"] for s in db.active_subscriptions() if s["symbol"] in catalog.BY_SYMBOL}
+    stale = db.perf_stale(sorted(followed | set(performance.BENCH.values())))[:PERF_MAX_PER_RUN]
+    if not stale:
+        return 0
+    got = fetch_history(stale)
+    db.save_perf({s: performance.metrics(got[s]) if s in got else None for s in stale if s in got})
+    return len(got)
+
+
 def run_check(
     provider: Optional[Provider] = None,
     send: Callable[..., bool] = send_email,
     now: Optional[datetime] = None,
 ) -> dict:
     provider = provider or YahooProvider()
+    summary = _run_check(provider, send, now)
+    try:                       # a failure here must never affect alerts, which have already been sent
+        summary["performance_refreshed"] = _refresh_performance(provider)
+    except Exception as exc:  # noqa: BLE001
+        log.error("performance refresh failed: %s", exc)
+        summary["performance_refreshed"] = 0
+    return summary
+
+
+def _run_check(provider, send, now) -> dict:
     now = now or datetime.now(timezone.utc)
     stale_year = markets.missing_holiday_year(now)
     if stale_year:

@@ -82,3 +82,9 @@ MAX_BUCKETS = 10
 MAX_BUCKET_ITEMS = 25
 # Alert levels offered on the first-run screen (percent fall from the previous close).
 START_LEVELS = (2.0, 3.0, 5.0)
+
+# Written performance summaries. With no key set, the page uses a plain template sentence instead.
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", "claude-haiku-5-5").strip()
+SUMMARY_PER_USER_PER_DAY = 5      # new summaries one person can trigger in a day (a changed watchlist makes a new one)
+SUMMARY_PER_DAY_TOTAL = 500       # a hard daily ceiling across everyone: the most the API can ever cost

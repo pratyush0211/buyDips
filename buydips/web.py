@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, abort, g, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import buckets as bucketmath, card, catalog, config, db, emails, importer, links, markets
+from . import buckets as bucketmath, card, catalog, config, db, emails, importer, links, markets, performance, summarize
 from .data import YahooProvider
 from .mailer import send_email
 
@@ -589,6 +589,17 @@ def create_app() -> Flask:
         except (TypeError, ValueError):
             return 3.0
         return v if v in config.START_LEVELS else 3.0
+
+    @app.route("/performance")
+    def performance_page():
+        """How the followed stocks have done over a week, a month, three months and a year, from stored daily figures."""
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        subs = db.get_subscriptions(user["id"])
+        model = performance.build(subs, db.perf_for(list(subs) + list(performance.BENCH.values())))
+        text, by_ai = summarize.get(user["id"], model) if subs else ("", False)
+        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, by_ai=by_ai, pct=performance.pct)
 
     @app.route("/import", methods=["GET", "POST"])
     def import_holdings():

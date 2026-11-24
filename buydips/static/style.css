@@ -545,3 +545,8 @@ a.lval { color: var(--brand); }
 .impchk { cursor: pointer; } .bc-import { text-decoration: none; display: block; }
 .lead.small { font-size: 17px; margin: 0 0 12px; }
 .btn-block { display: block; width: 100%; margin-top: 16px; text-align: center; }
+
+.sumcard { margin: 0 0 22px; padding: 18px 18px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.sumcard p { margin: 0; font-size: 17px; line-height: 1.5; }
+.sumcard .sumnote { margin-top: 10px; font-size: 14px; color: var(--muted); }
+.perf .lside { text-align: right; }

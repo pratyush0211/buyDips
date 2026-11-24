@@ -73,6 +73,27 @@ bucket_items = Table(
 )
 
 # The latest price per symbol, refreshed by the alert job, so pages never call the data provider.
+# Daily price-history figures per symbol (1 week / 1 month / 3 months / 1 year returns and distance from the 1-year
+# high), refreshed once a day by the alert job so pages never wait on Yahoo.
+perf_cache = Table(
+    "perf_cache", metadata,
+    Column("symbol", String(40), primary_key=True),
+    Column("last_date", String(10)),
+    Column("last_price", Float),
+    Column("r1w", Float), Column("r1m", Float), Column("r3m", Float), Column("r1y", Float),
+    Column("from_high", Float),
+    Column("updated_at", DateTime, nullable=False),
+)
+
+# Written summaries already produced, keyed by a digest of the exact facts they describe.
+summaries = Table(
+    "summaries", metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("digest", String(40), primary_key=True),
+    Column("text", String(1000), nullable=False),
+    Column("created_at", DateTime, nullable=False, index=True),
+)
+
 quotes_cache = Table(
     "quotes_cache", metadata,
     Column("symbol", String(40), primary_key=True),
@@ -524,6 +545,62 @@ def save_quotes(quotes) -> None:
             conn.execute(insert(quotes_cache), new)
         if old:
             conn.execute(update(quotes_cache).where(quotes_cache.c.symbol == bindparam("b_symbol")), old)
+
+
+def perf_for(symbols) -> Dict[str, dict]:
+    symbols = list(symbols)
+    if not symbols:
+        return {}
+    with _auto() as conn:
+        rows = conn.execute(select(perf_cache).where(perf_cache.c.symbol.in_(symbols))).mappings().all()
+    return {r["symbol"]: dict(r) for r in rows}
+
+
+def perf_stale(symbols, max_age_hours: int = 20) -> list:
+    """Which of `symbols` have no figures yet, or figures older than `max_age_hours`."""
+    symbols = list(symbols)
+    if not symbols:
+        return []
+    fresh_after = _now() - timedelta(hours=max_age_hours)
+    with _auto() as conn:
+        fresh = {r[0] for r in conn.execute(select(perf_cache.c.symbol).where(
+            perf_cache.c.symbol.in_(symbols) & (perf_cache.c.updated_at >= fresh_after)))}
+    return [s for s in symbols if s not in fresh]
+
+
+def save_perf(rows: Dict[str, Optional[dict]]) -> None:
+    """Replace the figures for each symbol. A symbol with no usable history is stored empty, so it isn't retried every
+    hour. One delete and one bulk insert."""
+    if not rows:
+        return
+    keys = ("last_date", "last_price", "r1w", "r1m", "r3m", "r1y", "from_high")
+    now = _now()
+    batch = [{"symbol": s, "updated_at": now, **{k: (m or {}).get(k) for k in keys}} for s, m in rows.items()]
+    with engine().begin() as conn:
+        conn.execute(delete(perf_cache).where(perf_cache.c.symbol.in_(list(rows))))
+        conn.execute(insert(perf_cache), batch)
+
+
+def get_summary(user_id: int, digest: str) -> Optional[str]:
+    with _auto() as conn:
+        row = conn.execute(select(summaries.c.text).where((summaries.c.user_id == user_id) & (summaries.c.digest == digest))).first()
+    return row[0] if row else None
+
+
+def save_summary(user_id: int, digest: str, text: str) -> None:
+    with engine().begin() as conn:
+        conn.execute(delete(summaries).where(summaries.c.created_at < _now() - timedelta(days=14)))   # tidy up
+        conn.execute(delete(summaries).where((summaries.c.user_id == user_id) & (summaries.c.digest == digest)))
+        conn.execute(insert(summaries).values(user_id=user_id, digest=digest, text=text, created_at=_now()))
+
+
+def summaries_today(user_id: Optional[int] = None) -> int:
+    """How many summaries were written in the last 24 hours (for one person, or for everyone)."""
+    cond = summaries.c.created_at >= _now() - timedelta(hours=24)
+    if user_id is not None:
+        cond = cond & (summaries.c.user_id == user_id)
+    with _auto() as conn:
+        return conn.execute(select(func.count()).select_from(summaries).where(cond)).scalar() or 0
 
 
 def prune_quotes(days: int = 30) -> int:

@@ -25,7 +25,8 @@
   {% else %}
   <header class="large-head">
     <h1>Watchlist</h1>
-    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed. <a href="/import">Import from your broker</a></p>
+    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
+    <p class="fine tight"><a href="/import">Import from your broker</a> &middot; <a href="/performance">How they've done</a></p>
   </header>
 
   <a class="mstrip" href="/markets" aria-label="Market hours and holidays">
