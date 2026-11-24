@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name }} · on buyDips{% endblock %}
+{% block description %}How {{ m.n }} {{ "stock" if m.n == 1 else "stocks" }} have done over the past month, shared on buyDips.{% endblock %}
+{% block ogtitle %}{{ m.name }}{% endblock %}
+{% block ogdesc %}{{ m.n }} {{ "stock" if m.n == 1 else "stocks" }}, {{ m.avg_text }} on average over the past month. Follow your own on buyDips.{% endblock %}
+{% block ogextra %}<meta property="og:image" content="{{ base }}/p/{{ token }}/link.png">
+  <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="container app-page shared">
+  <header class="large-head">
+    <div class="kicker">A list of {{ m.n }} {{ "stock" if m.n == 1 else "stocks" }}</div>
+    <h1 class="serif-title">{{ m.name }}</h1>
+  </header>
+
+  <section class="bhero">
+    <div class="bhero-label">Average over the past month</div>
+    <div class="bhero-num tone-{{ m.tone }}">{{ m.avg_text }}</div>
+    <div class="bsub">{% for v in m.vs %}{{ v.name }} {{ v.text }}{% if not loop.last %} &middot; {% endif %}{% endfor %}{% if m.vs %}. {% endif %}A simple average across {{ m.n_priced }} {{ "stock" if m.n_priced == 1 else "stocks" }}, using closing prices{% if m.as_of %} up to {{ m.as_of }}{% endif %}. Past performance says nothing about the future.</div>
+  </section>
+
+  <ul class="lrows brows">
+    {% for s in m.stocks %}
+    <li class="lrow"><div class="lident">{{ icon(None, s.name) }}<div class="lmain"><span class="lname">{{ s.name }}</span></div></div><span class="mkt mkt-{{ s.market }}">{{ s.market }}</span></li>
+    {% endfor %}
+  </ul>
+
+  <div class="sharecta">
+    <h2>Follow your own stocks</h2>
+    <p>Pick the stocks you follow, get one email when any falls past the level you choose, and see how they've done. Free, no password.</p>
+    <a class="btn btn-primary" href="/">{% if mine %}Back to my list{% else %}Try buyDips{% endif %}</a>
+  </div>
+  <p class="fine">Shared by its owner for information only. This is not investment advice and not a recommendation to buy or sell anything.</p>
+</div>
+{% endblock %}

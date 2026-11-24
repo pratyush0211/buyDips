@@ -42,6 +42,35 @@
     {% endfor %}
   </ul>
   {% endif %}
+  <h2 class="lgroup-title">Share</h2>
+  {% if changed == "shared" %}<div class="notice" role="status">Sharing is on.</div>{% elif changed == "unshared" %}<div class="notice" role="status">Sharing stopped. The old link no longer works.</div>{% endif %}
+  {% if share_url %}
+  <div class="sharebox">
+    <p class="sharewarn">Share it as something you follow, not as a tip. Telling others what to buy or sell, or showing returns to attract followers, can need SEBI registration.</p>
+    <p class="sharenote">Anyone with this link can see the names of the stocks you follow and their average move over the past month, beside the index. It updates as prices change. Never your email, your alert levels or your prices.</p>
+    <input class="sharelink" id="sharelink" readonly value="{{ share_url }}" aria-label="Share link">
+    <div class="sharebtns">
+      <button type="button" class="btn btn-primary" data-share data-url="{{ share_url }}" data-title="How my list has done" data-image="/p/{{ token }}/story.png">Share</button>
+      <button type="button" class="btn btn-ghost" data-copy="{{ share_url }}">Copy link</button>
+      <a class="btn btn-ghost" href="/p/{{ token }}/story.png?download=1">Save image</a>
+    </div>
+    <p class="sharehint" data-share-status role="status"></p>
+    <img class="sharepreview" src="/p/{{ token }}/story.png" width="540" height="675" alt="Preview of the share card" loading="lazy">
+    <form method="post" action="/performance/share" class="rowform">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="off">
+      <button class="rowbtn danger">Stop sharing</button>
+    </form>
+  </div>
+  {% elif can_share %}
+  <div class="sharebox">
+    <p class="sharenote">Make a link and a picture of how the stocks you follow have done over the past month. It shows their names and the average move beside the index. You can stop sharing any time and the link stops working.</p>
+    <p class="sharewarn">Share it as something you follow, not as a tip. Telling others what to buy or sell, or showing returns to attract followers, can need SEBI registration.</p>
+    <form method="post" action="/performance/share">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="on">
+      <button class="btn btn-primary">Create share link</button>
+    </form>
+  </div>
+  {% endif %}
   <p class="fine tight">Prices come from a third-party source and may be delayed or inaccurate. buyDips is not a SEBI-registered investment adviser or research analyst.</p>
   {% endif %}
 </div>

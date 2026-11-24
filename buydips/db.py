@@ -28,6 +28,7 @@ users = Table(
     Column("first_signin_at", DateTime),  # set once, when the person first clicks a sign-in link
     Column("alerts_seen_at", DateTime),   # when they last opened Alerts: newer alerts show as a badge on the bell
     Column("buckets_seen_at", DateTime),  # when they last opened Buckets: newer red flags show as a badge on the tab
+    Column("perf_share_token", String(32), unique=True),  # set only while they share "how my list has done"; NULL = private
 )
 
 subscriptions = Table(
@@ -167,7 +168,8 @@ def _migrate() -> None:
               ("alerts_sent", "threshold_pct", "DOUBLE PRECISION"),
               ("bucket_items", "split_through", "DATE"), ("bucket_items", "split_checked_at", "TIMESTAMP"),
               ("users", "alerts_seen_at", "TIMESTAMP"), ("users", "buckets_seen_at", "TIMESTAMP"),
-              ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE")]
+              ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE"),
+              ("users", "perf_share_token", "VARCHAR(32)")]
     for table, column, ddl in wanted:
         if column in {c["name"] for c in inspect(engine()).get_columns(table)}:
             continue
@@ -444,6 +446,20 @@ def get_bucket(user_id: int, bucket_id: int) -> Optional[dict]:
 def set_share(bucket_id: int, token: Optional[str], perf: bool) -> None:
     with _auto() as conn:
         conn.execute(update(buckets).where(buckets.c.id == bucket_id).values(share_token=token, share_perf=perf))
+
+
+def set_perf_share(user_id: int, token: Optional[str]) -> None:
+    with _auto() as conn:
+        conn.execute(update(users).where(users.c.id == user_id).values(perf_share_token=token))
+
+
+def get_perf_share_user(token: str) -> Optional[dict]:
+    """The person sharing their performance under this link. Only people currently sharing have a token."""
+    if not token or len(token) > 32:
+        return None
+    with _auto() as conn:
+        row = conn.execute(select(users).where((users.c.perf_share_token == token) & users.c.active)).mappings().first()
+    return dict(row) if row else None
 
 
 def get_shared_bucket(token: str) -> Optional[dict]:

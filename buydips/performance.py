@@ -110,6 +110,27 @@ def template_summary(model: dict) -> str:
     return " ".join(parts)
 
 
+def share_model(model: dict) -> Optional[dict]:
+    """Exactly what a shared performance link reveals: the names of the stocks followed (no thresholds, no email) and
+    their equal-weighted average move over the past month, set beside the index for each market present. None when
+    there is no figure to show."""
+    items = [r for r in model["rows"] if r["type"] != "index"]
+    have = [r for r in items if r["r1m"] is not None]
+    if not have:
+        return None
+    avg = sum(r["r1m"] for r in have) / len(have)
+    vs = []
+    for market in ("India", "US"):
+        b = model["bench"].get(market)
+        if b and any(r["market"] == market for r in have):
+            vs.append({"name": b["name"], "text": pct(b["r1m"])})
+    return {"name": "How my list has done", "n": len(items), "n_priced": len(have), "avg_text": pct(avg),
+            "tone": "up" if avg > 0 else "down" if avg < 0 else "none", "vs": vs, "as_of": model["as_of"],
+            "stocks": [{"name": r["name"], "market": "IN" if r["market"] == "India" else "US"} for r in items],
+            "kicker": f"MY LIST OF {len(items)} {'STOCK' if len(items) == 1 else 'STOCKS'}",
+            "avg_label": "average over the past month", "cta": "Follow your own stocks at buydips.in"}
+
+
 def digest(model: dict) -> str:
     """Identifies the exact facts, so the same facts reuse the same written summary."""
     return hashlib.sha1(facts(model).encode("utf-8")).hexdigest()

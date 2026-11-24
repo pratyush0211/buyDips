@@ -310,3 +310,109 @@ def test_without_a_key_the_page_works_and_does_not_claim_ai(client, monkeypatch)
 def test_privacy_page_discloses_the_service_and_what_it_gets(client):
     html = client.application.test_client().get("/privacy").get_data(as_text=True)
     assert "Anthropic" in html and "never your email" in html
+
+
+# ---------------- sharing how the list has done ----------------
+
+def _owner(client):
+    sign_in(client)
+    uid = db.get_or_create_user("a@x.com")["id"]
+    db.set_subscriptions(uid, {"RELIANCE.NS": 3.0, "TCS.NS": 5.0, "AAPL": 3.0, "^NSEI": 2.0})
+    seed("RELIANCE.NS", r1m=4.0); seed("TCS.NS", r1m=-2.0); seed("AAPL", r1m=9.0)
+    seed("^NSEI", r1m=1.0); seed("^NDX", r1m=3.0)
+    return uid
+
+
+def _start_sharing(client):
+    client.post("/performance/share", data={"csrf": csrf(client, "/performance"), "action": "on"})
+    return db.get_or_create_user("a@x.com")["perf_share_token"]
+
+
+def test_share_model_averages_stocks_not_indexes_and_names_the_yardsticks():
+    subs = {"RELIANCE.NS": 3.0, "TCS.NS": 3.0, "AAPL": 3.0, "^NSEI": 2.0}
+    perf = {"RELIANCE.NS": {"r1m": 4.0, "last_date": "2026-11-20"}, "TCS.NS": {"r1m": -2.0, "last_date": "2026-11-20"},
+            "AAPL": {"r1m": 9.0, "last_date": "2026-11-20"}, "^NSEI": {"r1m": 50.0, "last_date": "2026-11-20"},
+            "^NDX": {"r1m": 3.0, "r1w": 0, "r3m": 0, "r1y": 0}}
+    perf["^NSEI"].update(r1w=0, r3m=0, r1y=0)
+    s = performance.share_model(performance.build(subs, perf))
+    assert s["avg_text"] == "+3.7%" and s["n"] == 3 and s["n_priced"] == 3 and s["tone"] == "up"
+    assert [v["name"] for v in s["vs"]] == ["Nifty 50", "Nasdaq-100"]
+    assert {st["name"] for st in s["stocks"]} == {"Reliance Industries", "Tata Consultancy Services", "Apple"}
+    assert performance.share_model(performance.build({"^NSEI": 2.0}, perf)) is None      # only an index: nothing to share
+    assert performance.share_model(performance.build({"TCS.NS": 3.0}, {})) is None       # no history yet
+
+
+def test_sharing_is_off_until_chosen_and_the_link_shows_only_what_was_promised(client):
+    _owner(client)
+    html = client.get("/performance").get_data(as_text=True)
+    assert "Create share link" in html and "/p/" not in html
+    token = _start_sharing(client)
+    assert token
+    other = client.application.test_client()                 # a stranger with no sign-in
+    page = other.get(f"/p/{token}")
+    body = page.get_data(as_text=True)
+    assert page.status_code == 200 and page.headers["X-Robots-Tag"] == "noindex"
+    assert "+3.7%" in body and "Reliance Industries" in body and "Nifty 50 +1.0%" in body
+    assert "a@x.com" not in body and "threshold" not in body.lower()        # nothing about the owner beyond the list
+    assert "not investment advice" in body and "Past performance says nothing about the future" in body
+    assert f"/p/{token}/link.png" in body
+
+
+def test_the_share_pictures_render_and_are_not_indexed(client):
+    _owner(client)
+    token = _start_sharing(client)
+    other = client.application.test_client()
+    for kind, size in (("story", (1080, 1350)), ("link", (1200, 630))):
+        r = other.get(f"/p/{token}/{kind}.png")
+        assert r.status_code == 200 and r.mimetype == "image/png" and r.headers["X-Robots-Tag"] == "noindex"
+        from io import BytesIO
+        from PIL import Image
+        assert Image.open(BytesIO(r.data)).size == size
+    assert other.get(f"/p/{token}/other.png").status_code == 404
+    assert "attachment" in other.get(f"/p/{token}/story.png?download=1").headers["Content-Disposition"]
+
+
+def test_stopping_sharing_kills_the_link_and_a_guessed_token_finds_nothing(client):
+    _owner(client)
+    token = _start_sharing(client)
+    other = client.application.test_client()
+    assert other.get(f"/p/{token}").status_code == 200
+    client.post("/performance/share", data={"csrf": csrf(client, "/performance"), "action": "off"})
+    assert other.get(f"/p/{token}").status_code == 404 and other.get(f"/p/{token}/story.png").status_code == 404
+    assert other.get("/p/" + "x" * 12).status_code == 404 and other.get("/p/" + "x" * 80).status_code == 404
+    html = client.get("/performance?changed=unshared").get_data(as_text=True)
+    assert "the old link no longer works" in html.lower()
+
+
+def test_sharing_again_after_stopping_gives_a_fresh_link(client):
+    _owner(client)
+    first = _start_sharing(client)
+    client.post("/performance/share", data={"csrf": csrf(client, "/performance"), "action": "off"})
+    assert _start_sharing(client) != first
+
+
+def test_sharing_needs_sign_in_csrf_and_something_to_show(client):
+    anon = client.application.test_client()
+    assert anon.post("/performance/share", data={"action": "on"}).status_code == 302
+    sign_in(client)
+    assert client.post("/performance/share", data={"action": "on"}).status_code in (400, 403)      # no CSRF token
+    token = csrf(client, "/watchlist?start=india")
+    assert client.post("/performance/share", data={"csrf": token, "action": "on"}).status_code == 400  # nothing followed
+    assert db.get_or_create_user("a@x.com")["perf_share_token"] is None
+    assert client.post("/performance/share", data={"csrf": token, "action": "bogus"}).status_code == 400
+
+
+def test_a_link_goes_dark_if_the_owner_unfollows_everything(client):
+    uid = _owner(client)
+    token = _start_sharing(client)
+    db.set_subscriptions(uid, {})
+    assert client.application.test_client().get(f"/p/{token}").status_code == 404
+
+
+def test_the_link_follows_the_list_as_it_changes(client):
+    uid = _owner(client)
+    token = _start_sharing(client)
+    other = client.application.test_client()
+    db.set_subscriptions(uid, {"AAPL": 3.0})
+    body = other.get(f"/p/{token}").get_data(as_text=True)
+    assert "+9.0%" in body and "Reliance Industries" not in body and "Nasdaq-100 +3.0%" in body and "Nifty 50" not in body

@@ -130,6 +130,8 @@ def _chip(draw, x, y, label):
 
 
 def _kicker(model: dict) -> str:
+    if model.get("kicker"):
+        return model["kicker"]
     return f"A BUCKET OF {model['n']} {'STOCK' if model['n'] == 1 else 'STOCKS'}"
 
 
@@ -160,7 +162,7 @@ def _story(model: dict) -> Image.Image:
     y = _title(d, model["name"], 268, W - 144, 112 if perf else 128, 590, 72) + 18
     if perf:
         _t(d, (72, y + 112), model["avg_text"], font("Geist-Bold.ttf", 132), _avg_color(model), anchor="ls")
-        _t(d, (72, y + 158), "average since added", font("Geist-Medium.ttf", 32), MUTED)
+        _t(d, (72, y + 158), model.get("avg_label", "average since added"), font("Geist-Medium.ttf", 32), MUTED)
         y += 200
     y += 14
     stocks = model["stocks"]
@@ -175,7 +177,7 @@ def _story(model: dict) -> Image.Image:
     ry = _rows(d, stocks, 96, W - 96, y + 24, row_h, fit, W - 330, 38, 28, 96)
     if extra > 0:
         _t(d, (96, ry + 28), f"+ {extra} more", font("Geist-Medium.ttf", 30), MUTED, anchor="lm")
-    _t(d, (72, H - 112), "Make your own bucket at buydips.in", font("Geist-Bold.ttf", 34), INK)
+    _t(d, (72, H - 112), model.get("cta", "Make your own bucket at buydips.in"), font("Geist-Bold.ttf", 34), INK)
     _t(d, (72, H - 64), "Not investment advice. For information only.", font("Geist-Regular.ttf", 26), MUTED)
     return img.resize((W, H), Image.LANCZOS)
 
@@ -191,9 +193,9 @@ def _link(model: dict) -> Image.Image:
     _title(d, model["name"], 214, 640, 100, H - 190 if perf else H - 110, 64)
     if perf:
         _t(d, (64, H - 96), model["avg_text"], font("Geist-Bold.ttf", 76), _avg_color(model), anchor="ls")
-        _t(d, (64, H - 52), "average since added", font("Geist-Medium.ttf", 26), MUTED)
+        _t(d, (64, H - 52), model.get("avg_label", "average since added"), font("Geist-Medium.ttf", 26), MUTED)
     else:
-        _t(d, (64, H - 60), "India + US stocks, tracked on buyDips", font("Geist-Medium.ttf", 26), MUTED)
+        _t(d, (64, H - 60), model.get("link_note", "India + US stocks, tracked on buyDips"), font("Geist-Medium.ttf", 26), MUTED)
     _box(d, 760, 56, W - 56, H - 56, 30, WHITE, LINE)
     stocks = model["stocks"]
     fit = 6 if len(stocks) <= 6 else 5  # five rows plus a "+ N more" line when there are more
@@ -211,7 +213,7 @@ def render(model: dict, kind: str = "story") -> bytes:
     """PNG bytes. `model`: name, n, stocks [{name, market}], optionally avg_text and tone."""
     model = {**model, "name": printable(model["name"])}
     key = repr((kind, model["name"], model["n"], tuple((s["name"], s["market"]) for s in model["stocks"]),
-                model.get("avg_text"), model.get("tone")))
+                model.get("avg_text"), model.get("tone"), model.get("kicker"), model.get("avg_label"), model.get("cta")))
     with _lock:
         if key in _cache:
             return _cache[key]

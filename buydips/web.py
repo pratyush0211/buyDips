@@ -599,7 +599,58 @@ def create_app() -> Flask:
         subs = db.get_subscriptions(user["id"])
         model = performance.build(subs, db.perf_for(list(subs) + list(performance.BENCH.values())))
         text, by_ai = summarize.get(user["id"], model) if subs else ("", False)
-        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, by_ai=by_ai, pct=performance.pct)
+        token = user.get("perf_share_token")
+        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, by_ai=by_ai, pct=performance.pct,
+                               can_share=performance.share_model(model) is not None, token=token,
+                               share_url=f"{config.BASE_URL}/p/{token}" if token else None, changed=request.args.get("changed"))
+
+    @app.route("/performance/share", methods=["POST"])
+    def performance_share():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        action = request.form.get("action", "")
+        if action == "off":
+            db.set_perf_share(user["id"], None)
+        elif action == "on":
+            subs = db.get_subscriptions(user["id"])
+            if not performance.share_model(performance.build(subs, db.perf_for(list(subs) + list(performance.BENCH.values())))):
+                return page("Nothing to share yet", "Your price history is still being gathered. Try again tomorrow.", 400)
+            db.set_perf_share(user["id"], user.get("perf_share_token") or secrets.token_urlsafe(9))
+        else:
+            abort(400)
+        return redirect(url_for("performance_page", changed="shared" if action == "on" else "unshared"))
+
+    def _perf_share_or_404(token: str) -> dict:
+        owner = db.get_perf_share_user(token)
+        if not owner:
+            abort(404)
+        subs = db.get_subscriptions(owner["id"])
+        m = performance.share_model(performance.build(subs, db.perf_for(list(subs) + list(performance.BENCH.values()))))
+        if not m:
+            abort(404)      # they unfollowed everything, or history isn't there: nothing to show
+        return m
+
+    @app.route("/p/<token>")
+    def shared_performance(token):
+        m = _perf_share_or_404(token)
+        owner = db.get_perf_share_user(token)
+        resp = app.make_response(render_template("shared_perf.html", user=current_user(), tab=None, m=m, token=token, base=config.BASE_URL,
+                                                 mine=bool(current_user() and current_user()["id"] == owner["id"])))
+        resp.headers["X-Robots-Tag"] = "noindex"
+        return resp
+
+    @app.route("/p/<token>/<kind>.png")
+    def shared_performance_card(token, kind):
+        if kind not in ("story", "link"):
+            abort(404)
+        resp = Response(card.render(_perf_share_or_404(token), kind), mimetype="image/png")
+        resp.headers["Cache-Control"] = "public, max-age=300"
+        resp.headers["X-Robots-Tag"] = "noindex"
+        if request.args.get("download"):
+            resp.headers["Content-Disposition"] = 'attachment; filename="buydips-performance.png"'
+        return resp
 
     @app.route("/import", methods=["GET", "POST"])
     def import_holdings():
