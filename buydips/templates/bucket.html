@@ -1,6 +1,46 @@
 {% extends "base.html" %}
 {% block title %}{{ b.name }} · buyDips{% endblock %}
 {% block body %}
+{% macro addbox() %}
+  {% if full %}
+    <p class="fine">This bucket is full ({{ max_items }} stocks). Remove one to add another.</p>
+  {% else %}
+  <form class="newbucket" method="get" action="/buckets/{{ b.id }}">
+    <label class="sr-only" for="q">Search stocks</label>
+    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or HDFC" autocomplete="off">
+    <button class="btn btn-ghost">Search</button>
+  </form>
+  {% if q %}
+    {% if results %}
+    <ul class="lrows">
+      {% for it in results %}
+      <li class="lrow">
+        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
+        <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
+          <button class="btn btn-primary btn-sm">Add</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="fine">No stocks match &ldquo;{{ q }}&rdquo;, or they're already in this bucket.</p>{% endif %}
+  {% endif %}
+  {% if popular %}
+    <h3 class="lgroup-title sub">Popular picks</h3>
+    <ul class="lrows">
+      {% for it in popular %}
+      <li class="lrow">
+        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
+        <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
+          <button class="btn btn-primary btn-sm">Add</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  {% endif %}
+{% endmacro %}
 <div class="container app-page">
   <a class="backlink" href="/buckets">Buckets</a>
   <header class="large-head tight">
@@ -9,16 +49,24 @@
 
   {% if changed == "added" %}<div class="notice" role="status">Added. It's measured from today's price.</div>{% elif changed == "removed" %}<div class="notice" role="status">Removed.</div>{% elif changed == "renamed" %}<div class="notice" role="status">Renamed.</div>{% elif changed == "shared" %}<div class="notice" role="status">Sharing is on.</div>{% elif changed == "unshared" %}<div class="notice" role="status">Sharing stopped. The old link no longer works.</div>{% endif %}
 
+  {% if v.n == 0 %}
+  <section class="empty-state emptybucket">
+    <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    <h2>Add your first stock</h2>
+    <p>Search for any Indian or US stock. We note today's price, and this page then shows how the bucket is doing since. Up to {{ max_items }} stocks per bucket.</p>
+  </section>
+  {{ addbox() }}
+  {% else %}
   <section class="bhero">
     <div class="bhero-label">Average since added</div>
     <div class="bhero-num tone-{{ v.tone }}">{{ v.average_text }}</div>
     <div class="bsub">
-      {% if v.n == 0 %}Add your first stock below.
-      {% elif v.n_priced == 0 %}Waiting for the first prices. They arrive within a few minutes.
+      {% if v.n_priced == 0 %}Waiting for the first prices. They arrive within a few minutes.
       {% else %}Equal weight across {{ v.n_priced }} {{ "stock" if v.n_priced == 1 else "stocks" }}{% if v.n_priced < v.n %} ({{ v.n - v.n_priced }} still waiting for a price){% endif %}.{% endif %}
     </div>
     <div class="bsub">{{ synced }}</div>
   </section>
+  {% endif %}
 
   {% if v.n_flagged %}
   <div class="flagbanner" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>
@@ -45,33 +93,14 @@
   </ul>
   {% endif %}
 
-  <h2 class="lgroup-title">Add a stock</h2>
-  {% if full %}
-    <p class="fine">This bucket is full ({{ max_items }} stocks). Remove one to add another.</p>
-  {% else %}
-  <form class="newbucket" method="get" action="/buckets/{{ b.id }}">
-    <label class="sr-only" for="q">Search stocks</label>
-    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or HDFC" autocomplete="off">
-    <button class="btn btn-ghost">Search</button>
-  </form>
-  {% if q %}
-    {% if results %}
-    <ul class="lrows">
-      {% for it in results %}
-      <li class="lrow">
-        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
-        <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
-          <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
-          <button class="btn btn-primary btn-sm">Add</button>
-        </form>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}<p class="fine">No stocks match &ldquo;{{ q }}&rdquo;, or they're already in this bucket.</p>{% endif %}
-  {% endif %}
+  {% if v.n %}
+  <h2 class="lgroup-title">Add a stock <span class="cap">{{ v.n }} of {{ max_items }}</span></h2>
+  {{ addbox() }}
   {% endif %}
 
+  {% if v.n or share_url %}
   <h2 class="lgroup-title">Share</h2>
+  {% endif %}
   {% if share_url %}
   <div class="sharebox">
     <p class="sharenote">Anyone with this link can see the bucket's name and stocks{% if b.share_perf %} and its average since added{% endif %}. Never your email or your prices.</p>
@@ -93,14 +122,13 @@
       <button class="rowbtn danger">Stop sharing</button>
     </form>
   </div>
-  {% else %}
+  {% elif v.n %}
   <div class="sharebox">
     <p class="sharenote">Make a link and a picture to send on WhatsApp or post on Instagram. It shows the bucket's name and stocks only. You can stop sharing any time and the link stops working.</p>
-    <form method="post" action="/buckets/{{ b.id }}/share"{% if not v.n %} hidden{% endif %}>
+    <form method="post" action="/buckets/{{ b.id }}/share">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="on">
       <button class="btn btn-primary">Create share link</button>
     </form>
-    {% if not v.n %}<p class="fine">Add a stock first.</p>{% endif %}
   </div>
   {% endif %}
 

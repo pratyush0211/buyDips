@@ -60,6 +60,9 @@ def _fetch_quote(symbol: str):
         return None
 
 
+_POPULAR = ["RELIANCE.NS", "HDFCBANK.NS", "TCS.NS", "INFY.NS", "AAPL", "MSFT", "NVDA", "GOOGL"]
+
+
 def _starting_price(symbol: str):
     """The price to measure a new bucket stock from: a recent synced price, else a live look, else unknown."""
     cached = db.quotes_for([symbol]).get(symbol)
@@ -297,9 +300,10 @@ def create_app() -> Flask:
             name = _clean_name(request.form.get("name", ""))
             if not name:
                 return page("Name your bucket", "Give the bucket a name, like \u201cBanks\u201d or \u201cUS tech\u201d.", 400)
-            if db.count_buckets(user["id"]) >= config.MAX_BUCKETS:
+            new_id = db.create_bucket(user["id"], name, limit=config.MAX_BUCKETS)
+            if new_id is None:
                 return page("Too many buckets", f"You can have up to {config.MAX_BUCKETS} buckets.", 400)
-            return redirect(url_for("bucket_page", bucket_id=db.create_bucket(user["id"], name)))
+            return redirect(url_for("bucket_page", bucket_id=new_id))
         rows = db.list_buckets(user["id"])
         items = db.bucket_items_for([b["id"] for b in rows])
         quotes = db.quotes_for({i["symbol"] for v in items.values() for i in v})
@@ -321,7 +325,8 @@ def create_app() -> Flask:
         if q:
             results = [i for i in catalog.ITEMS if i["type"] == "stock" and i["symbol"] not in have
                        and q in catalog.search_text(i)][:12]
-        return render_template("bucket.html", user=user, tab="buckets", b=b, v=bucketmath.view(items, quotes),
+        popular = [catalog.BY_SYMBOL[x] for x in _POPULAR if x in catalog.BY_SYMBOL and x not in have] if not items and not q else []
+        return render_template("bucket.html", user=user, tab="buckets", b=b, popular=popular, v=bucketmath.view(items, quotes),
                                synced=_synced_text(quotes), q=q, results=results, flag_pct=f"{config.BUCKET_FLAG_PCT:g}",
                                full=len(items) >= config.MAX_BUCKET_ITEMS, max_items=config.MAX_BUCKET_ITEMS,
                                changed=request.args.get("changed"),
@@ -338,11 +343,16 @@ def create_app() -> Flask:
         item = catalog.BY_SYMBOL.get(symbol)
         if not item or item["type"] != "stock":
             return page("Couldn't add that", "That stock isn't available.", 400)
-        if len(db.bucket_items_for([b["id"]])[b["id"]]) >= config.MAX_BUCKET_ITEMS:
-            return page("Bucket is full", f"A bucket can hold up to {config.MAX_BUCKET_ITEMS} stocks.", 400)
-        if symbol not in {i["symbol"] for i in db.bucket_items_for([b["id"]])[b["id"]]}:
-            db.add_bucket_item(b["id"], symbol, _starting_price(symbol))
-        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="added"))
+        have = db.bucket_items_for([b["id"]])[b["id"]]
+        if symbol in {i["symbol"] for i in have}:  # already there: nothing to do, and no price lookup
+            return redirect(url_for("bucket_page", bucket_id=b["id"]))
+        full = ("Bucket is full", f"A bucket can hold up to {config.MAX_BUCKET_ITEMS} stocks.", 400)
+        if len(have) >= config.MAX_BUCKET_ITEMS:  # cheap early exit; the insert below re-checks atomically
+            return page(*full)
+        outcome = db.add_bucket_item(b["id"], symbol, _starting_price(symbol), limit=config.MAX_BUCKET_ITEMS)
+        if outcome == "full":
+            return page(*full)
+        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="added" if outcome == "added" else None))
 
     @app.route("/buckets/<int:bucket_id>/remove", methods=["POST"])
     def bucket_remove(bucket_id):
@@ -378,6 +388,8 @@ def create_app() -> Flask:
         if action == "off":
             db.set_share(b["id"], None, False)
         elif action in ("on", "perf"):
+            if not db.bucket_items_for([b["id"]])[b["id"]]:
+                return page("Add a stock first", "A bucket needs at least one stock before it can be shared.", 400)
             token = b.get("share_token") or secrets.token_urlsafe(9)
             perf = bool(b.get("share_perf")) if action == "on" else request.form.get("perf") == "1"
             db.set_share(b["id"], token, perf)
@@ -390,6 +402,8 @@ def create_app() -> Flask:
         items = db.bucket_items_for([b["id"]])[b["id"]]
         stocks = [{"name": catalog.name_of(i["symbol"]), "market": "IN" if markets.market_of(i["symbol"]) == "India" else "US"}
                   for i in items]
+        if not stocks:
+            abort(404)  # the owner emptied it: there is nothing to show until they add a stock again
         m = {"name": b["name"], "n": len(stocks), "stocks": stocks}
         if b.get("share_perf"):
             v = bucketmath.view(items, db.quotes_for([i["symbol"] for i in items]))

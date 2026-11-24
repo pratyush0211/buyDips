@@ -451,3 +451,11 @@ a.lval { color: var(--brand); }
 .sharecta { text-align: center; margin: 28px 0 8px; padding: 26px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
 .sharecta h2 { margin: 0 0 6px; font: 650 20px var(--sans); letter-spacing: -.01em; }
 .sharecta p { margin: 0 auto 16px; max-width: 420px; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+.lgroup-title .cap { float: right; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.lgroup-title.sub { margin-top: 18px; }
+.emptybucket { margin-top: 16px; }
+.emptybucket + .newbucket { margin-top: 18px; }
+.empty-state.emptybucket { padding: 8px 12px 0; margin-top: 4px; min-height: 0; }
+.emptybucket .empty-icon { width: 48px; height: 48px; margin-bottom: 8px; }
+.emptybucket h2 { margin: 0 0 4px; }
+.emptybucket p { margin: 0 auto; max-width: 340px; }

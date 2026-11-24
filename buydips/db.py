@@ -6,9 +6,10 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import (
-    Boolean, Column, DateTime, false, Float, ForeignKey, Integer, MetaData, PrimaryKeyConstraint,
-    String, Table, create_engine, delete, func, insert, inspect, select, text, update,
+    Boolean, Column, DateTime, false, Float, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
+    String, Table, bindparam, create_engine, delete, exists, func, insert, inspect, literal, select, text, update,
 )
 
 from . import config
@@ -52,6 +53,7 @@ buckets = Table(
     Column("created_at", DateTime, nullable=False),
     Column("share_token", String(32), unique=True),   # set only while the owner is sharing; NULL means private
     Column("share_perf", Boolean, nullable=False, default=False, server_default=false()),  # also show the average since added
+    Index("ix_buckets_user", "user_id"),   # every page lists or counts a user's buckets
 )
 
 bucket_items = Table(
@@ -122,6 +124,10 @@ def _migrate() -> None:
         except Exception:  # noqa: BLE001  (another worker may have added it at the same moment)
             if column not in {c["name"] for c in inspect(engine()).get_columns(table)}:
                 raise
+    # create_all never touches a table that already exists, so the buckets index has to be added by hand.
+    if "ix_buckets_user" not in {i["name"] for i in inspect(engine()).get_indexes("buckets")}:
+        with engine().begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_buckets_user ON buckets (user_id)"))
 
 
 def _now() -> datetime:
@@ -321,10 +327,18 @@ def count_buckets(user_id: int) -> int:
         return conn.execute(select(func.count()).select_from(buckets).where(buckets.c.user_id == user_id)).scalar()
 
 
-def create_bucket(user_id: int, name: str) -> int:
+def create_bucket(user_id: int, name: str, limit: Optional[int] = None) -> Optional[int]:
+    """The new bucket's id, or None if the user is already at `limit` buckets. The limit check is part of the INSERT
+    itself (one atomic statement), and the user's row is locked first on Postgres, so simultaneous creates can't overshoot."""
+    cap = limit if limit is not None else 10 ** 9
     with engine().begin() as conn:
-        res = conn.execute(insert(buckets).values(user_id=user_id, name=name, created_at=_now()))
-        return int(res.inserted_primary_key[0])
+        conn.execute(select(users.c.id).where(users.c.id == user_id).with_for_update())
+        count = select(func.count()).select_from(buckets).where(buckets.c.user_id == user_id).scalar_subquery()
+        stmt = (insert(buckets).from_select(["user_id", "name", "created_at"],
+                                            select(literal(user_id, Integer), literal(name, String), literal(_now(), DateTime)).where(count < cap))
+                .returning(buckets.c.id))
+        row = conn.execute(stmt).first()
+    return row[0] if row else None
 
 
 def list_buckets(user_id: int) -> List[dict]:
@@ -335,6 +349,8 @@ def list_buckets(user_id: int) -> List[dict]:
 
 def get_bucket(user_id: int, bucket_id: int) -> Optional[dict]:
     """The bucket, but only if it belongs to this user (anyone else's looks like it doesn't exist)."""
+    if not 0 < bucket_id < 2**31:  # a made-up huge id in the URL must read as "not found", not crash the database driver
+        return None
     with engine().connect() as conn:
         row = conn.execute(select(buckets).where((buckets.c.id == bucket_id) & (buckets.c.user_id == user_id))).mappings().first()
     return dict(row) if row else None
@@ -347,7 +363,7 @@ def set_share(bucket_id: int, token: Optional[str], perf: bool) -> None:
 
 def get_shared_bucket(token: str) -> Optional[dict]:
     """A bucket by its share link. Only buckets whose owner is currently sharing have a token."""
-    if not token:
+    if not token or len(token) > 32:
         return None
     with engine().connect() as conn:
         row = conn.execute(select(buckets).where(buckets.c.share_token == token)).mappings().first()
@@ -377,14 +393,27 @@ def bucket_items_for(bucket_ids: List[int]) -> Dict[int, List[dict]]:
     return out
 
 
-def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float]) -> bool:
-    """False if the stock is already in the bucket."""
+def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float], limit: Optional[int] = None) -> str:
+    """"added", "exists" (already in the bucket) or "full" (already at `limit` stocks). The limit and duplicate checks
+    are part of the INSERT statement itself, and the bucket row is locked first on Postgres, so simultaneous adds
+    can't overshoot the limit or double up."""
+    cap = limit if limit is not None else 10 ** 9
+    mine = bucket_items.c.bucket_id == bucket_id
     with engine().begin() as conn:
-        if conn.execute(select(bucket_items.c.symbol).where(
-                (bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol))).first():
-            return False
-        conn.execute(insert(bucket_items).values(bucket_id=bucket_id, symbol=symbol, added_price=added_price, added_at=_now()))
-    return True
+        conn.execute(select(buckets.c.id).where(buckets.c.id == bucket_id).with_for_update())
+        count = select(func.count()).select_from(bucket_items).where(mine).scalar_subquery()
+        dup = exists().where(mine & (bucket_items.c.symbol == symbol))
+        stmt = insert(bucket_items).from_select(
+            ["bucket_id", "symbol", "added_price", "added_at"],
+            select(literal(bucket_id, Integer), literal(symbol, String), literal(added_price, Float), literal(_now(), DateTime))
+            .where((count < cap) & ~dup))
+        try:
+            done = conn.execute(stmt).rowcount == 1
+        except IntegrityError:  # lost a race on the primary key: someone else added it a moment ago
+            return "exists"
+        if done:
+            return "added"
+        return "exists" if conn.execute(select(bucket_items.c.symbol).where(mine & (bucket_items.c.symbol == symbol))).first() else "full"
 
 
 def remove_bucket_item(bucket_id: int, symbol: str) -> None:
@@ -402,26 +431,51 @@ def quotes_for(symbols) -> Dict[str, dict]:
 
 
 def save_quotes(quotes) -> None:
-    """Remember the latest price per symbol. `quotes` are objects with symbol, price, prev_close, session."""
+    """Remember the latest price per symbol: one read, then one bulk insert and one bulk update, however many
+    symbols there are. `quotes` are objects with symbol, price, prev_close, session."""
+    rows = {q.symbol: dict(symbol=q.symbol, price=q.price, prev_close=q.prev_close, session=q.session, updated_at=_now())
+            for q in quotes}
+    if not rows:
+        return
     with engine().begin() as conn:
-        for q in quotes:
-            vals = dict(price=q.price, prev_close=q.prev_close, session=q.session, updated_at=_now())
-            if conn.execute(select(quotes_cache.c.symbol).where(quotes_cache.c.symbol == q.symbol)).first():
-                conn.execute(update(quotes_cache).where(quotes_cache.c.symbol == q.symbol).values(**vals))
-            else:
-                conn.execute(insert(quotes_cache).values(symbol=q.symbol, **vals))
+        have = set()
+        names = list(rows)
+        for i in range(0, len(names), 500):  # keep each IN list modest
+            have.update(r[0] for r in conn.execute(select(quotes_cache.c.symbol).where(quotes_cache.c.symbol.in_(names[i:i + 500]))))
+        new = [r for k, r in rows.items() if k not in have]
+        old = [{"b_symbol": k, **{c: v for c, v in r.items() if c != "symbol"}} for k, r in rows.items() if k in have]
+        if new:
+            conn.execute(insert(quotes_cache), new)
+        if old:
+            conn.execute(update(quotes_cache).where(quotes_cache.c.symbol == bindparam("b_symbol")), old)
 
 
-def all_bucket_items() -> List[dict]:
-    """Every bucket stock across all users, with who owns it. Used by the alert job."""
+def prune_quotes(days: int = 30) -> int:
+    """Forget prices for symbols nothing has refreshed in `days` days (stocks nobody follows any more)."""
+    with engine().begin() as conn:
+        return conn.execute(delete(quotes_cache).where(quotes_cache.c.updated_at < _now() - timedelta(days=days))).rowcount
+
+
+def bucket_symbol_sets() -> tuple:
+    """(every symbol in any bucket, the symbols that still lack a starting price): two small DISTINCT queries, so the
+    alert job can decide what to fetch without loading every bucket row."""
     with engine().connect() as conn:
-        rows = conn.execute(
-            select(bucket_items.c.bucket_id, bucket_items.c.symbol, bucket_items.c.added_price, bucket_items.c.flagged_at,
+        everything = {r[0] for r in conn.execute(select(bucket_items.c.symbol).distinct())}
+        unpriced = {r[0] for r in conn.execute(select(bucket_items.c.symbol).where(bucket_items.c.added_price.is_(None)).distinct())}
+    return everything, unpriced
+
+
+def iter_open_bucket_items(batch: int = 5000):
+    """Bucket stocks that haven't been red-flagged yet, with their owner, streamed in batches so memory stays flat
+    however many there are. (Already-flagged stocks never need looking at again.)"""
+    stmt = (select(bucket_items.c.bucket_id, bucket_items.c.symbol, bucket_items.c.added_price, bucket_items.c.flagged_at,
                    buckets.c.name.label("bucket_name"), buckets.c.user_id, users.c.email, users.c.active)
             .select_from(bucket_items.join(buckets, buckets.c.id == bucket_items.c.bucket_id)
                          .join(users, users.c.id == buckets.c.user_id))
-        ).mappings().all()
-    return [dict(r) for r in rows]
+            .where(bucket_items.c.flagged_at.is_(None)))
+    with engine().connect() as conn:
+        for row in conn.execution_options(stream_results=True, yield_per=batch).execute(stmt).mappings():
+            yield dict(row)
 
 
 def set_added_price(bucket_id: int, symbol: str, price: float) -> None:

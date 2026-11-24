@@ -26,6 +26,20 @@ def font(name: str, size: int) -> ImageFont.FreeTypeFont:
     return _font_cache[key]
 
 
+_missing: Dict[str, bytes] = {}
+
+
+def printable(text: str, name: str = "InstrumentSerif-Regular.ttf") -> str:
+    """Drop characters the card font has no glyph for (emoji, Devanagari...), which would draw as empty boxes.
+    Falls back to "My bucket" if nothing is left."""
+    f = font(name, 40)
+    if name not in _missing:
+        _missing[name] = bytes(f.getmask("\U0010fffe"))  # what a missing glyph looks like
+    keep = "".join(c for c in text if c.isspace() or bytes(f.getmask(c)) != _missing[name])
+    keep = " ".join(keep.split())
+    return keep or "My bucket"
+
+
 def _fit(draw, text: str, name: str, size: int, max_w: int, min_size: int):
     while size > min_size and draw.textlength(text, font=font(name, size)) > max_w * S:
         size -= 2
@@ -195,6 +209,7 @@ _lock = threading.Lock()
 
 def render(model: dict, kind: str = "story") -> bytes:
     """PNG bytes. `model`: name, n, stocks [{name, market}], optionally avg_text and tone."""
+    model = {**model, "name": printable(model["name"])}
     key = repr((kind, model["name"], model["n"], tuple((s["name"], s["market"]) for s in model["stocks"]),
                 model.get("avg_text"), model.get("tone")))
     with _lock:

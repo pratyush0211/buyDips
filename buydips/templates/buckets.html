@@ -23,7 +23,7 @@
         {% if c.n_flagged %}<span class="flagpill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>{{ c.n_flagged }} flagged</span>{% endif %}
       </div>
       <div class="bnum tone-{{ c.tone }}">{{ c.average_text }}</div>
-      <div class="bsub">{% if c.n == 0 %}No stocks yet{% elif c.n_priced == 0 %}Waiting for first prices{% else %}Average since added &middot; {{ c.n }} {{ "stock" if c.n == 1 else "stocks" }}{% endif %}</div>
+      <div class="bsub">{% if c.n == 0 %}Empty. Tap to add your first stock{% elif c.n_priced == 0 %}Waiting for first prices{% else %}Average since added &middot; {{ c.n }} {{ "stock" if c.n == 1 else "stocks" }}{% endif %}</div>
     </a>
     {% endfor %}
   </div>

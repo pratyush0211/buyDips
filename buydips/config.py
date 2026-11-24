@@ -78,4 +78,4 @@ DISCLAIMER = (
 # Buckets: named groups of stocks whose performance is tracked from the day each stock was added.
 BUCKET_FLAG_PCT = float(os.getenv("BUCKET_FLAG_PCT", "10"))  # a stock this far below its added price gets a red flag
 MAX_BUCKETS = 10
-MAX_BUCKET_ITEMS = 30
+MAX_BUCKET_ITEMS = 25

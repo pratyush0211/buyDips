@@ -33,9 +33,8 @@ def run_check(
     sub_symbols = {s["symbol"] for s in subs}
     # Bucket stocks are tracked too: the ones whose market is open, plus any that have no price yet (so a
     # newly added stock gets its starting price even after hours).
-    bucket_rows = db.all_bucket_items()
-    live_bucket = {r["symbol"] for r in bucket_rows if markets.is_live(r["symbol"], now)}
-    unpriced = {r["symbol"] for r in bucket_rows if r["added_price"] is None}
+    bucket_symbols, unpriced = db.bucket_symbol_sets()
+    live_bucket = {sym for sym in bucket_symbols if markets.is_live(sym, now)}
     symbols = sorted(sub_symbols | live_bucket | unpriced)
     unknown = sorted({s["symbol"] for s in all_subs if markets.market_of(s["symbol"]) is None})
     if unknown:
@@ -51,6 +50,7 @@ def run_check(
     quotes = provider.fetch(symbols)
     summary["fetched"] = len(quotes)
     db.save_quotes(quotes.values())
+    db.prune_quotes()
     summary["failed_symbols"] = [s for s in symbols if s not in quotes]
 
     by_user = defaultdict(list)
@@ -86,7 +86,7 @@ def run_check(
         else:
             log.error("Alert email to user %s failed; will retry on the next run", user_id)
 
-    _flag_bucket_stocks(bucket_rows, quotes, now, send, summary)
+    _flag_bucket_stocks(quotes, now, send, summary)
 
     failed = len(summary["failed_symbols"])
     log.info("Checked %d symbols (%d failed) for %d users; sent %d emails",
@@ -98,20 +98,20 @@ def run_check(
     return summary
 
 
-def _flag_bucket_stocks(rows, quotes, now, send, summary) -> None:
+def _flag_bucket_stocks(quotes, now, send, summary) -> None:
     """Fill in missing starting prices, then send the one-time red-flag email for any bucket stock that is
-    down BUCKET_FLAG_PCT or more since it was added. Only fresh prices from an open market can flag a stock."""
-    for r in rows:
+    down BUCKET_FLAG_PCT or more since it was added. Only fresh prices from an open market can flag a stock.
+    One streamed pass over the not-yet-flagged rows; only the few that need action are kept in memory."""
+    fills, pending = [], defaultdict(list)
+    for r in db.iter_open_bucket_items():
         q = quotes.get(r["symbol"])
-        if r["added_price"] is None and q is not None:
-            db.set_added_price(r["bucket_id"], r["symbol"], q.price)
+        if q is None:
+            continue
+        if r["added_price"] is None:
+            fills.append((r["bucket_id"], r["symbol"], q.price))
             r["added_price"] = q.price
-
-    pending = defaultdict(list)
-    for r in rows:
-        q = quotes.get(r["symbol"])
-        if (not r["active"] or r["flagged_at"] or r["added_price"] is None or q is None
-                or not markets.is_live(r["symbol"], now) or not markets.is_fresh(r["symbol"], q.session, now)):
+        if (not r["active"] or r["added_price"] is None or not markets.is_live(r["symbol"], now)
+                or not markets.is_fresh(r["symbol"], q.session, now)):
             continue
         pct = bucketmath.since_pct(q.price, r["added_price"])
         if pct is None or pct > -config.BUCKET_FLAG_PCT:
@@ -121,6 +121,8 @@ def _flag_bucket_stocks(rows, quotes, now, send, summary) -> None:
             "bucket_id": r["bucket_id"], "symbol": r["symbol"], "bucket": r["bucket_name"], "name": catalog.name_of(r["symbol"]),
             "pct": pct, "added_price": f"{cur}{r['added_price']:,.2f}", "price": f"{cur}{q.price:,.2f}",
         })
+    for bucket_id, symbol, price in fills:  # written after the read finishes, so the two never contend
+        db.set_added_price(bucket_id, symbol, price)
     for (user_id, email), items in pending.items():
         unsub = links.unsubscribe_url(user_id)
         subject, body, html = emails.flagged(items, unsub)
