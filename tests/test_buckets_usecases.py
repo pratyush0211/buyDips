@@ -875,3 +875,33 @@ def test_copy_matches_what_the_code_actually_does(client):
     settings = text(client.get("/settings").get_data(as_text=True))
     assert "only your email address" not in settings.lower() and "buckets" in settings and "SEBI-registered" in settings
     assert "never alerted from stale prices" not in text(client.get("/markets").get_data(as_text=True))
+
+
+# ---------------- instant search ----------------
+
+def test_the_stock_list_is_served_once_cached_and_holds_no_user_data(client):
+    anon = client.application.test_client()
+    r = anon.get("/catalog.json")
+    assert r.status_code == 200 and r.mimetype == "application/json" and "max-age=86400" in r.headers["Cache-Control"]
+    rows = r.get_json()
+    syms = {x["s"] for x in rows}
+    assert "RELIANCE.NS" in syms and "AAPL" in syms and "GOLDBEES.NS" in syms and "SILVERBEES.NS" in syms
+    assert "^NSEI" not in syms                                   # indexes can't go in buckets
+    assert len(r.get_data()) < 80_000                            # small enough to fetch once on a phone
+    assert anon.get("/catalog.json", headers={"If-None-Match": r.headers["ETag"]}).status_code == 304
+    gold = next(x for x in rows if x["s"] == "GOLDBEES.NS")
+    assert gold["e"] == 1 and "gold" in (gold["n"] + gold.get("a", "")).lower()
+
+
+def test_bucket_page_wires_up_live_search_and_still_works_without_javascript(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    add(client, bid, "TCS.NS")
+    page = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "data-bucket-search" in page and 'data-have="TCS.NS"' in page and "/static/bucketsearch.js" in page
+    assert 'class="btn btn-ghost nojs-only"' in page             # plain Search button remains for no-JS browsers
+    assert client.get("/static/bucketsearch.js").status_code == 200
+    # the server-side search still answers, so a browser without JavaScript can use it
+    assert "RELIANCE.NS" in client.get(f"/buckets/{bid}?q=reliance").get_data(as_text=True)
+    # the CSP must allow the script (self only, no inline)
+    assert "script-src 'self'" in client.get(f"/buckets/{bid}").headers["Content-Security-Policy"]

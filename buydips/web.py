@@ -1,5 +1,6 @@
 """The website: sign in with an emailed link, pick what to watch, unsubscribe."""
 
+import json
 import logging
 import re
 import secrets
@@ -60,6 +61,21 @@ def _fetch_quote(symbol: str):
         return None
 
 
+def _build_catalog_json() -> bytes:
+    rows = []
+    for i in catalog.ITEMS:
+        if i["type"] not in catalog.TRADED:
+            continue
+        row = {"s": i["symbol"], "n": i["name"], "g": "I" if i["group"] == "India" else "U"}
+        if catalog.ALIASES.get(i["symbol"]):
+            row["a"] = catalog.ALIASES[i["symbol"]]
+        if i["type"] == "etf":
+            row["e"] = 1
+        rows.append(row)
+    return json.dumps(rows, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+_CATALOG_JSON = _build_catalog_json()
 _POPULAR = ["RELIANCE.NS", "HDFCBANK.NS", "TCS.NS", "INFY.NS", "AAPL", "MSFT", "NVDA", "GOOGL"]
 
 
@@ -349,7 +365,7 @@ def create_app() -> Flask:
             results = [i for i in catalog.ITEMS if i["type"] in catalog.TRADED and i["symbol"] not in have
                        and q in catalog.search_text(i)][:12]
         popular = [catalog.BY_SYMBOL[x] for x in _POPULAR if x in catalog.BY_SYMBOL and x not in have] if not items and not q else []
-        return render_template("bucket.html", user=user, tab="buckets", b=b, popular=popular, v=bucketmath.view(items, quotes),
+        return render_template("bucket.html", user=user, tab="buckets", b=b, popular=popular, have_symbols=" ".join(sorted(have)), v=bucketmath.view(items, quotes),
                                synced=_synced_text(quotes), q=q, results=results, flag_pct=f"{config.BUCKET_FLAG_PCT:g}",
                                full=len(items) >= config.MAX_BUCKET_ITEMS, max_items=config.MAX_BUCKET_ITEMS,
                                changed=request.args.get("changed"),
@@ -539,6 +555,15 @@ def create_app() -> Flask:
         check_csrf()
         session.clear()
         return redirect(url_for("index"))
+
+    @app.route("/catalog.json")
+    def catalog_json():
+        """Every stock and ETF a bucket can hold, for instant search in the browser. Public catalog data only, no user
+        information, so the browser can cache it for a day and search without asking the server again."""
+        resp = Response(_CATALOG_JSON, mimetype="application/json")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        resp.add_etag()
+        return resp.make_conditional(request)
 
     @app.route("/healthz")
     def healthz():

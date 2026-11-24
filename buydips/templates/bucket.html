@@ -5,11 +5,13 @@
   {% if full %}
     <p class="fine">This bucket is full ({{ max_items }} stocks). Remove one to add another.</p>
   {% else %}
-  <form class="newbucket" method="get" action="/buckets/{{ b.id }}">
+  <form class="newbucket" method="get" action="/buckets/{{ b.id }}" data-bucket-search data-add-url="/buckets/{{ b.id }}/add" data-csrf="{{ csrf_token() }}" data-have="{{ have_symbols }}">
     <label class="sr-only" for="q">Search stocks</label>
-    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or Gold" autocomplete="off">
-    <button class="btn btn-ghost">Search</button>
+    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or Gold" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <button class="btn btn-ghost nojs-only">Search</button>
   </form>
+  <ul class="lrows" id="bsearch-results" aria-live="polite" hidden></ul>
+  <p class="fine" id="bsearch-empty" hidden>No match. Try part of the name or the ticker.</p>
   {% if q %}
     {% if results %}
     <ul class="lrows">
@@ -154,3 +156,4 @@
   <p class="fine">Each stock is measured from its price on the day you added it. We email you once, the first time a stock is down {{ flag_pct }}% or more. Prices come from a third-party source and may be delayed.</p>
 </div>
 {% endblock %}
+{% block scripts %}<script src="/static/bucketsearch.js" defer></script>{% endblock %}

@@ -404,7 +404,9 @@ def test_search_finds_stocks_and_hides_ones_already_in_the_bucket(client):
     db.add_bucket_item(bid, "RELIANCE.NS", 100.0)
     html = client.get(f"/buckets/{bid}?q=apple").get_data(as_text=True)
     assert "AAPL" in html
-    assert "RELIANCE.NS" not in client.get(f"/buckets/{bid}?q=reliance").get_data(as_text=True).split("Add a stock")[1]
+    page = client.get(f"/buckets/{bid}?q=reliance").get_data(as_text=True)
+    assert 'data-have="RELIANCE.NS"' in page            # tells the browser not to offer it again
+    assert "RELIANCE.NS" not in page.split("Add a stock")[1].replace('data-have="RELIANCE.NS"', "")
 
 
 def test_rename_remove_and_delete(client):

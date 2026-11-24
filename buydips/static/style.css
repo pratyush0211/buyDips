@@ -487,3 +487,6 @@ a.lval { color: var(--brand); }
 .mchip i.is-open { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft, rgba(22,101,52,.15)); }
 .mmore { margin-left: auto; color: var(--brand); font-weight: 600; }
 .sec-note { margin: -2px 0 12px; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.js .nojs-only { display: none; }
+#bsearch-results { margin-top: 10px; }
+#bsearch-results .btn[disabled] { opacity: .6; }
