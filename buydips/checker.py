@@ -1,11 +1,12 @@
-"""One alert run: fetch each distinct symbol once, then email every user whose threshold was
-crossed. Each (user, symbol, trading session) is alerted at most once."""
+"""One alert run: fetch each symbol whose market is open once, then email every user whose threshold
+was crossed today. Each (user, symbol, trading session) is alerted at most once."""
 
 import logging
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Callable, Optional
 
-from . import catalog, config, db, emails, links
+from . import catalog, config, db, emails, links, markets
 from .data import Provider, YahooProvider
 from .mailer import send_email
 
@@ -19,14 +20,19 @@ class DataFetchError(RuntimeError):
 def run_check(
     provider: Optional[Provider] = None,
     send: Callable[..., bool] = send_email,
+    now: Optional[datetime] = None,
 ) -> dict:
     provider = provider or YahooProvider()
-    subs = db.active_subscriptions()
+    now = now or datetime.now(timezone.utc)
+    all_subs = db.active_subscriptions()
+    # Only symbols whose own market is open right now (or just closed) are looked at.
+    subs = [s for s in all_subs if markets.is_live(s["symbol"], now)]
     symbols = sorted({s["symbol"] for s in subs})
     summary = {"users": len({s["user_id"] for s in subs}), "symbols": len(symbols),
-               "fetched": 0, "emails": 0, "failed_symbols": []}
+               "fetched": 0, "emails": 0, "failed_symbols": [],
+               "skipped_closed": len({s["symbol"] for s in all_subs}) - len(symbols)}
     if not symbols:
-        log.info("No active subscriptions; nothing to check.")
+        log.info("No watched market is open right now; nothing to check.")
         return summary
 
     quotes = provider.fetch(symbols)
@@ -44,6 +50,8 @@ def run_check(
             q = quotes.get(s["symbol"])
             if q is None or q.change_pct > -s["threshold_pct"]:
                 continue
+            if not markets.is_fresh(q.symbol, q.session, now):
+                continue  # not this market's current trading day: stale data, weekend or holiday
             if (q.symbol, q.session) in already:
                 continue
             hits.append({
