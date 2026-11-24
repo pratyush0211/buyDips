@@ -46,8 +46,10 @@ document.addEventListener("change", function (e) {
 });
 
 // Sharing: the phone's own share sheet (WhatsApp, Instagram, Messages...) with the card image attached when the
-// browser allows it, otherwise the link alone, otherwise copy the link.
+// browser allows it, otherwise the link alone, otherwise copy the link. Safari only lets share() run inside the tap
+// itself, so the image is fetched when the page loads and the tap shares it without waiting for anything.
 (function () {
+  var file = null;
   function say(msg) {
     var el = document.querySelector("[data-share-status]");
     if (el) el.textContent = msg;
@@ -59,24 +61,26 @@ document.addEventListener("change", function (e) {
     var box = document.getElementById("sharelink");
     if (box) { box.select(); try { document.execCommand("copy"); say("Link copied."); } catch (e) { say("Press and hold the link to copy it."); } }
   }
+  var btn = document.querySelector("[data-share]");
+  if (btn && window.fetch && window.File) {
+    fetch(btn.getAttribute("data-image")).then(function (r) { return r.ok ? r.blob() : null; }).then(function (blob) {
+      if (blob) file = new File([blob], "buydips-bucket.png", { type: "image/png" });
+    }).catch(function () {});
+  }
   document.addEventListener("click", function (e) {
     var c = e.target.closest && e.target.closest("[data-copy]");
     if (c) { copy(c.getAttribute("data-copy")); return; }
     var b = e.target.closest && e.target.closest("[data-share]");
     if (!b) return;
-    var url = b.getAttribute("data-url"), title = b.getAttribute("data-title"), img = b.getAttribute("data-image");
-    var text = title + " on buyDips";
+    var url = b.getAttribute("data-url"), title = b.getAttribute("data-title"), text = title + " on buyDips";
     if (!navigator.share) { copy(url); return; }
-    function linkOnly() { return navigator.share({ title: title, text: text, url: url }); }
-    fetch(img).then(function (r) { return r.blob(); }).then(function (blob) {
-      var file = new File([blob], "buydips-bucket.png", { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: title, text: text + " " + url });
-      }
-      return linkOnly();
-    }).catch(function (err) {
+    var withImage = file && navigator.canShare && navigator.canShare({ files: [file] });
+    var p = withImage ? navigator.share({ files: [file], title: title, text: text + " " + url })
+                      : navigator.share({ title: title, text: text, url: url });
+    p.catch(function (err) {
       if (err && err.name === "AbortError") return;
-      linkOnly().catch(function (e2) { if (!e2 || e2.name !== "AbortError") copy(url); });
+      if (withImage) { navigator.share({ title: title, text: text, url: url }).catch(function (e2) { if (!e2 || e2.name !== "AbortError") copy(url); }); }
+      else copy(url);
     });
   });
 })();

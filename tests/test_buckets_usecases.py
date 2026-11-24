@@ -656,3 +656,13 @@ def test_badge_lookup_is_one_statement_and_never_breaks_a_page(client, monkeypat
     assert len(q) == 1
     monkeypatch.setattr(db, "badge_counts", lambda *a: (_ for _ in ()).throw(RuntimeError("db hiccup")))
     assert client.get("/watchlist").status_code == 200
+
+
+def test_share_image_urls_are_same_origin_so_the_browser_can_fetch_them(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    add(client, bid, "TCS.NS"); share_on(client, bid)
+    html = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
+    assert f'data-image="/b/{token}/story.png"' in html          # relative: the CSP only allows fetching from the site itself
+    assert f'href="/b/{token}/story.png?download=1"' in html

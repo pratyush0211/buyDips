@@ -108,9 +108,9 @@
     <p class="sharenote">Anyone with this link can see the bucket's name and stocks{% if b.share_perf %} and its average since added{% endif %}. Never your email or your prices.</p>
     <input class="sharelink" id="sharelink" readonly value="{{ share_url }}" aria-label="Share link">
     <div class="sharebtns">
-      <button type="button" class="btn btn-primary" data-share data-url="{{ share_url }}" data-title="{{ b.name }}" data-image="{{ share_url }}/story.png">Share</button>
+      <button type="button" class="btn btn-primary" data-share data-url="{{ share_url }}" data-title="{{ b.name }}" data-image="/b/{{ b.share_token }}/story.png">Share</button>
       <button type="button" class="btn btn-ghost" data-copy="{{ share_url }}">Copy link</button>
-      <a class="btn btn-ghost" href="{{ share_url }}/story.png?download=1">Save image</a>
+      <a class="btn btn-ghost" href="/b/{{ b.share_token }}/story.png?download=1">Save image</a>
     </div>
     <p class="sharehint" data-share-status role="status"></p>
     <img class="sharepreview" src="/b/{{ b.share_token }}/story.png" width="540" height="675" alt="Preview of the share card" loading="lazy">
