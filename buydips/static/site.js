@@ -44,3 +44,39 @@ document.addEventListener("change", function (e) {
   var t = e.target;
   if (t && t.hasAttribute && t.hasAttribute("data-autosubmit") && t.form) t.form.submit();
 });
+
+// Sharing: the phone's own share sheet (WhatsApp, Instagram, Messages...) with the card image attached when the
+// browser allows it, otherwise the link alone, otherwise copy the link.
+(function () {
+  function say(msg) {
+    var el = document.querySelector("[data-share-status]");
+    if (el) el.textContent = msg;
+  }
+  function copy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { say("Link copied."); }, function () { say("Press and hold the link to copy it."); });
+    }
+    var box = document.getElementById("sharelink");
+    if (box) { box.select(); try { document.execCommand("copy"); say("Link copied."); } catch (e) { say("Press and hold the link to copy it."); } }
+  }
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest && e.target.closest("[data-copy]");
+    if (c) { copy(c.getAttribute("data-copy")); return; }
+    var b = e.target.closest && e.target.closest("[data-share]");
+    if (!b) return;
+    var url = b.getAttribute("data-url"), title = b.getAttribute("data-title"), img = b.getAttribute("data-image");
+    var text = title + " on buyDips";
+    if (!navigator.share) { copy(url); return; }
+    function linkOnly() { return navigator.share({ title: title, text: text, url: url }); }
+    fetch(img).then(function (r) { return r.blob(); }).then(function (blob) {
+      var file = new File([blob], "buydips-bucket.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: title, text: text + " " + url });
+      }
+      return linkOnly();
+    }).catch(function (err) {
+      if (err && err.name === "AbortError") return;
+      linkOnly().catch(function (e2) { if (!e2 || e2.name !== "AbortError") copy(url); });
+    });
+  });
+})();

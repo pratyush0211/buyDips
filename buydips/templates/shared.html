@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name }} · a bucket on buyDips{% endblock %}
+{% block description %}A bucket of {{ m.n }} {{ "stock" if m.n == 1 else "stocks" }}, shared on buyDips.{% endblock %}
+{% block ogtitle %}{{ m.name }}{% endblock %}
+{% block ogdesc %}A bucket of {{ m.n }} {{ "stock" if m.n == 1 else "stocks" }}{% if m.avg_text %}, {{ m.avg_text }} on average since added{% endif %}. Make your own on buyDips.{% endblock %}
+{% block ogextra %}<meta property="og:image" content="{{ base }}/b/{{ token }}/link.png">
+  <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="container app-page shared">
+  <header class="large-head">
+    <div class="kicker">A bucket of {{ m.n }} {{ "stock" if m.n == 1 else "stocks" }}</div>
+    <h1 class="serif-title">{{ m.name }}</h1>
+  </header>
+
+  {% if m.avg_text %}
+  <section class="bhero">
+    <div class="bhero-label">Average since added</div>
+    <div class="bhero-num tone-{{ m.tone }}">{{ m.avg_text }}</div>
+    <div class="bsub">Equal weight across {{ m.n_priced }} {{ "stock" if m.n_priced == 1 else "stocks" }}. Measured from the day the owner added each one.</div>
+  </section>
+  {% endif %}
+
+  <ul class="lrows brows">
+    {% for s in m.stocks %}
+    <li class="lrow"><div class="lmain"><span class="lname">{{ s.name }}</span></div><span class="mkt mkt-{{ s.market }}">{{ s.market }}</span></li>
+    {% endfor %}
+  </ul>
+
+  <div class="sharecta">
+    <h2>Make your own bucket</h2>
+    <p>Group the stocks you follow, see how they've done since you added them, and get one email if any falls 10% or more. Free, no password.</p>
+    <a class="btn btn-primary" href="/">{% if mine %}Back to my buckets{% else %}Try buyDips{% endif %}</a>
+  </div>
+  <p class="fine">Shared by its owner for information only. This is not investment advice and not a recommendation to buy or sell anything.</p>
+</div>
+{% endblock %}

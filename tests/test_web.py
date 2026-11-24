@@ -422,3 +422,73 @@ def test_bucket_pages_need_sign_in_and_deleting_the_account_removes_buckets(clie
     uid = db.get_or_create_user("a@x.com")["id"]
     client.post("/delete-account", data={"csrf": csrf(client, "/settings")})
     assert db.list_buckets(uid) == [] and db.bucket_items_for([bid])[bid] == []
+
+
+# ---------- sharing ----------
+
+def share_on(client, bid, action="on", **extra):
+    return client.post(f"/buckets/{bid}/share", data={"csrf": csrf(client, f"/buckets/{bid}"), "action": action, **extra})
+
+
+def test_shared_bucket_is_private_until_shared_and_shows_no_prices_by_default(client):
+    sign_in(client)
+    bid = new_bucket(client, "Secret picks")
+    db.add_bucket_item(bid, "TCS.NS", 3500.0)
+    db.save_quotes([Quote("TCS.NS", 3150.0, 1, 0, "d")])
+    assert "Create share link" in client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert share_on(client, bid).status_code == 302
+    token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
+    assert token and len(token) >= 12
+    anon = client.application.test_client()
+    page_html = anon.get(f"/b/{token}").get_data(as_text=True)
+    assert "Secret picks" in page_html and "Tata Consultancy Services" in page_html
+    for leak in ("3500", "3150", "10.00%", "a@x.com", "Average since added"):
+        assert leak not in page_html
+    assert f"/b/{token}/link.png" in page_html and "noindex" in page_html
+    assert anon.get(f"/b/{token}/story.png").data[:4] == b"\x89PNG"
+    assert anon.get(f"/b/{token}/link.png").data[:4] == b"\x89PNG"
+    assert anon.get(f"/b/{token}/other.png").status_code == 404
+    assert anon.get("/b/not-a-real-token").status_code == 404
+
+
+def test_owner_can_include_average_and_stop_sharing(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "TCS.NS", 100.0)
+    db.save_quotes([Quote("TCS.NS", 110.0, 1, 0, "d")])
+    share_on(client, bid)
+    token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
+    share_on(client, bid, "perf", perf="1")
+    anon = client.application.test_client()
+    html = anon.get(f"/b/{token}").get_data(as_text=True)
+    assert "+10.00%" in html and "100" not in html.replace("10.00", "")
+    share_on(client, bid, "perf")  # unchecked box sends nothing
+    assert "+10.00%" not in anon.get(f"/b/{token}").get_data(as_text=True)
+    share_on(client, bid, "off")
+    assert anon.get(f"/b/{token}").status_code == 404 and anon.get(f"/b/{token}/story.png").status_code == 404
+    share_on(client, bid)  # turning it on again makes a fresh link
+    assert db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"] != token
+
+
+def test_only_the_owner_can_change_sharing_and_deleting_ends_it(client):
+    sign_in(client, "a@x.com")
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "TCS.NS", 100.0)
+    share_on(client, bid)
+    token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
+    sign_in(client, "b@x.com")
+    assert client.post(f"/buckets/{bid}/share", data={"csrf": csrf(client, "/buckets"), "action": "off"}).status_code == 404
+    assert client.application.test_client().get(f"/b/{token}").status_code == 200
+    sign_in(client, "a@x.com")
+    assert client.post(f"/buckets/{bid}/share", data={"action": "off"}).status_code == 400  # no csrf
+    assert share_on(client, bid, "bogus").status_code == 400
+    client.post(f"/buckets/{bid}/delete", data={"csrf": csrf(client, f"/buckets/{bid}")})
+    assert client.application.test_client().get(f"/b/{token}").status_code == 404
+
+
+def test_cards_cope_with_long_names_and_many_stocks():
+    from buydips import card
+    stocks = [{"name": "Tata Consultancy Services " * 3, "market": "IN"}] * 30
+    for kind in ("story", "link"):
+        png = card.render({"name": "x" * 40, "n": 30, "stocks": stocks, "avg_text": "−11.40%", "tone": "down"}, kind)
+        assert png[:4] == b"\x89PNG"

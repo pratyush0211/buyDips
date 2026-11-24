@@ -433,3 +433,21 @@ a.lval { color: var(--brand); }
 .renameform input { flex: 1; min-width: 0; padding: 9px 12px; font-size: 16px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); }
 .lrow-tight { padding-top: 0; padding-bottom: 0; }
 @media (prefers-reduced-motion: no-preference) { .bcard, .bhero { animation: rise .5s cubic-bezier(.2, .7, .2, 1) backwards; } }
+
+/* ===== Sharing ===== */
+.sharebox { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.sharenote { margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.sharelink { width: 100%; padding: 11px 12px; font: 500 14px var(--mono); border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); }
+.sharebtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.sharebtns .btn { flex: 1 1 auto; text-align: center; }
+.sharehint { min-height: 18px; margin: 4px 0 8px; color: var(--muted); font-size: 13px; }
+.sharepreview { display: block; width: 100%; max-width: 270px; height: auto; margin: 6px auto 14px; border-radius: 12px; border: 1px solid var(--line); }
+.sharetoggle { border-top: 1px solid var(--line); padding-top: 6px; }
+.sharebox .rowform { margin: 0; }
+.shared .kicker { font: 650 12.5px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+.shared .large-head h1.serif-title { font-family: var(--serif, "Instrument Serif", Georgia, serif); font-weight: 400; font-size: clamp(40px, 11vw, 64px); line-height: 1.02; letter-spacing: -.01em; margin: 10px 0 0; }
+.mkt { font: 700 12px/1 var(--sans); padding: 6px 9px; border-radius: 99px; background: var(--brand-soft, #e1f1ed); color: var(--brand); }
+.mkt-US { background: #eceaf6; color: #4b4a8a; }
+.sharecta { text-align: center; margin: 28px 0 8px; padding: 26px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.sharecta h2 { margin: 0 0 6px; font: 650 20px var(--sans); letter-spacing: -.01em; }
+.sharecta p { margin: 0 auto 16px; max-width: 420px; color: var(--muted); font-size: 14.5px; line-height: 1.5; }

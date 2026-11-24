@@ -7,9 +7,9 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, abort, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import buckets as bucketmath, catalog, config, db, emails, links, markets
+from . import buckets as bucketmath, card, catalog, config, db, emails, links, markets
 from .data import YahooProvider
 from .mailer import send_email
 
@@ -277,6 +277,10 @@ def create_app() -> Flask:
     def _clean_name(raw: str) -> str:
         return " ".join(raw.split())[:40]
 
+    def _owns(b: dict) -> bool:
+        u = current_user()
+        return bool(u and u["id"] == b["user_id"])
+
     def _bucket_or_404(user, bucket_id: int) -> dict:
         b = db.get_bucket(user["id"], bucket_id)
         if not b:
@@ -320,7 +324,8 @@ def create_app() -> Flask:
         return render_template("bucket.html", user=user, tab="buckets", b=b, v=bucketmath.view(items, quotes),
                                synced=_synced_text(quotes), q=q, results=results, flag_pct=f"{config.BUCKET_FLAG_PCT:g}",
                                full=len(items) >= config.MAX_BUCKET_ITEMS, max_items=config.MAX_BUCKET_ITEMS,
-                               changed=request.args.get("changed"))
+                               changed=request.args.get("changed"),
+                               share_url=f"{config.BASE_URL}/b/{b['share_token']}" if b.get("share_token") else None)
 
     @app.route("/buckets/<int:bucket_id>/add", methods=["POST"])
     def bucket_add(bucket_id):
@@ -361,6 +366,62 @@ def create_app() -> Flask:
             return page("Name your bucket", "A bucket needs a name.", 400)
         db.rename_bucket(b["id"], name)
         return redirect(url_for("bucket_page", bucket_id=b["id"], changed="renamed"))
+
+    @app.route("/buckets/<int:bucket_id>/share", methods=["POST"])
+    def bucket_share(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        b = _bucket_or_404(user, bucket_id)
+        action = request.form.get("action", "")
+        if action == "off":
+            db.set_share(b["id"], None, False)
+        elif action in ("on", "perf"):
+            token = b.get("share_token") or secrets.token_urlsafe(9)
+            perf = bool(b.get("share_perf")) if action == "on" else request.form.get("perf") == "1"
+            db.set_share(b["id"], token, perf)
+        else:
+            abort(400)
+        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="shared" if action != "off" else "unshared"))
+
+    def _shared_model(b: dict) -> dict:
+        """Exactly what a shared bucket reveals: name, stocks and (only if the owner chose) the average."""
+        items = db.bucket_items_for([b["id"]])[b["id"]]
+        stocks = [{"name": catalog.name_of(i["symbol"]), "market": "IN" if markets.market_of(i["symbol"]) == "India" else "US"}
+                  for i in items]
+        m = {"name": b["name"], "n": len(stocks), "stocks": stocks}
+        if b.get("share_perf"):
+            v = bucketmath.view(items, db.quotes_for([i["symbol"] for i in items]))
+            if v["n_priced"]:
+                m.update(avg_text=v["average_text"], tone=v["tone"], n_priced=v["n_priced"])
+        return m
+
+    def _shared_or_404(token: str) -> dict:
+        b = db.get_shared_bucket(token)
+        if not b:
+            abort(404)
+        return b
+
+    @app.route("/b/<token>")
+    def shared_bucket(token):
+        b = _shared_or_404(token)
+        m = _shared_model(b)
+        resp = app.make_response(render_template("shared.html", user=current_user(), tab="buckets" if _owns(b) else None, m=m, token=token, base=config.BASE_URL, mine=_owns(b)))
+        resp.headers["X-Robots-Tag"] = "noindex"
+        return resp
+
+    @app.route("/b/<token>/<kind>.png")
+    def shared_card(token, kind):
+        if kind not in ("story", "link"):
+            abort(404)
+        png = card.render(_shared_model(_shared_or_404(token)), kind)
+        resp = Response(png, mimetype="image/png")
+        resp.headers["Cache-Control"] = "public, max-age=300"
+        resp.headers["X-Robots-Tag"] = "noindex"
+        if request.args.get("download"):
+            resp.headers["Content-Disposition"] = 'attachment; filename="buydips-bucket.png"'
+        return resp
 
     @app.route("/buckets/<int:bucket_id>/delete", methods=["POST"])
     def bucket_delete(bucket_id):

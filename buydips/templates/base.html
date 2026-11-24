@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}buyDips: dip alerts for indexes and stocks{% endblock %}</title>
   <meta name="description" content="{% block description %}Pick the indexes and stocks you follow and get an email when they fall past your alert level. Free, no password.{% endblock %}">
-  <meta property="og:title" content="buyDips">
-  <meta property="og:description" content="Don't watch the market. Know when it matters.">
+  <meta property="og:title" content="{% block ogtitle %}buyDips{% endblock %}">
+  <meta property="og:description" content="{% block ogdesc %}Don't watch the market. Know when it matters.{% endblock %}">
+  {% block ogextra %}{% endblock %}
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b1110" media="(prefers-color-scheme: dark)">

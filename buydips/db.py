@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Float, ForeignKey, Integer, MetaData, PrimaryKeyConstraint,
+    Boolean, Column, DateTime, false, Float, ForeignKey, Integer, MetaData, PrimaryKeyConstraint,
     String, Table, create_engine, delete, func, insert, inspect, select, text, update,
 )
 
@@ -50,6 +50,8 @@ buckets = Table(
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("name", String(60), nullable=False),
     Column("created_at", DateTime, nullable=False),
+    Column("share_token", String(32), unique=True),   # set only while the owner is sharing; NULL means private
+    Column("share_perf", Boolean, nullable=False, default=False, server_default=false()),  # also show the average since added
 )
 
 bucket_items = Table(
@@ -106,7 +108,8 @@ def _migrate() -> None:
     """Add columns introduced after the first deploy (create_all never alters existing tables)."""
     wanted = [("users", "first_signin_at", "TIMESTAMP"), ("alerts_sent", "change_pct", "DOUBLE PRECISION"),
               ("alerts_sent", "price", "DOUBLE PRECISION"), ("alerts_sent", "prev_close", "DOUBLE PRECISION"),
-              ("alerts_sent", "threshold_pct", "DOUBLE PRECISION")]
+              ("alerts_sent", "threshold_pct", "DOUBLE PRECISION"),
+              ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE")]
     for table, column, ddl in wanted:
         if column in {c["name"] for c in inspect(engine()).get_columns(table)}:
             continue
@@ -334,6 +337,20 @@ def get_bucket(user_id: int, bucket_id: int) -> Optional[dict]:
     """The bucket, but only if it belongs to this user (anyone else's looks like it doesn't exist)."""
     with engine().connect() as conn:
         row = conn.execute(select(buckets).where((buckets.c.id == bucket_id) & (buckets.c.user_id == user_id))).mappings().first()
+    return dict(row) if row else None
+
+
+def set_share(bucket_id: int, token: Optional[str], perf: bool) -> None:
+    with engine().begin() as conn:
+        conn.execute(update(buckets).where(buckets.c.id == bucket_id).values(share_token=token, share_perf=perf))
+
+
+def get_shared_bucket(token: str) -> Optional[dict]:
+    """A bucket by its share link. Only buckets whose owner is currently sharing have a token."""
+    if not token:
+        return None
+    with engine().connect() as conn:
+        row = conn.execute(select(buckets).where(buckets.c.share_token == token)).mappings().first()
     return dict(row) if row else None
 
 
