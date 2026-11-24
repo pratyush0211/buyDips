@@ -151,6 +151,8 @@ def create_app() -> Flask:
 
     @app.route("/")
     def index():
+        if safe_user():  # signed in: open straight on the app, like an iPhone app would
+            return redirect(url_for("watchlist"))
         indexes = [i for i in catalog.ITEMS if i["type"] == "index"]
         examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft"]
         return render_template(

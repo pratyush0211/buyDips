@@ -22,6 +22,8 @@ def csrf(client, path="/"):
 
 
 def sign_in(client, email="a@x.com"):
+    with client.session_transaction() as sess:  # start signed out: "/" sends signed-in visitors to the app
+        sess.clear()
     token = csrf(client)
     client.post("/login", data={"email": email, "csrf": token})
     code = db.create_login_code(email, 15)
@@ -230,10 +232,21 @@ def test_every_tab_shows_the_tab_bar_with_the_right_one_selected(client):
         assert f'aria-current="page" href="{path}"' in html or f'href="{path}" aria-current="page"' in html, path
 
 
-def test_marketing_and_message_pages_have_no_tab_bar(client):
-    assert 'class="tabbar"' not in client.get("/").get_data(as_text=True)
+def test_signed_out_pages_have_no_tab_bar_but_every_signed_in_page_does(client):
+    for path in ("/", "/privacy"):
+        assert 'class="tabbar"' not in client.get(path).get_data(as_text=True), path
     sign_in(client)
-    assert 'class="tabbar"' not in client.get("/privacy").get_data(as_text=True)
+    html = client.get("/privacy").get_data(as_text=True)
+    assert 'class="tabbar"' in html and 'class="app"' in html
+    assert 'aria-current="page"' not in html  # no tab is selected on a page that isn't one of the four
+    assert "Sign out</button>" not in html.split("</header>")[0]  # the old header with its Sign out button is gone
+
+
+def test_signed_in_visitors_open_straight_on_the_watchlist(client):
+    assert client.get("/").status_code == 200
+    sign_in(client)
+    r = client.get("/")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/watchlist")
 
 
 def test_alerts_tab_empty_then_lists_history_newest_first(client):

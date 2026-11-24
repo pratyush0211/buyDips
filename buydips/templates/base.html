@@ -23,7 +23,7 @@
   <link rel="preload" href="/static/fonts/instrument-serif-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body{% if user and tab is defined and tab %} class="app"{% endif %}>
+<body{% if user %} class="app"{% endif %}>
 <header class="site-header">
   <div class="container">
     <a class="brand" href="/" aria-label="buyDips home">
@@ -31,14 +31,10 @@
       buyDips
     </a>
     <nav class="nav" aria-label="Main">
-      {% if user and tab is defined and tab %}
+      {% if user %}
         {% for key, label, href in [("watchlist", "Watchlist", "/watchlist"), ("alerts", "Alerts", "/alerts"), ("markets", "Markets", "/markets"), ("settings", "Settings", "/settings")] %}
           <a class="navtab"{% if tab == key %} aria-current="page"{% endif %} href="{{ href }}">{{ label }}</a>
         {% endfor %}
-      {% elif user %}
-        <a href="/watchlist">Watchlist</a>
-        <span class="who">{{ user.email }}</span>
-        <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm">Sign out</button></form>
       {% else %}
         <a class="hide-sm" href="/#how">How it works</a>
         <a class="hide-sm" href="/#faq">FAQ</a>
@@ -50,7 +46,7 @@
 
 <main>{% block body %}{% endblock %}</main>
 
-{% if user and tab is defined and tab %}
+{% if user %}
 <nav class="tabbar" aria-label="Sections">
   <a href="/watchlist"{% if tab == "watchlist" %} aria-current="page"{% endif %}>
     <svg class="fillable" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.5 15.1 8.8 22 9.8 17 14.6 18.2 21.5 12 18.2 5.8 21.5 7 14.6 2 9.8 8.9 8.8 12 2.5"/></svg>Watchlist</a>
