@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, abort, g, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import buckets as bucketmath, card, catalog, config, db, emails, links, markets
+from . import buckets as bucketmath, card, catalog, config, db, emails, importer, links, markets
 from .data import YahooProvider
 from .mailer import send_email
 
@@ -582,6 +582,60 @@ def create_app() -> Flask:
         check_csrf()
         session.clear()
         return redirect(url_for("index"))
+
+    def _level(raw) -> float:
+        try:
+            v = float(raw)
+        except (TypeError, ValueError):
+            return 3.0
+        return v if v in config.START_LEVELS else 3.0
+
+    @app.route("/import", methods=["GET", "POST"])
+    def import_holdings():
+        """Switch on alerts for the stocks in a broker's holdings file (or pasted names). Nothing from the file is kept."""
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        if request.method == "GET":
+            return render_template("import.html", user=user, tab="watchlist", result=None, levels=config.START_LEVELS)
+        request.max_content_length = importer.MAX_BYTES + 200_000   # this page alone accepts a file (the site default is 64 KB)
+        check_csrf()
+        upload, pasted = request.files.get("file"), request.form.get("pasted", "")
+        try:
+            if upload and upload.filename:
+                rows, loose = importer.read_file(upload.filename, upload.read(importer.MAX_BYTES + 1)), False
+            elif pasted.strip():
+                rows, loose = importer.read_text(pasted[:200_000]), True
+            else:
+                return page("Choose a file", "Pick your holdings file, or paste your stock names.", 400)
+        except importer.ImportError_ as exc:
+            return page("We couldn't read that", str(exc), 400)
+        found, unknown = importer.find_holdings(rows, loose)
+        following = db.get_subscriptions(user["id"])
+        new = [i for i in found if i["symbol"] not in following]
+        room = max(0, config.MAX_WATCHLIST_ITEMS - len(following))
+        result = {"new": new, "already": [i for i in found if i["symbol"] in following], "unknown": unknown,
+                  "room": room, "checked": {i["symbol"] for i in new[:room]}, "found": len(found)}
+        return render_template("import.html", user=user, tab="watchlist", result=result, levels=config.START_LEVELS,
+                               lvl=_level(request.form.get("lvl")), limit=config.MAX_WATCHLIST_ITEMS)
+
+    @app.route("/import/confirm", methods=["POST"])
+    def import_confirm():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        lvl = _level(request.form.get("lvl"))
+        merged = dict(db.get_subscriptions(user["id"]))
+        for symbol in request.form.getlist("sym"):
+            item = catalog.BY_SYMBOL.get(symbol)
+            if item and item["type"] in catalog.TRADED and catalog.offered(item):
+                merged.setdefault(symbol, lvl)         # followed ones keep their own level
+        if len(merged) > config.MAX_WATCHLIST_ITEMS:
+            return page("That's too many", f"A watchlist holds up to {config.MAX_WATCHLIST_ITEMS} items and this would make "
+                        f"{len(merged)}. Go back and untick a few.", 400)
+        db.set_subscriptions(user["id"], merged)
+        return redirect(url_for("watchlist", saved=1))
 
     @app.route("/favicon.ico")
     def favicon():  # browsers ask for this path blindly, whatever the page's <link> says

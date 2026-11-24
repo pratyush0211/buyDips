@@ -19,12 +19,13 @@
     <button class="bigchoice" name="start" value="india"><span class="bc-t">Indian stocks</span><span class="bc-s">Nifty 500 companies, like Reliance or TCS</span></button>
     <button class="bigchoice" name="start" value="us"><span class="bc-t">US stocks</span><span class="bc-s">Nasdaq-100 companies, like Apple or Nvidia</span></button>
     <button class="bigchoice" name="start" value="metals"><span class="bc-t">Gold &amp; silver</span><span class="bc-s">Two funds listed on the NSE</span></button>
+    <a class="bigchoice bc-import" href="/import"><span class="bc-t">Import my holdings</span><span class="bc-s">Upload your broker's file and we'll switch on the stocks you own</span></a>
     <p class="fine tight"><a href="/watchlist?start=indexes&amp;lvl=3">Prefer indexes like the Nifty 50?</a></p>
   </form>
   {% else %}
   <header class="large-head">
     <h1>Watchlist</h1>
-    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
+    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed. <a href="/import">Import from your broker</a></p>
   </header>
 
   <a class="mstrip" href="/markets" aria-label="Market hours and holidays">

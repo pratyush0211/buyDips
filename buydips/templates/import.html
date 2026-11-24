@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Import your stocks · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <a class="backlink" href="/watchlist?start=india">Watchlist</a>
+  <header class="large-head">
+    <h1>Import your stocks</h1>
+    {% if not result %}<p>Upload the holdings file from your broker and we'll switch on alerts for the stocks you own.</p>{% endif %}
+  </header>
+
+  {% if not result %}
+  <form method="post" action="/import" enctype="multipart/form-data" class="importform">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <fieldset class="lvlpick">
+      <legend>Email me when something falls by&hellip;</legend>
+      <div class="lvlchips">
+        {% for v in levels %}<input type="radio" name="lvl" id="ilvl{{ loop.index }}" value="{{ '%g' % v }}" {% if v == 3.0 %}checked{% endif %}><label for="ilvl{{ loop.index }}">{{ '%g' % v }}%</label>{% endfor %}
+      </div>
+    </fieldset>
+    <label class="filepick" for="file"><span class="bc-t">Choose your holdings file</span><span class="bc-s">CSV or Excel (.xlsx). Most brokers let you download one from their holdings or reports page.</span></label>
+    <input type="file" id="file" name="file" accept=".csv,.xlsx,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    <details class="pastebox"><summary>Or paste your stock names instead</summary>
+      <label class="sr-only" for="pasted">Stock names, one per line</label>
+      <textarea id="pasted" name="pasted" rows="6" placeholder="Reliance Industries&#10;TCS&#10;HDFC Bank"></textarea>
+    </details>
+    <button class="btn btn-primary btn-block">Find my stocks</button>
+  </form>
+  <p class="fine tight">We read only the stock names. We never connect to your broker, and we don't keep the file, your quantities or your amounts. Only the stocks you confirm are added to your watchlist.</p>
+
+  {% else %}
+  {% if result.found == 0 %}
+    <div class="warnbox">We couldn't find any stocks we cover in that file. We cover the Nifty 500, the Nasdaq-100 and two gold and silver funds. You can try pasting the names instead.</div>
+    <p><a class="btn btn-ghost" href="/import">Try again</a></p>
+  {% else %}
+  <p class="lead small">We found <b>{{ result.found }}</b> {{ "stock" if result.found == 1 else "stocks" }} we cover. Untick any you don't want alerts for.</p>
+  <form method="post" action="/import/confirm">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="lvl" value="{{ '%g' % lvl }}">
+    {% if result.new %}
+    <h2 class="lgroup-title">To switch on <span class="cap">alerts at {{ '%g' % lvl }}%</span></h2>
+    {% if result.new|length > result.room %}<p class="fine">A watchlist holds up to {{ limit }}. We ticked the first {{ result.room }}; tick others only if you remove something first.</p>{% endif %}
+    <ul class="lrows">
+      {% for it in result.new %}
+      <li class="lrow">
+        <label class="lident impchk" for="s{{ loop.index }}">{{ icon(it.symbol) }}<div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }}</span></div></label>
+        <input type="checkbox" class="switch" id="s{{ loop.index }}" name="sym" value="{{ it.symbol }}" {% if it.symbol in result.checked %}checked{% endif %}>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if result.already %}
+    <h2 class="lgroup-title">Already on your watchlist</h2>
+    <p class="fine">{% for it in result.already %}{{ it.name }}{{ ", " if not loop.last }}{% endfor %}</p>
+    {% endif %}
+    {% if result.new %}<button class="btn btn-primary btn-block">Switch on alerts</button>
+    {% else %}<p><a class="btn btn-primary" href="/watchlist?start=india">Back to your watchlist</a></p>{% endif %}
+  </form>
+  {% endif %}
+  {% if result.unknown %}
+  <details class="pastebox"><summary>{{ result.unknown|length }} in your file we don't cover</summary>
+    <p class="fine">{{ result.unknown|join(", ") }}. We cover the Nifty 500, the Nasdaq-100 and two gold and silver funds, so mutual funds, smaller companies and other items aren't listed.</p>
+  </details>
+  {% endif %}
+  <p class="fine tight">Your file wasn't saved. Only the stocks you confirm are kept.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/importfile.js" defer></script>{% endblock %}
