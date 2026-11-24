@@ -1,11 +1,13 @@
 """Database layer (SQLAlchemy Core). SQLite locally, Postgres in production, same code."""
 
 import base64
+import time
 import hashlib
 import secrets
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+from sqlalchemy import event, exc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import (
     Boolean, Column, DateTime, false, Float, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
@@ -88,11 +90,38 @@ login_codes = Table(
 _engine = None
 
 
+def _make_engine(url: str):
+    """The database is far from the web server, so every network round trip counts (about 0.1 to 0.25 s each).
+    No ping on every checkout (that doubled the cost of each statement); instead a connection is only tested when it
+    has sat idle, and old connections are replaced before the pooler can drop them."""
+    eng = create_engine(url, pool_recycle=240)
+    if eng.dialect.name == "postgresql":
+        @event.listens_for(eng, "checkout")
+        def _ping_if_idle(dbapi_con, record, proxy):
+            now = time.time()
+            idle = now - record.info.get("last_used", 0)
+            record.info["last_used"] = now
+            if idle > 30:
+                try:
+                    cur = dbapi_con.cursor()
+                    cur.execute("SELECT 1")
+                    cur.close()
+                    dbapi_con.rollback()
+                except Exception as exc_:  # noqa: BLE001
+                    raise exc.DisconnectionError() from exc_
+    return eng
+
+
 def engine():
     global _engine
     if _engine is None:
-        _engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
+        _engine = _make_engine(config.DATABASE_URL)
     return _engine
+
+
+def _auto():
+    """A connection for ONE statement: autocommit, so there is no BEGIN, COMMIT or ROLLBACK round trip around it."""
+    return engine().connect().execution_options(isolation_level="AUTOCOMMIT")
 
 
 def reset_engine(url: Optional[str] = None) -> None:
@@ -100,7 +129,7 @@ def reset_engine(url: Optional[str] = None) -> None:
     global _engine
     if _engine is not None:
         _engine.dispose()
-    _engine = create_engine(url or config.DATABASE_URL, pool_pre_ping=True)
+    _engine = _make_engine(url or config.DATABASE_URL)
 
 
 def init_db() -> None:
@@ -170,12 +199,12 @@ def mark_first_signin(user_id: int) -> bool:
 
 
 def user_count() -> int:
-    with engine().connect() as conn:
+    with _auto() as conn:
         return conn.execute(select(func.count()).select_from(users)).scalar()
 
 
 def get_user(user_id: int) -> Optional[dict]:
-    with engine().connect() as conn:
+    with _auto() as conn:
         row = conn.execute(select(users).where(users.c.id == user_id)).mappings().first()
         return dict(row) if row else None
 
@@ -187,25 +216,28 @@ def mark_seen(user_id: int, what: str) -> datetime:
     """Record that the person has just looked at "alerts" or "buckets"; returns the time stored."""
     col = {"alerts": users.c.alerts_seen_at, "buckets": users.c.buckets_seen_at}[what]
     now = _now()
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(update(users).where(users.c.id == user_id).values({col.key: now}))
     return now
 
 
-def badge_counts(user_id: int, alerts_seen: Optional[datetime], buckets_seen: Optional[datetime]) -> tuple:
-    """(alerts since they last looked, red flags since they last looked): one statement, two index-backed counts."""
+def get_user_with_badges(user_id: int) -> Optional[dict]:
+    """The user row plus bell_n (alerts since they last looked) and flag_n (red flags since they last looked): one
+    statement instead of two, because it runs on every page."""
     a = (select(func.count()).select_from(alerts_sent)
-         .where((alerts_sent.c.user_id == user_id) & (alerts_sent.c.sent_at > (alerts_seen or _EPOCH))).scalar_subquery())
+         .where((alerts_sent.c.user_id == users.c.id) & (alerts_sent.c.sent_at > func.coalesce(users.c.alerts_seen_at, _EPOCH)))
+         .scalar_subquery())
     f = (select(func.count()).select_from(bucket_items.join(buckets, buckets.c.id == bucket_items.c.bucket_id))
-         .where((buckets.c.user_id == user_id) & (bucket_items.c.flagged_at > (buckets_seen or _EPOCH))).scalar_subquery())
-    with engine().connect() as conn:
-        row = conn.execute(select(a, f)).first()
-    return int(row[0] or 0), int(row[1] or 0)
+         .where((buckets.c.user_id == users.c.id) & (bucket_items.c.flagged_at > func.coalesce(users.c.buckets_seen_at, _EPOCH)))
+         .scalar_subquery())
+    with _auto() as conn:
+        row = conn.execute(select(users, a.label("bell_n"), f.label("flag_n")).where(users.c.id == user_id)).mappings().first()
+    return dict(row) if row else None
 
 
 def seconds_since_login_link(email: str) -> Optional[float]:
     """Seconds since we last emailed this address a sign-in link (None if never)."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         row = conn.execute(
             select(users.c.last_login_sent_at).where(users.c.email == normalize_email(email))
         ).first()
@@ -241,7 +273,7 @@ def delete_user(user_id: int) -> None:
 # ---------- subscriptions ----------
 
 def get_subscriptions(user_id: int) -> Dict[str, float]:
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(
             select(subscriptions.c.symbol, subscriptions.c.threshold_pct).where(
                 subscriptions.c.user_id == user_id
@@ -263,7 +295,7 @@ def set_subscriptions(user_id: int, items: Dict[str, float]) -> None:
 
 def active_subscriptions() -> List[dict]:
     """Every (user, symbol, threshold) that should be checked, for active users only."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(
             select(users.c.id, users.c.email, subscriptions.c.symbol, subscriptions.c.threshold_pct)
             .join(subscriptions, subscriptions.c.user_id == users.c.id)
@@ -276,7 +308,7 @@ def active_subscriptions() -> List[dict]:
 
 def sent_sessions(user_id: int) -> set:
     """(symbol, session) pairs this user has already been alerted about."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(
             select(alerts_sent.c.symbol, alerts_sent.c.session).where(alerts_sent.c.user_id == user_id)
         ).all()
@@ -307,7 +339,7 @@ def record_alerts(user_id: int, items: List[tuple]) -> None:
 
 def alerts_for_user(user_id: int, limit: int = 100) -> List[dict]:
     """This user's alert history, newest first."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(
             select(alerts_sent).where(alerts_sent.c.user_id == user_id)
             .order_by(alerts_sent.c.sent_at.desc()).limit(limit)
@@ -316,7 +348,7 @@ def alerts_for_user(user_id: int, limit: int = 100) -> List[dict]:
 
 
 def set_active(user_id: int, active: bool) -> None:
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(update(users).where(users.c.id == user_id).values(active=active))
 
 
@@ -340,7 +372,7 @@ def create_login_code(email: str, minutes: int) -> str:
 
 def email_for_login_code(code: str) -> Optional[str]:
     """The email a valid, unexpired sign-in code belongs to, else None."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         row = conn.execute(
             select(login_codes.c.email, login_codes.c.expires_at).where(login_codes.c.code_hash == _hash(code))
         ).first()
@@ -352,7 +384,7 @@ def email_for_login_code(code: str) -> Optional[str]:
 # ---------- buckets ----------
 
 def count_buckets(user_id: int) -> int:
-    with engine().connect() as conn:
+    with _auto() as conn:
         return conn.execute(select(func.count()).select_from(buckets).where(buckets.c.user_id == user_id)).scalar()
 
 
@@ -371,7 +403,7 @@ def create_bucket(user_id: int, name: str, limit: Optional[int] = None) -> Optio
 
 
 def list_buckets(user_id: int) -> List[dict]:
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(select(buckets).where(buckets.c.user_id == user_id).order_by(buckets.c.created_at, buckets.c.id)).mappings().all()
     return [dict(r) for r in rows]
 
@@ -380,13 +412,13 @@ def get_bucket(user_id: int, bucket_id: int) -> Optional[dict]:
     """The bucket, but only if it belongs to this user (anyone else's looks like it doesn't exist)."""
     if not 0 < bucket_id < 2**31:  # a made-up huge id in the URL must read as "not found", not crash the database driver
         return None
-    with engine().connect() as conn:
+    with _auto() as conn:
         row = conn.execute(select(buckets).where((buckets.c.id == bucket_id) & (buckets.c.user_id == user_id))).mappings().first()
     return dict(row) if row else None
 
 
 def set_share(bucket_id: int, token: Optional[str], perf: bool) -> None:
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(update(buckets).where(buckets.c.id == bucket_id).values(share_token=token, share_perf=perf))
 
 
@@ -394,13 +426,13 @@ def get_shared_bucket(token: str) -> Optional[dict]:
     """A bucket by its share link. Only buckets whose owner is currently sharing have a token."""
     if not token or len(token) > 32:
         return None
-    with engine().connect() as conn:
+    with _auto() as conn:
         row = conn.execute(select(buckets).where(buckets.c.share_token == token)).mappings().first()
     return dict(row) if row else None
 
 
 def rename_bucket(bucket_id: int, name: str) -> None:
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(update(buckets).where(buckets.c.id == bucket_id).values(name=name))
 
 
@@ -414,7 +446,7 @@ def bucket_items_for(bucket_ids: List[int]) -> Dict[int, List[dict]]:
     out: Dict[int, List[dict]] = {i: [] for i in bucket_ids}
     if not bucket_ids:
         return out
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(select(bucket_items).where(bucket_items.c.bucket_id.in_(bucket_ids))
                             .order_by(bucket_items.c.added_at, bucket_items.c.symbol)).mappings().all()
     for r in rows:
@@ -446,7 +478,7 @@ def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float], l
 
 
 def remove_bucket_item(bucket_id: int, symbol: str) -> None:
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(delete(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol)))
 
 
@@ -454,7 +486,7 @@ def quotes_for(symbols) -> Dict[str, dict]:
     symbols = list(symbols)
     if not symbols:
         return {}
-    with engine().connect() as conn:
+    with _auto() as conn:
         rows = conn.execute(select(quotes_cache).where(quotes_cache.c.symbol.in_(symbols))).mappings().all()
     return {r["symbol"]: dict(r) for r in rows}
 
@@ -481,14 +513,14 @@ def save_quotes(quotes) -> None:
 
 def prune_quotes(days: int = 30) -> int:
     """Forget prices for symbols nothing has refreshed in `days` days (stocks nobody follows any more)."""
-    with engine().begin() as conn:
+    with _auto() as conn:
         return conn.execute(delete(quotes_cache).where(quotes_cache.c.updated_at < _now() - timedelta(days=days))).rowcount
 
 
 def bucket_symbol_sets() -> tuple:
     """(every symbol in any bucket, the symbols that still lack a starting price): two small DISTINCT queries, so the
     alert job can decide what to fetch without loading every bucket row."""
-    with engine().connect() as conn:
+    with _auto() as conn:
         everything = {r[0] for r in conn.execute(select(bucket_items.c.symbol).distinct())}
         unpriced = {r[0] for r in conn.execute(select(bucket_items.c.symbol).where(bucket_items.c.added_price.is_(None)).distinct())}
     return everything, unpriced
@@ -508,7 +540,7 @@ def iter_open_bucket_items(batch: int = 5000):
 
 
 def set_added_price(bucket_id: int, symbol: str, price: float) -> None:
-    with engine().begin() as conn:
+    with _auto() as conn:
         conn.execute(update(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol)
                                                 & (bucket_items.c.added_price.is_(None))).values(added_price=price))
 

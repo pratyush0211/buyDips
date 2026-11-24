@@ -646,16 +646,22 @@ def test_existing_users_start_with_nothing_unseen_after_the_migration(tmp_path):
     db.init_db(); db.init_db()
     u = db.get_user(1)
     assert u["alerts_seen_at"] is not None and u["buckets_seen_at"] is not None
-    assert db.badge_counts(1, u["alerts_seen_at"], u["buckets_seen_at"]) == (0, 0)   # the old alert is not "new"
+    full = db.get_user_with_badges(1)
+    assert (full["bell_n"], full["flag_n"]) == (0, 0)   # the old alert is not "new"
 
 
-def test_badge_lookup_is_one_statement_and_never_breaks_a_page(client, monkeypatch):
+def test_user_and_badges_come_in_one_statement_and_a_page_with_nothing_new_writes_nothing(client):
     sign_in(client)
     with count_queries() as q:
-        db.badge_counts(1, None, None)
-    assert len(q) == 1
-    monkeypatch.setattr(db, "badge_counts", lambda *a: (_ for _ in ()).throw(RuntimeError("db hiccup")))
-    assert client.get("/watchlist").status_code == 200
+        u = db.get_user_with_badges(1)
+    assert len(q) == 1 and u["bell_n"] == 0 and u["flag_n"] == 0
+    with count_queries() as q:
+        client.get("/alerts")               # nothing new: no "mark as seen" write
+    assert not any(stmt.lstrip().upper().startswith("UPDATE USERS") for stmt in q), q
+    db.record_alerts(1, [("^NSEI", "2026-11-20")])
+    with count_queries() as q:
+        client.get("/alerts")               # something new: one write, then it is cleared
+    assert sum(stmt.lstrip().upper().startswith("UPDATE USERS") for stmt in q) == 1
 
 
 def test_share_image_urls_are_same_origin_so_the_browser_can_fetch_them(client):

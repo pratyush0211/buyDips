@@ -139,23 +139,22 @@ def create_app() -> Flask:
         if not uid:
             return None
         if "user" not in g:  # one lookup per request, shared by the page and the header badges
-            g.user = db.get_user(uid)
+            g.user = db.get_user_with_badges(uid)
         return g.user
 
     def _seen(kind: str) -> None:
         """They are looking at Alerts/Buckets now: clear that badge for this page and the next."""
         u = current_user()
-        if u:
+        count = "bell_n" if kind == "alerts" else "flag_n"
+        if u and u.get(count):  # nothing new means nothing to record: skip the write
             u[f"{kind}_seen_at"] = db.mark_seen(u["id"], kind)
+            u[count] = 0
 
     @app.context_processor
     def header_badges():
         try:
             u = current_user()
-            if not u:
-                return {}
-            a, f = db.badge_counts(u["id"], u.get("alerts_seen_at"), u.get("buckets_seen_at"))
-            return {"bell_n": a, "bucket_n": f}
+            return {"bell_n": u.get("bell_n", 0), "bucket_n": u.get("flag_n", 0)} if u else {}
         except Exception:  # noqa: BLE001  (a badge must never take a page down)
             return {}
 
