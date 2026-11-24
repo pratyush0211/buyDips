@@ -10,23 +10,16 @@ from zoneinfo import ZoneInfo
 
 from . import catalog
 
-# name -> (timezone, open, close), all in the market's own local time. Lunch breaks are ignored.
+# name -> (timezone, open, close), all in the market's own local time. Only India and the US are supported.
 MARKETS = {
     "India": ("Asia/Kolkata", time(9, 15), time(15, 30)),
     "US": ("America/New_York", time(9, 30), time(16, 0)),
-    "UK": ("Europe/London", time(8, 0), time(16, 30)),
-    "Germany": ("Europe/Berlin", time(9, 0), time(17, 30)),
-    "Japan": ("Asia/Tokyo", time(9, 0), time(15, 30)),
-    "Hong Kong": ("Asia/Hong_Kong", time(9, 30), time(16, 0)),
 }
-INDEX_MARKET = {"^FTSE": "UK", "^GDAXI": "Germany", "^N225": "Japan", "^HSI": "Hong Kong"}
 GRACE = timedelta(minutes=60)  # still alert this long after the close, for the closing price
 
 
 def market_of(symbol: str) -> Optional[str]:
     """The market a catalog symbol belongs to, or None if we don't know it."""
-    if symbol in INDEX_MARKET:
-        return INDEX_MARKET[symbol]
     item = catalog.BY_SYMBOL.get(symbol)
     group = item["group"] if item else None
     return group if group in MARKETS else None

@@ -48,30 +48,6 @@
   "group": "US"
  },
  {
-  "symbol": "^FTSE",
-  "name": "FTSE 100",
-  "type": "index",
-  "group": "Europe"
- },
- {
-  "symbol": "^GDAXI",
-  "name": "DAX",
-  "type": "index",
-  "group": "Europe"
- },
- {
-  "symbol": "^N225",
-  "name": "Nikkei 225",
-  "type": "index",
-  "group": "Asia"
- },
- {
-  "symbol": "^HSI",
-  "name": "Hang Seng",
-  "type": "index",
-  "group": "Asia"
- },
- {
   "symbol": "360ONE.NS",
   "name": "360 ONE WAM",
   "type": "stock",

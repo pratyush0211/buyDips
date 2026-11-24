@@ -57,5 +57,11 @@ def test_currency_symbols():
 def test_tab_totals_cover_every_item_once():
     totals = catalog.tab_totals()
     assert sum(totals.values()) == len(catalog.ITEMS)
-    assert totals["indexes"] == 12 and totals["india"] >= 450 and totals["us"] >= 95
+    assert totals["indexes"] == 8 and totals["india"] >= 450 and totals["us"] >= 95
     assert {s["tab"] for s in catalog.grouped()} == {"indexes", "india", "us"}
+
+
+def test_only_india_and_us_are_supported():
+    assert {i["group"] for i in catalog.ITEMS} == {"India", "US"}
+    for gone in ("^FTSE", "^GDAXI", "^N225", "^HSI"):
+        assert gone not in catalog.BY_SYMBOL

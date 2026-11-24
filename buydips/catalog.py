@@ -37,7 +37,7 @@ def default_threshold(symbol: str) -> float:
     return DEFAULT_THRESHOLD.get(BY_SYMBOL.get(symbol, {}).get("type", "stock"), 1.0)
 
 
-_GROUP_ORDER = ["India", "US", "Europe", "Asia"]
+_GROUP_ORDER = ["India", "US"]
 
 
 def grouped() -> List[dict]:
