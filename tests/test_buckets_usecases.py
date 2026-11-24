@@ -849,3 +849,9 @@ def test_a_gold_etf_alerts_in_indian_hours_only_and_a_shared_bucket_marks_it_ind
     token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
     html = client.application.test_client().get(f"/b/{token}").get_data(as_text=True)
     assert "Gold BeES" in html and 'class="mkt mkt-IN"' in html
+
+
+def test_the_landing_page_mentions_gold_and_silver_accurately(client):
+    html = client.application.test_client().get("/").get_data(as_text=True)
+    assert "gold and silver ETFs" in html and "Can I follow gold and silver?" in html and "Gold BeES" in html
+    assert "differs a little from the spot or MCX price" in html          # no pretence that it is the spot price

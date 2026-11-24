@@ -210,7 +210,7 @@ def create_app() -> Flask:
         if safe_user():  # signed in: open straight on the app, like an iPhone app would
             return redirect(url_for("watchlist"))
         indexes = [i for i in catalog.ITEMS if i["type"] == "index"]
-        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft"]
+        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft", "Gold BeES"]
         return render_template(
             "index.html", user=safe_user(), n_indexes=len(indexes),
             n_india=sum(i["type"] == "stock" and i["group"] == "India" for i in catalog.ITEMS),

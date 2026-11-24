@@ -1,6 +1,6 @@
 # buyDips 📉
 
-Pick the indexes and stocks you follow (Nifty 500 and Nasdaq-100), set how far they must fall, and get an email when they do.
+Pick the indexes, stocks and gold and silver ETFs you follow (Nifty 500, Nasdaq-100, Gold BeES and Silver ETF), set how far they must fall, and get an email when they do.
 
 ## How it works
 
