@@ -7,7 +7,7 @@
   {% else %}
   <form class="newbucket" method="get" action="/buckets/{{ b.id }}" data-bucket-search data-add-url="/buckets/{{ b.id }}/add" data-csrf="{{ csrf_token() }}" data-have="{{ have_symbols }}" data-room="{{ max_items - v.n }}">
     <label class="sr-only" for="q">Search stocks</label>
-    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or Gold" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance or Gold" autocomplete="off" autocapitalize="none" spellcheck="false">
     <button class="btn btn-ghost nojs-only">Search</button>
   </form>
   <ul class="lrows" id="bsearch-results" aria-live="polite" hidden></ul>

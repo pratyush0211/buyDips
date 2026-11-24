@@ -2,9 +2,29 @@
 {% block title %}My watchlist · buyDips{% endblock %}
 {% block body %}
 <div class="container wl app-page">
+  {% if first_run %}
+  <header class="large-head">
+    <h1>Let's set up your alerts</h1>
+    <p>Two quick choices. You can change everything later.</p>
+  </header>
+  <form method="get" action="/watchlist" class="start">
+    <fieldset class="lvlpick">
+      <legend>1. Email me when something falls by&hellip;</legend>
+      <div class="lvlchips">
+        {% for v in levels %}<input type="radio" name="lvl" id="lvl{{ loop.index }}" value="{{ '%g' % v }}" {% if v == 3.0 %}checked{% endif %}><label for="lvl{{ loop.index }}">{{ '%g' % v }}%</label>{% endfor %}
+      </div>
+      <p class="fine">&hellip;from the previous close. Smaller numbers mean more emails.</p>
+    </fieldset>
+    <h2 class="lgroup-title">2. What do you want to follow?</h2>
+    <button class="bigchoice" name="start" value="india"><span class="bc-t">Indian stocks</span><span class="bc-s">Nifty 500 companies, like Reliance or TCS</span></button>
+    <button class="bigchoice" name="start" value="us"><span class="bc-t">US stocks</span><span class="bc-s">Nasdaq-100 companies, like Apple or Nvidia</span></button>
+    <button class="bigchoice" name="start" value="metals"><span class="bc-t">Gold &amp; silver</span><span class="bc-s">Two funds listed on the NSE</span></button>
+    <p class="fine tight"><a href="/watchlist?start=indexes&amp;lvl=3">Prefer indexes like the Nifty 50?</a></p>
+  </form>
+  {% else %}
   <header class="large-head">
     <h1>Watchlist</h1>
-    <p>Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
+    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
   </header>
 
   <a class="mstrip" href="/markets" aria-label="Market hours and holidays">
@@ -15,12 +35,12 @@
   {% if saved %}<div class="notice" role="status">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
   {% if not active %}<div class="warnbox">Alerts are paused because you unsubscribed. Saving your watchlist turns them back on.</div>{% endif %}
 
-  <form method="post" action="/watchlist" id="wl" data-limit="{{ limit }}">
+  <form method="post" action="/watchlist" id="wl" data-limit="{{ limit }}" data-start="{{ start }}">
     <input type="hidden" name="csrf" value="{{ csrf_token() }}">
 
     <div class="toolbar">
       <label class="sr-only" for="filter">Search</label>
-      <input type="search" id="filter" placeholder="Search, e.g. Reliance, Nifty or Gold" autocomplete="off">
+      <input type="search" id="filter" placeholder="Search, e.g. Reliance or Gold" autocomplete="off">
       {% for label, symbols in presets %}
         <button type="button" class="btn btn-ghost btn-sm" data-symbols="{{ symbols }}">{{ label }}</button>
       {% endfor %}
@@ -29,10 +49,10 @@
 
     <div class="navbar">
     <div class="tabs" role="tablist" aria-label="What to browse">
-      <button type="button" role="tab" class="tab" data-tab="indexes">Indexes <span class="tab-n">{{ totals.indexes }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="india">Indian stocks <span class="tab-n">{{ totals.india }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="us">US stocks <span class="tab-n">{{ totals.us }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="metals">Gold &amp; silver <span class="tab-n">{{ totals.metals }}</span><span class="tab-sel" hidden></span></button>
+      <button type="button" role="tab" class="tab" data-tab="indexes">Indexes <span class="tab-n">{{ totals.indexes }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="selected">Selected <span class="tab-sel-total" id="sel-total"></span></button>
     </div>
     <div class="jump" id="jump" role="navigation" aria-label="Jump to a letter" hidden></div>
@@ -57,7 +77,7 @@
             <button type="button" class="stepper" data-step="-0.5" aria-label="Lower alert level for {{ it.name }}">−</button>
             <input type="number" name="th_{{ it.symbol }}" min="0.5" max="20" step="0.1" inputmode="decimal"
                    aria-label="Alert level in percent for {{ it.name }}"
-                   value="{{ '%g' % (subs[it.symbol] if on else default_threshold(it.symbol)) }}">
+                   value="{{ '%g' % (subs[it.symbol] if on else (lvl if (lvl and it.type != 'index') else default_threshold(it.symbol))) }}">
             <button type="button" class="stepper" data-step="0.5" aria-label="Raise alert level for {{ it.name }}">+</button>
             <span class="thr-pct">%</span>
           </div>
@@ -76,6 +96,7 @@
       </div>
     </div>
   </form>
+  {% endif %}
 </div>
 {% endblock %}
 {% block scripts %}<script src="/static/watchlist.js" defer></script>{% endblock %}

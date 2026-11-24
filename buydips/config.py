@@ -80,3 +80,5 @@ DISCLAIMER = (
 BUCKET_FLAG_PCT = float(os.getenv("BUCKET_FLAG_PCT", "10"))  # a stock this far below its added price gets a red flag
 MAX_BUCKETS = 10
 MAX_BUCKET_ITEMS = 25
+# Alert levels offered on the first-run screen (percent fall from the previous close).
+START_LEVELS = (2.0, 3.0, 5.0)

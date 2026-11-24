@@ -17,6 +17,8 @@ def client(monkeypatch):
 
 
 def csrf(client, path="/"):
+    if path == "/watchlist":
+        path = "/watchlist?start=india"   # a brand-new account sees the first-run screen at plain /watchlist
     html = client.get(path).get_data(as_text=True)
     return re.search(r'name="csrf" value="([^"]+)"', html).group(1)
 
@@ -72,7 +74,7 @@ def test_login_code_expires_and_is_not_stored_in_clear(client):
 
 
 def test_watchlist_requires_login(client):
-    assert client.get("/watchlist").status_code == 302
+    assert client.get("/watchlist?start=india").status_code == 302
 
 
 def test_save_watchlist_validates(client):
@@ -202,7 +204,7 @@ def test_failed_notice_never_breaks_sign_in(client, monkeypatch):
 
 def test_watchlist_page_has_tabs_for_each_market(client):
     sign_in(client, "tabs@x.com")
-    html = client.get("/watchlist").get_data(as_text=True)
+    html = client.get("/watchlist?start=india").get_data(as_text=True)
     for tab in ("indexes", "india", "us", "selected"):
         assert f'data-tab="{tab}"' in html
     assert 'class="group" data-tab="india"' in html and 'class="group" data-tab="us"' in html
@@ -246,7 +248,7 @@ def test_the_bar_has_two_tabs_and_alerts_and_settings_are_header_icons(client):
 
 def test_watchlist_shows_market_status_that_leads_to_hours_and_holidays(client):
     sign_in(client)
-    html = client.get("/watchlist").get_data(as_text=True)
+    html = client.get("/watchlist?start=india").get_data(as_text=True)
     assert 'class="mstrip"' in html and 'href="/markets"' in html and "India" in html and "US" in html
     assert 'class="backlink" href="/watchlist"' in client.get("/markets").get_data(as_text=True)
 

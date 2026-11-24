@@ -813,7 +813,7 @@ def test_old_bucket_items_gain_the_split_columns(tmp_path):
 
 def test_etfs_show_on_the_watchlist_in_their_own_tab_and_can_be_followed(client):
     sign_in(client)
-    html = client.get("/watchlist").get_data(as_text=True)
+    html = client.get("/watchlist?start=india").get_data(as_text=True)
     assert 'data-tab="metals"' in html and "Gold &amp; silver" in html and "GOLDBEES.NS" in html and "SILVERBEES.NS" in html
     assert "differs a little from the spot or MCX price" in html
     r = client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["GOLDBEES.NS", "SILVERBEES.NS"],
@@ -921,7 +921,7 @@ def test_only_nifty_and_nasdaq_indexes_are_offered_and_the_landing_count_says_so
     home = anon.get("/").get_data(as_text=True)
     assert 'data-count="5"' in home and "Major indexes" not in home and "Sensex" not in home and "S&amp;P 500" not in home
     sign_in(client)
-    page = client.get("/watchlist").get_data(as_text=True)
+    page = client.get("/watchlist?start=india").get_data(as_text=True)
     assert "Nasdaq-100" in page and "^NDX" in page
     assert not any(f'value="{s}"' in page for s in RETIRED)           # not offered to someone who doesn't follow them
     presets = dict(web_presets())
@@ -941,7 +941,7 @@ def test_someone_already_following_a_retired_index_keeps_it_and_its_alerts(clien
                             "^NSEI": Quote("^NSEI", 100.0, 100.0, 0.0, "2026-11-20")}), out, now=US_OPEN)
     assert len(out.sent) == 1 and "S&P 500" in out.sent[0][1]          # still named properly, still alerts
     sign_in(client, "old@x.com")
-    page = client.get("/watchlist").get_data(as_text=True)
+    page = client.get("/watchlist?start=india").get_data(as_text=True)
     assert 'value="^GSPC"' in page and "no longer offered to new followers" in page
     assert 'value="^DJI"' not in page                                   # others who don't follow it don't see it
     # saving the page must not silently drop it
@@ -1065,7 +1065,7 @@ def test_badge_letters_colours_and_special_cases():
 
 def test_badges_appear_on_every_page_that_lists_stocks_and_stay_markup_safe(client):
     sign_in(client)
-    wl = client.get("/watchlist").get_data(as_text=True)
+    wl = client.get("/watchlist?start=india").get_data(as_text=True)
     assert 'class="ico ico-gold"' in wl and 'class="ico ico-silver"' in wl and 'class="ico ico-idx"' in wl
     bid = new_bucket(client)
     add_many(client, bid, ["RELIANCE.NS", "GOLDBEES.NS"])
@@ -1083,3 +1083,83 @@ def test_badges_appear_on_every_page_that_lists_stocks_and_stay_markup_safe(clie
     assert rel["i"] == "RI" and rel["c"] in list("01234567")
     assert next(r for r in rows if r["s"] == "GOLDBEES.NS")["c"] == "gold"
     assert 'ico-' in client.get("/static/bucketsearch.js").get_data(as_text=True)
+
+
+# ---------------- first-run screen and usability fixes ----------------
+
+def _text(html):
+    import re
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+
+
+def test_a_brand_new_account_sees_the_two_question_start_screen_not_the_whole_list(client):
+    sign_in(client)
+    page = client.get("/watchlist").get_data(as_text=True)
+    t = _text(page)
+    assert "Let's set up your alerts" in t and "Email me when something falls by" in t and "What do you want to follow?" in t
+    assert 'name="start" value="india"' in page and 'name="start" value="us"' in page and 'name="start" value="metals"' in page
+    assert 'name="lvl" id="lvl2" value="3" checked' in page            # 3% is pre-selected
+    assert "Save watchlist" not in page and 'id="wl"' not in page and "mstrip" not in page   # none of the clutter yet
+
+
+def test_choosing_a_start_opens_that_tab_with_the_chosen_alert_level_as_default(client):
+    sign_in(client)
+    page = client.get("/watchlist?start=metals&lvl=5").get_data(as_text=True)
+    assert 'data-start="metals"' in page and "Alerts are set to 5% for stocks" in _text(page)
+    import re
+    def level(sym):
+        return re.search(r'name="th_%s"[^>]*value="([0-9.]+)"' % re.escape(sym), page, re.S).group(1)
+    assert level("RELIANCE.NS") == "5" and level("GOLDBEES.NS") == "5"
+    assert level("^NSEI") == "1"                                        # indexes keep their own much smaller level
+    # nonsense values are ignored, never an error
+    bad = client.get("/watchlist?start=<script>&lvl=abc")
+    assert bad.status_code == 200 and "<script>" not in bad.get_data(as_text=True).split("</head>")[1].split("<script src")[0]
+    assert "Let's set up your alerts" in _text(bad.get_data(as_text=True))   # ignored, so a new account just sees the start screen
+    assert client.get("/watchlist?start=india&lvl=99").status_code == 200
+    assert "Alerts are set to" not in _text(client.get("/watchlist?start=india&lvl=99").get_data(as_text=True))
+
+
+def test_people_with_a_watchlist_or_who_just_saved_never_see_the_start_screen(client):
+    sign_in(client)
+    db.set_subscriptions(db.get_or_create_user("a@x.com")["id"], {"RELIANCE.NS": 3.0})
+    page = client.get("/watchlist").get_data(as_text=True)
+    assert "Let's set up your alerts" not in page and 'id="wl"' in page
+    # saved with everything switched off: the confirmation still shows, not the start screen
+    db.set_subscriptions(db.get_or_create_user("a@x.com")["id"], {})
+    assert "Let's set up your alerts" not in client.get("/watchlist?saved=1").get_data(as_text=True)
+
+
+def test_tabs_put_stocks_first_and_the_save_bar_script_hides_it_until_needed(client):
+    sign_in(client)
+    page = client.get("/watchlist?start=india").get_data(as_text=True)
+    order = [page.index(f'data-tab="{t}">') for t in ("india", "us", "metals", "indexes", "selected")]
+    assert order == sorted(order)
+    js = client.get("/static/watchlist.js").get_data(as_text=True)
+    assert "savebar.hidden" in js and 'form.dataset.start || "india"' in js
+
+
+def test_site_icons_and_robots_exist_so_bookmarks_and_crawlers_get_answers(client):
+    anon = client.application.test_client()
+    for path in ("/favicon.ico", "/apple-touch-icon.png"):
+        r = anon.get(path)
+        assert r.status_code == 200 and r.mimetype == "image/png" and len(r.get_data()) > 500
+    robots = anon.get("/robots.txt")
+    assert robots.status_code == 200 and "Disallow: /" in robots.get_data(as_text=True)
+    assert 'rel="apple-touch-icon"' in anon.get("/").get_data(as_text=True)
+
+
+def test_text_is_never_below_13px_and_tap_targets_are_44px():
+    import re
+    from pathlib import Path
+    css = (Path(__file__).parent.parent / "buydips/static/style.css").read_text()
+    for line in css.split("\n"):
+        for m in re.finditer(r"(?:font: (?:\d+ )?|font-size: )([0-9.]+)px", line):
+            assert float(m.group(1)) >= (13 if "uppercase" in line else 14) or "@media" in line, line.strip()[:90]
+    assert ".stepper { width: 44px; height: 44px; }" in css
+
+
+def test_quick_pick_buttons_are_hidden_by_the_script_until_something_is_selected(client):
+    sign_in(client)
+    js = client.get("/static/watchlist.js").get_data(as_text=True)
+    assert "b.hidden = n === 0" in js
+    assert ".toolbar .btn[hidden]" in client.get("/static/style.css").get_data(as_text=True)

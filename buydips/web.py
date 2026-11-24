@@ -321,8 +321,15 @@ def create_app() -> Flask:
             return redirect(url_for("watchlist", saved=1))
 
         subs = db.get_subscriptions(user["id"])
+        start = request.args.get("start") if request.args.get("start") in ("india", "us", "metals", "indexes") else None
+        try:
+            lvl = float(request.args.get("lvl", ""))
+        except ValueError:
+            lvl = None
+        lvl = lvl if lvl in config.START_LEVELS else None
+        first_run = not subs and start is None and not request.args.get("saved")   # a brand-new, empty watchlist
         return render_template(
-            "watchlist.html", user=user, tab="watchlist", sections=catalog.grouped(keep=subs), totals=catalog.tab_totals(), subs=subs,
+            "watchlist.html", first_run=first_run, start=start or "india", lvl=lvl, levels=config.START_LEVELS, user=user, tab="watchlist", sections=catalog.grouped(keep=subs), totals=catalog.tab_totals(), subs=subs,
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
             mkts=[markets.market_status(m, datetime.now(timezone.utc)) for m in ("India", "US")],
@@ -575,6 +582,23 @@ def create_app() -> Flask:
         check_csrf()
         session.clear()
         return redirect(url_for("index"))
+
+    @app.route("/favicon.ico")
+    def favicon():  # browsers ask for this path blindly, whatever the page's <link> says
+        resp = app.send_static_file("icons/icon-192.png")
+        resp.headers["Cache-Control"] = "public, max-age=604800"
+        return resp
+
+    @app.route("/apple-touch-icon.png")
+    @app.route("/apple-touch-icon-precomposed.png")
+    def touch_icon():
+        resp = app.send_static_file("icons/apple-touch-icon.png")
+        resp.headers["Cache-Control"] = "public, max-age=604800"
+        return resp
+
+    @app.route("/robots.txt")
+    def robots():
+        return Response("User-agent: *\nAllow: /$\nAllow: /privacy\nDisallow: /\n", mimetype="text/plain")
 
     @app.route("/catalog.json")
     def catalog_json():

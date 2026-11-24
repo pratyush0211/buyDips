@@ -12,7 +12,10 @@
   var selTotal = document.getElementById("sel-total");
   var note = document.getElementById("view-note");
   var empty = document.getElementById("empty");
-  var current = "indexes";
+  var current = "india";
+  var savebar = form.querySelector(".savebar");
+  var quick = Array.prototype.slice.call(form.querySelectorAll(".toolbar [data-symbols]"));
+  var initiallyOn = items.filter(function (it) { return it.querySelector("input.switch").checked; }).length;
   var jump = document.getElementById("jump");
   var navbar = form.querySelector(".navbar");
   items.forEach(function (it) {  // first letter of each name; digits (like "360 ONE") go under "#"
@@ -47,6 +50,8 @@
       badge.hidden = c === 0;
     });
     selTotal.textContent = n ? String(n) : "";
+    quick.forEach(function (b) { b.hidden = n === 0; });   // presets and Clear all mean nothing until something is picked
+    if (savebar) savebar.hidden = n === 0 && initiallyOn === 0;   // nothing to save yet: keep the screen clear
   }
 
   form.addEventListener("change", function (e) { if (e.target.classList.contains("switch")) refresh(); });
@@ -144,5 +149,5 @@
   filterEl.addEventListener("input", applyView);
 
   refresh();
-  setTab(items.some(function (it) { return box(it).checked; }) ? "selected" : "indexes");
+  setTab(initiallyOn ? "selected" : (form.dataset.start || "india"));
 })();
