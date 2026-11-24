@@ -4,11 +4,11 @@ import logging
 import re
 import secrets
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
-from flask import Flask, abort, redirect, render_template, request, session, url_for
+from flask import Flask, abort, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import catalog, config, db, emails, links
+from . import catalog, config, db, emails, links, markets
 from .mailer import send_email
 
 log = logging.getLogger("buyDips.web")
@@ -45,6 +45,28 @@ def _presets() -> list:
     india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India"]
     us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US"]
     return [("Indian indexes", "|".join(india)), ("US indexes", "|".join(us))]
+
+
+def _alert_groups(user_id: int) -> list:
+    """The user's alert history as [{day, rows}], newest first, with times in Indian Standard Time."""
+    now = datetime.now(timezone.utc).astimezone(markets.IST)
+    groups = []
+    for r in db.alerts_for_user(user_id):
+        when = r["sent_at"].replace(tzinfo=timezone.utc).astimezone(markets.IST)
+        gap = (now.date() - when.date()).days
+        day = "Today" if gap == 0 else "Yesterday" if gap == 1 else when.strftime("%a %d %b")
+        cur = catalog.currency_symbol(r["symbol"])
+        row = {
+            "name": catalog.name_of(r["symbol"]), "symbol": r["symbol"],
+            "time": markets._clock(when) + " IST",
+            "drop": None if r["change_pct"] is None else f"\u2212{abs(r['change_pct']):.2f}%",
+            "detail": None if r["price"] is None else f"{cur}{r['price']:,.2f} vs {cur}{r['prev_close']:,.2f} close",
+            "level": None if r["threshold_pct"] is None else f"{r['threshold_pct']:g}%",
+        }
+        if not groups or groups[-1]["day"] != day:
+            groups.append({"day": day, "rows": []})
+        groups[-1]["rows"].append(row)
+    return groups
 
 
 def create_app() -> Flask:
@@ -210,10 +232,53 @@ def create_app() -> Flask:
             return redirect(url_for("watchlist", saved=1))
 
         return render_template(
-            "watchlist.html", user=user, sections=catalog.grouped(), totals=catalog.tab_totals(), subs=db.get_subscriptions(user["id"]),
+            "watchlist.html", user=user, tab="watchlist", sections=catalog.grouped(), totals=catalog.tab_totals(), subs=db.get_subscriptions(user["id"]),
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
         )
+
+    @app.route("/alerts")
+    def alerts():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        return render_template("alerts.html", user=user, tab="alerts", groups=_alert_groups(user["id"]),
+                               active=user["active"], n_watched=len(db.get_subscriptions(user["id"])))
+
+    @app.route("/markets")
+    def markets_tab():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        now = datetime.now(timezone.utc)
+        cards = [{**markets.market_status(m, now), "holidays": markets.upcoming_holidays(m, now)}
+                 for m in ("India", "US")]
+        return render_template("markets.html", user=user, tab="markets", cards=cards)
+
+    @app.route("/settings")
+    def settings():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        return render_template("settings.html", user=user, tab="settings", active=user["active"],
+                               n_watched=len(db.get_subscriptions(user["id"])),
+                               changed=request.args.get("changed"))
+
+    @app.route("/settings/alerts", methods=["POST"])
+    def settings_alerts():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        on = request.form.get("on") == "1"
+        db.set_active(user["id"], on)
+        return redirect(url_for("settings", changed="on" if on else "off"))
+
+    @app.route("/manifest.webmanifest")
+    def manifest():
+        resp = send_from_directory(app.static_folder, "manifest.webmanifest", mimetype="application/manifest+json")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
     @app.route("/unsubscribe/<token>", methods=["GET", "POST"])
     def unsubscribe(token):

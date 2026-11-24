@@ -18,8 +18,10 @@ MARKETS = {
     "US": ("America/New_York", time(9, 30), time(16, 0)),
 }
 # Full-day closures that fall on weekdays (weekends are handled separately). Refresh every December.
-HOLIDAYS = {k: set(v) for k, v in json.loads((Path(__file__).parent / "holidays.json").read_text()).items()
-            if not k.startswith("_")}
+_HOLIDAY_DATA = {k: v for k, v in json.loads((Path(__file__).parent / "holidays.json").read_text()).items()
+                 if not k.startswith("_")}
+HOLIDAYS = {m: set(days) for m, days in _HOLIDAY_DATA.items()}
+HOLIDAY_NAMES = _HOLIDAY_DATA  # market -> {"YYYY-MM-DD": "Holiday name"}
 GRACE = timedelta(minutes=60)  # still alert this long after the close, for the closing price
 
 
@@ -63,3 +65,60 @@ def missing_holiday_year(now: datetime) -> Optional[int]:
     """The current year if the holiday list has no dates for it (so someone should refresh it), else None."""
     year = str(now.year)
     return None if all(any(d.startswith(year) for d in HOLIDAYS[m]) for m in HOLIDAYS) else now.year
+
+
+# ---------- what the Markets tab shows ----------
+
+LABELS = {"India": "India (NSE)", "US": "United States (NYSE, Nasdaq)"}
+IST = ZoneInfo("Asia/Kolkata")
+
+
+def _clock(dt: datetime) -> str:
+    return dt.strftime("%I:%M %p").lstrip("0").lower().replace(" ", "\u202f")
+
+
+def _trading_day(market: str, d: date) -> bool:
+    return d.weekday() < 5 and d.isoformat() not in HOLIDAYS.get(market, ())
+
+
+def _open_dt(market: str, d: date) -> datetime:
+    tz, opens, _ = MARKETS[market]
+    return datetime.combine(d, opens, tzinfo=ZoneInfo(tz))
+
+
+def market_status(market: str, now: datetime) -> dict:
+    """Everything the Markets tab needs to describe one market right now."""
+    tz, opens, closes = MARKETS[market]
+    here = local_now(market, now)
+    today = here.date()
+    trading = _trading_day(market, today)
+    is_open = trading and opens <= here.time() < closes
+    if is_open:
+        reason = "Trading now"
+    elif today.isoformat() in HOLIDAYS.get(market, ()):
+        reason = "Closed today: " + HOLIDAY_NAMES[market][today.isoformat()]
+    elif today.weekday() >= 5:
+        reason = "Closed for the weekend"
+    elif here.time() < opens:
+        reason = "Opens later today"
+    else:
+        reason = "Closed for the day"
+    day = today if (trading and here.time() < opens) else today + timedelta(days=1)
+    while not _trading_day(market, day):
+        day += timedelta(days=1)
+    nxt = _open_dt(market, day)
+    zone = here.tzname()
+    mine = nxt.astimezone(IST)
+    return {
+        "market": market, "label": LABELS[market], "open": is_open, "reason": reason,
+        "local_now": here.strftime("%a %d %b, ") + _clock(here) + " " + zone,
+        "hours": f"{_clock(_open_dt(market, today))} \u2013 {_clock(datetime.combine(today, closes, tzinfo=ZoneInfo(tz)))} {zone}",
+        "next_open": nxt.strftime("%a %d %b, ") + _clock(nxt) + " " + zone,
+        "next_open_ist": None if tz == "Asia/Kolkata" else mine.strftime("%a ") + _clock(mine) + " IST",
+    }
+
+
+def upcoming_holidays(market: str, now: datetime, n: int = 4) -> list:
+    today = local_now(market, now).date().isoformat()
+    days = sorted(d for d in HOLIDAY_NAMES.get(market, {}) if d >= today)[:n]
+    return [{"date": date.fromisoformat(d).strftime("%a %d %b"), "name": HOLIDAY_NAMES[market][d]} for d in days]

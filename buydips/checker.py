@@ -70,7 +70,10 @@ def run_check(
         unsub = links.unsubscribe_url(user_id)
         subject, body, html = emails.alert(hits, unsub)
         if send(email, subject, body, unsubscribe_url=unsub, html=html):
-            db.record_alerts(user_id, [(h["symbol"], h["session"]) for h in hits])
+            db.record_alerts(user_id, [
+                (h["symbol"], h["session"], {"change_pct": h["change_pct"], "price": h["price"],
+                                             "prev_close": h["prev_close"], "threshold_pct": h["threshold"]})
+                for h in hits])
             summary["emails"] += 1
         else:
             log.error("Alert email to user %s failed; will retry on the next run", user_id)

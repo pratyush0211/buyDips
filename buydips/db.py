@@ -39,6 +39,8 @@ alerts_sent = Table(
     Column("symbol", String(40), nullable=False),
     Column("session", String(10), nullable=False),
     Column("sent_at", DateTime, nullable=False),
+    # What the alert said, kept for the Alerts tab. Empty on rows sent before 24 Nov 2026.
+    Column("change_pct", Float), Column("price", Float), Column("prev_close", Float), Column("threshold_pct", Float),
     PrimaryKeyConstraint("user_id", "symbol", "session"),
 )
 
@@ -74,16 +76,21 @@ def init_db() -> None:
 
 def _migrate() -> None:
     """Add columns introduced after the first deploy (create_all never alters existing tables)."""
-    if "first_signin_at" in {c["name"] for c in inspect(engine()).get_columns("users")}:
-        return
-    try:
-        with engine().begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN first_signin_at TIMESTAMP"))
-            # Everyone who already exists counts as already welcomed, so they don't trigger notices.
-            conn.execute(text("UPDATE users SET first_signin_at = created_at WHERE first_signin_at IS NULL"))
-    except Exception:  # noqa: BLE001  (another worker may have added it at the same moment)
-        if "first_signin_at" not in {c["name"] for c in inspect(engine()).get_columns("users")}:
-            raise
+    wanted = [("users", "first_signin_at", "TIMESTAMP"), ("alerts_sent", "change_pct", "DOUBLE PRECISION"),
+              ("alerts_sent", "price", "DOUBLE PRECISION"), ("alerts_sent", "prev_close", "DOUBLE PRECISION"),
+              ("alerts_sent", "threshold_pct", "DOUBLE PRECISION")]
+    for table, column, ddl in wanted:
+        if column in {c["name"] for c in inspect(engine()).get_columns(table)}:
+            continue
+        try:
+            with engine().begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+                if column == "first_signin_at":
+                    # Everyone who already exists counts as already welcomed, so they don't trigger notices.
+                    conn.execute(text("UPDATE users SET first_signin_at = created_at WHERE first_signin_at IS NULL"))
+        except Exception:  # noqa: BLE001  (another worker may have added it at the same moment)
+            if column not in {c["name"] for c in inspect(engine()).get_columns(table)}:
+                raise
 
 
 def _now() -> datetime:
@@ -206,9 +213,13 @@ def sent_sessions(user_id: int) -> set:
     return {(s, sess) for s, sess in rows}
 
 
-def record_alerts(user_id: int, pairs: List[tuple]) -> None:
+def record_alerts(user_id: int, items: List[tuple]) -> None:
+    """Remember what was sent. Each item is (symbol, session) or (symbol, session, details), where
+    details may hold change_pct, price, prev_close and threshold_pct."""
     with engine().begin() as conn:
-        for symbol, session in pairs:
+        for symbol, session, *rest in items:
+            extra = {k: v for k, v in (rest[0] if rest else {}).items()
+                     if k in ("change_pct", "price", "prev_close", "threshold_pct")}
             exists = conn.execute(
                 select(alerts_sent.c.user_id).where(
                     (alerts_sent.c.user_id == user_id)
@@ -219,9 +230,24 @@ def record_alerts(user_id: int, pairs: List[tuple]) -> None:
             if not exists:
                 conn.execute(
                     insert(alerts_sent).values(
-                        user_id=user_id, symbol=symbol, session=session, sent_at=_now()
+                        user_id=user_id, symbol=symbol, session=session, sent_at=_now(), **extra
                     )
                 )
+
+
+def alerts_for_user(user_id: int, limit: int = 100) -> List[dict]:
+    """This user's alert history, newest first."""
+    with engine().connect() as conn:
+        rows = conn.execute(
+            select(alerts_sent).where(alerts_sent.c.user_id == user_id)
+            .order_by(alerts_sent.c.sent_at.desc()).limit(limit)
+        ).mappings().all()
+    return [dict(r) for r in rows]
+
+
+def set_active(user_id: int, active: bool) -> None:
+    with engine().begin() as conn:
+        conn.execute(update(users).where(users.c.id == user_id).values(active=active))
 
 
 # ---------- sign-in codes ----------

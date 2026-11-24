@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}My watchlist · buyDips{% endblock %}
 {% block body %}
-<div class="container wl">
-  <div class="page-head">
-    <h1>My watchlist</h1>
+<div class="container wl app-page">
+  <header class="large-head">
+    <h1>Watchlist</h1>
     <p>Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
-  </div>
+  </header>
 
   {% if saved %}<div class="notice" role="status">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
   {% if not active %}<div class="warnbox">Alerts are paused because you unsubscribed. Saving your watchlist turns them back on.</div>{% endif %}
@@ -68,15 +68,6 @@
       </div>
     </div>
   </form>
-
-  <section class="account">
-    <h2>Your data</h2>
-    <p>We store only your email address ({{ user.email }}) and this watchlist. Deleting your account removes both permanently.</p>
-    <form method="post" action="/delete-account" data-confirm="Permanently delete your account and watchlist?">
-      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
-      <button class="btn btn-danger btn-sm">Delete my account</button>
-    </form>
-  </section>
 </div>
 {% endblock %}
 {% block scripts %}<script src="/static/watchlist.js" defer></script>{% endblock %}

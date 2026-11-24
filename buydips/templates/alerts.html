@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Alerts · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <header class="large-head">
+    <h1>Alerts</h1>
+    <p>Every dip we've emailed you about.</p>
+  </header>
+
+  {% if not active %}<div class="warnbox">Alerts are paused, so nothing new will be sent. <a href="/settings">Turn them back on in Settings.</a></div>{% endif %}
+
+  {% for g in groups %}
+  <section class="lgroup">
+    <h2 class="lgroup-title">{{ g.day }}</h2>
+    <ul class="lrows">
+      {% for r in g.rows %}
+      <li class="lrow">
+        <div class="lmain">
+          <span class="lname">{{ r.name }}</span>
+          <span class="lsub">{% if r.detail %}{{ r.detail }}{% else %}{{ r.symbol }}{% endif %}{% if r.level %} &middot; level {{ r.level }}{% endif %}</span>
+        </div>
+        <div class="lside">
+          {% if r.drop %}<span class="drop">{{ r.drop }}</span>{% else %}<span class="drop plain">Alerted</span>{% endif %}
+          <span class="lsub">{{ r.time }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+    <h2>No alerts yet</h2>
+    {% if n_watched %}
+      <p>You're watching {{ n_watched }} {{ "item" if n_watched == 1 else "items" }}. When one falls past your alert level, the email we send will appear here.</p>
+    {% else %}
+      <p>You aren't watching anything yet. Pick a few stocks or indexes and we'll email you when they dip.</p>
+      <a class="btn btn-primary" href="/watchlist">Choose what to watch</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

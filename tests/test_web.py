@@ -206,3 +206,86 @@ def test_watchlist_page_has_tabs_for_each_market(client):
     assert 'class="group" data-tab="india"' in html and 'class="group" data-tab="us"' in html
     assert 'id="view-note"' in html and 'id="empty"' in html
     assert 'id="jump"' in html and 'class="navbar"' in html  # A-Z bar, filled in by watchlist.js
+
+
+# ---------- the iOS-style app shell: Watchlist / Alerts / Markets / Settings ----------
+
+TABS = ["/watchlist", "/alerts", "/markets", "/settings"]
+
+
+def test_tab_pages_need_sign_in(client):
+    for path in TABS:
+        r = client.get(path)
+        assert r.status_code == 302 and r.headers["Location"].endswith("/"), path
+
+
+def test_every_tab_shows_the_tab_bar_with_the_right_one_selected(client):
+    sign_in(client)
+    for path in TABS:
+        html = client.get(path).get_data(as_text=True)
+        assert 'class="app"' in html and 'class="tabbar"' in html, path
+        assert html.count('aria-current="page"') == 2  # tab bar + desktop header
+        for other in TABS:
+            assert f'href="{other}"' in html
+        assert f'aria-current="page" href="{path}"' in html or f'href="{path}" aria-current="page"' in html, path
+
+
+def test_marketing_and_message_pages_have_no_tab_bar(client):
+    assert 'class="tabbar"' not in client.get("/").get_data(as_text=True)
+    sign_in(client)
+    assert 'class="tabbar"' not in client.get("/privacy").get_data(as_text=True)
+
+
+def test_alerts_tab_empty_then_lists_history_newest_first(client):
+    sign_in(client)
+    html = client.get("/alerts").get_data(as_text=True)
+    assert "No alerts yet" in html and "Choose what to watch" in html
+    uid = db.get_or_create_user("a@x.com")["id"]
+    db.record_alerts(uid, [("^NSEI", "2026-11-20", {"change_pct": -2.5, "price": 24100.0, "prev_close": 24720.0,
+                                                    "threshold_pct": 1.0}),
+                           ("RELIANCE.NS", "2026-11-20")])  # an older row with no details
+    html = client.get("/alerts").get_data(as_text=True)
+    assert "No alerts yet" not in html and "Nifty 50" in html and "Reliance" in html
+    assert "−2.50%" in html and "level 1%" in html and "Alerted" in html  # the old row degrades gracefully
+
+
+def test_alerts_history_is_private_to_each_user(client):
+    sign_in(client, "a@x.com")
+    other = db.get_or_create_user("b@x.com")["id"]
+    db.record_alerts(other, [("^GSPC", "2026-11-20", {"change_pct": -4.0, "price": 1.0, "prev_close": 2.0,
+                                                      "threshold_pct": 1.0})])
+    assert "S&amp;P 500" not in client.get("/alerts").get_data(as_text=True)
+
+
+def test_markets_tab_describes_both_markets_without_prices(client):
+    sign_in(client)
+    html = client.get("/markets").get_data(as_text=True)
+    assert "India (NSE)" in html and "United States" in html and "Upcoming holidays" in html
+    assert ">Open<" in html or ">Closed<" in html
+    assert "Local time" in html and "Hours" in html and "$" not in html.split("<main>")[1].split("</main>")[0]
+
+
+def test_settings_toggle_pauses_and_resumes_alerts(client):
+    sign_in(client)
+    uid = db.get_or_create_user("a@x.com")["id"]
+    assert db.get_user(uid)["active"]
+    r = client.post("/settings/alerts", data={"csrf": csrf(client, "/settings")})  # switch off: no "on" field
+    assert r.status_code == 302 and not db.get_user(uid)["active"]
+    assert "Alerts are paused" in client.get("/settings?changed=off").get_data(as_text=True)
+    client.post("/settings/alerts", data={"csrf": csrf(client, "/settings"), "on": "1"})
+    assert db.get_user(uid)["active"]
+
+
+def test_settings_actions_require_csrf(client):
+    sign_in(client)
+    assert client.post("/settings/alerts", data={"on": "1"}).status_code == 400
+
+
+def test_manifest_and_icons_are_served(client):
+    r = client.get("/manifest.webmanifest")
+    assert r.status_code == 200 and r.mimetype == "application/manifest+json"
+    data = r.get_json()
+    assert data["display"] == "standalone" and data["start_url"] == "/watchlist"
+    for icon in data["icons"] + [{"src": "/static/icons/apple-touch-icon.png"}]:
+        assert client.get(icon["src"]).status_code == 200, icon["src"]
+    assert 'rel="manifest"' in client.get("/").get_data(as_text=True)

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Settings · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <header class="large-head">
+    <h1>Settings</h1>
+  </header>
+
+  {% if changed == "on" %}<div class="notice" role="status">Alerts are on.</div>{% elif changed == "off" %}<div class="warnbox" role="status">Alerts are paused. We won't email you until you turn them back on.</div>{% endif %}
+
+  <h2 class="lgroup-title">Account</h2>
+  <ul class="lrows">
+    <li class="lrow"><span class="lname">Email</span><span class="lval">{{ user.email }}</span></li>
+    <li class="lrow"><span class="lname">Watching</span><a class="lval" href="/watchlist">{{ n_watched }} {{ "item" if n_watched == 1 else "items" }}</a></li>
+    <li class="lrow">
+      <form method="post" action="/settings/alerts" class="rowform">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label class="lmain" for="alerts-on"><span class="lname">Email alerts</span><span class="lsub">{{ "On: you'll be emailed when something dips." if active else "Paused: nothing will be sent." }}</span></label>
+        <input type="checkbox" class="switch" id="alerts-on" name="on" value="1" data-autosubmit {% if active %}checked{% endif %}>
+        <noscript><button class="btn btn-ghost btn-sm">Save</button></noscript>
+      </form>
+    </li>
+  </ul>
+
+  <h2 class="lgroup-title">About</h2>
+  <ul class="lrows">
+    <li class="lrow"><a class="lnav" href="/#faq">How alerts work</a></li>
+    <li class="lrow"><a class="lnav" href="/privacy">Privacy</a></li>
+    {% if contact_email %}<li class="lrow"><a class="lnav" href="mailto:{{ contact_email }}">Contact us</a></li>{% endif %}
+  </ul>
+
+  <ul class="lrows spaced">
+    <li class="lrow">
+      <form method="post" action="/logout" class="rowform"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn">Sign out</button></form>
+    </li>
+    <li class="lrow">
+      <form method="post" action="/delete-account" class="rowform" data-confirm="Permanently delete your account and watchlist?"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn danger">Delete my account</button></form>
+    </li>
+  </ul>
+  <p class="fine">We store only your email address and your watchlist. Deleting your account removes both, and your alert history, permanently.</p>
+  <p class="fine">buyDips sends automated price alerts for information only. It is not investment advice. Prices come from a third-party source and may be delayed or inaccurate.</p>
+</div>
+{% endblock %}

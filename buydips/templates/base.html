@@ -2,20 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}buyDips: dip alerts for indexes and stocks{% endblock %}</title>
   <meta name="description" content="{% block description %}Pick the indexes and stocks you follow and get an email when they fall past your alert level. Free, no password.{% endblock %}">
   <meta property="og:title" content="buyDips">
   <meta property="og:description" content="Don't watch the market. Know when it matters.">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1110" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="buyDips">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
   {% block canonical %}{% endblock %}
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="preload" href="/static/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/static/fonts/instrument-serif-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body{% if user and tab is defined and tab %} class="app"{% endif %}>
 <header class="site-header">
   <div class="container">
     <a class="brand" href="/" aria-label="buyDips home">
@@ -23,7 +31,11 @@
       buyDips
     </a>
     <nav class="nav" aria-label="Main">
-      {% if user %}
+      {% if user and tab is defined and tab %}
+        {% for key, label, href in [("watchlist", "Watchlist", "/watchlist"), ("alerts", "Alerts", "/alerts"), ("markets", "Markets", "/markets"), ("settings", "Settings", "/settings")] %}
+          <a class="navtab"{% if tab == key %} aria-current="page"{% endif %} href="{{ href }}">{{ label }}</a>
+        {% endfor %}
+      {% elif user %}
         <a href="/watchlist">Watchlist</a>
         <span class="who">{{ user.email }}</span>
         <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm">Sign out</button></form>
@@ -37,6 +49,19 @@
 </header>
 
 <main>{% block body %}{% endblock %}</main>
+
+{% if user and tab is defined and tab %}
+<nav class="tabbar" aria-label="Sections">
+  <a href="/watchlist"{% if tab == "watchlist" %} aria-current="page"{% endif %}>
+    <svg class="fillable" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.5 15.1 8.8 22 9.8 17 14.6 18.2 21.5 12 18.2 5.8 21.5 7 14.6 2 9.8 8.9 8.8 12 2.5"/></svg>Watchlist</a>
+  <a href="/alerts"{% if tab == "alerts" %} aria-current="page"{% endif %}>
+    <svg class="fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Alerts</a>
+  <a href="/markets"{% if tab == "markets" %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Markets</a>
+  <a href="/settings"{% if tab == "settings" %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h0"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg>Settings</a>
+</nav>
+{% endif %}
 
 <footer class="site-footer">
   <div class="container">

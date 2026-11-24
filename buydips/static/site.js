@@ -38,3 +38,9 @@ document.addEventListener("submit", function (e) {
   }, { threshold: 0.18 });
   els.forEach(function (el) { io.observe(el); });
 })();
+
+// Settings switches save as soon as they're flipped.
+document.addEventListener("change", function (e) {
+  var t = e.target;
+  if (t && t.hasAttribute && t.hasAttribute("data-autosubmit") && t.form) t.form.submit();
+});

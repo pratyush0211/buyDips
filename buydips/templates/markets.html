@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Markets · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <header class="large-head">
+    <h1>Markets</h1>
+    <p>We only check a market while it's open, so you're never alerted from stale prices.</p>
+  </header>
+
+  <div class="mcards">
+    {% for c in cards %}
+    <section class="mcard">
+      <div class="mtop">
+        <h2>{{ c.label }}</h2>
+        <span class="pill {{ 'is-open' if c.open else 'is-closed' }}"><i></i>{{ "Open" if c.open else "Closed" }}</span>
+      </div>
+      <p class="mreason">{{ c.reason }}</p>
+      <dl class="mfacts">
+        <div><dt>Local time</dt><dd>{{ c.local_now }}</dd></div>
+        <div><dt>Hours</dt><dd>{{ c.hours }}, Mon&ndash;Fri</dd></div>
+        {% if not c.open %}<div><dt>Next open</dt><dd>{{ c.next_open }}{% if c.next_open_ist %}<span class="alt">{{ c.next_open_ist }}</span>{% endif %}</dd></div>{% endif %}
+      </dl>
+      {% if c.holidays %}
+      <h3 class="mhol">Upcoming holidays</h3>
+      <ul class="lrows inner">
+        {% for h in c.holidays %}<li class="lrow slim"><span class="lname">{{ h.name }}</span><span class="lsub">{{ h.date }}</span></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+    {% endfor %}
+  </div>
+  <p class="fine">Hours and holidays come from the exchanges' published calendars. Alerts run for about an hour after each close, to catch the final price.</p>
+</div>
+{% endblock %}
