@@ -7,7 +7,7 @@
     <div class="hero-copy">
       <p class="kicker rise"><span class="dot"></span>Free during beta</p>
       <h1 class="rise">Don&rsquo;t watch the market.<br><em>Know when it matters.</em></h1>
-      <p class="lead rise">Choose the indexes, stocks and gold and silver ETFs you follow, set how far they have to fall, and buyDips emails you the moment they do.</p>
+      <p class="lead rise">Choose the indexes, stocks and gold and silver ETFs you follow, set how far they have to fall, and buyDips emails you when they do.</p>
       <div class="rise">
       {% if user %}
         <a class="btn btn-primary btn-lg" href="/watchlist">Open my watchlist</a>
@@ -18,7 +18,7 @@
           <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
           <button class="btn btn-primary btn-lg">Get alerts <span class="arrow" aria-hidden="true">&rarr;</span></button>
         </form>
-        <p class="fineprint">No password. We email you a one-time sign-in link. Unsubscribe any time.</p>
+        <p class="fineprint">No password. We email you a sign-in link that works for 15 minutes. Unsubscribe any time.</p>
       {% endif %}
       </div>
     </div>
@@ -54,7 +54,7 @@
     <ol class="process">
       <li class="reveal"><span class="idx">01</span><h3>Pick what to follow</h3><p>Choose from major indexes, the Nifty 500, the Nasdaq-100 and gold and silver ETFs. Search, or start from a preset.</p></li>
       <li class="reveal"><span class="idx">02</span><h3>Set your alert level</h3><p>Decide how far each one must fall from its previous close, like 1% for an index or 3% for a stock.</p></li>
-      <li class="reveal"><span class="idx">03</span><h3>Get one email when it happens</h3><p>Prices are checked about every 20 minutes on weekdays. Each item alerts at most once per trading day.</p></li>
+      <li class="reveal"><span class="idx">03</span><h3>Get one email when it happens</h3><p>Prices are checked about once an hour on weekdays, while the market is open. Each item alerts at most once per trading day.</p></li>
     </ol>
   </div>
 </section>
@@ -62,7 +62,7 @@
 <section class="section">
   <div class="container">
     <h2 class="reveal">What you can follow</h2>
-    <p class="section-lead reveal">Every symbol is checked against live prices, so nothing on the list is dead.</p>
+    <p class="section-lead reveal">Every symbol returned real prices when the list was built.</p>
     <div class="ledger">
       <div class="reveal"><b data-count="{{ n_indexes }}">{{ n_indexes }}</b><span>Major indexes</span></div>
       <div class="reveal"><b data-count="{{ n_india }}">{{ n_india }}</b><span>Indian stocks &middot; Nifty 500</span></div>
@@ -80,12 +80,12 @@
     </div>
     <div class="faq-list">
     <details><summary>Is it free?</summary><p>Yes, it's free while buyDips is in beta.</p></details>
-    <details><summary>How often are prices checked?</summary><p>About every 20 minutes on weekdays, covering Indian and US market hours, and only while each market is open. Prices can be delayed, so treat alerts as a heads-up, not a trading signal.</p></details>
-    <details><summary>How many emails will I get?</summary><p>At most one per check, grouping everything that fell. Each item alerts once per trading day, even if it keeps falling.</p></details>
+    <details><summary>How often are prices checked?</summary><p>About once an hour on weekdays, sometimes more often. Each market is checked only while it is open and for up to an hour after it closes, to catch the final price. Prices can be delayed, so an email can arrive up to an hour or more after the move. Treat alerts as a heads-up, not a trading signal.</p></details>
+    <details><summary>How many emails will I get?</summary><p>At most one alert email per check, grouping everything that fell. Each item alerts once per trading day, even if it keeps falling. If you use buckets, you also get one email, once for each stock, the first time it is down 10% or more since you added it.</p></details>
     <details><summary>Can I follow gold and silver?</summary><p>Yes, through two NSE-listed funds, Nippon India ETF Gold BeES and Nippon India Silver ETF. They track the metals and are priced in rupees, so their price differs a little from the spot or MCX price. They follow Indian market hours.</p></details>
     <details><summary>Where does the price data come from?</summary><p>A third-party source (Yahoo Finance). It can occasionally be wrong or unavailable, which is why alerts are for information only.</p></details>
     <details><summary>Is this investment advice?</summary><p>No. buyDips only reports that a price moved. It doesn't recommend buying or selling anything, and buyDips is not a SEBI-registered investment adviser or research analyst.</p></details>
-    <details><summary>What do you store about me?</summary><p>Only your email address and your watchlist. You can delete both permanently from the watchlist page. See the <a href="/privacy">privacy page</a>.</p></details>
+    <details><summary>What do you store about me?</summary><p>Your email address, your watchlist, your buckets and a record of the alerts we sent you. You can delete all of it permanently with "Delete my account" in Settings. See the <a href="/privacy">privacy page</a>.</p></details>
     </div>
   </div>
 </section>

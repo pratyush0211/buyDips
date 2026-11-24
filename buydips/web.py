@@ -201,7 +201,7 @@ def create_app() -> Flask:
 
     @app.errorhandler(500)
     def server_error(e):
-        return error_page(500, "Something broke on our side", "We've been notified in the logs. Please try again in a moment.")
+        return error_page(500, "Something broke on our side", "Please try again in a moment.")
 
     # ---------- routes ----------
 
@@ -532,7 +532,7 @@ def create_app() -> Flask:
         check_csrf()
         db.delete_user(user["id"])
         session.clear()
-        return page("Account deleted", "Your email address and watchlist have been permanently deleted.")
+        return page("Account deleted", "Your email address, watchlist, buckets and alert history have been permanently deleted.")
 
     @app.route("/logout", methods=["POST"])
     def logout():

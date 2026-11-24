@@ -855,3 +855,23 @@ def test_the_landing_page_mentions_gold_and_silver_accurately(client):
     html = client.application.test_client().get("/").get_data(as_text=True)
     assert "gold and silver ETFs" in html and "Can I follow gold and silver?" in html and "Gold BeES" in html
     assert "differs a little from the spot or MCX price" in html          # no pretence that it is the spot price
+
+
+def test_copy_matches_what_the_code_actually_does(client):
+    """Claims that were once wrong: links are not one-time, checks are about hourly, email goes through Resend, the
+    delete button lives in Settings, and more than the watchlist is stored. Keep them honest."""
+    import re
+    from buydips import config
+    anon = client.application.test_client()
+    def text(html):
+        return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+    home, privacy = text(anon.get("/").get_data(as_text=True)), text(anon.get("/privacy").get_data(as_text=True))
+    assert "one-time" not in home and f"works for {config.LOGIN_LINK_MINUTES} minutes" in home
+    assert "every 20 minutes" not in home and "moment they do" not in home and "about once an hour" in home
+    assert "Only your email address and your watchlist" not in home and "your buckets" in home and "in Settings" in home
+    assert "Brevo" not in privacy and "Google Mail" not in privacy and "Resend" in privacy and "cron-job.org" in privacy
+    assert "watchlist page" not in privacy and "buckets" in privacy and "in Settings" in privacy
+    sign_in(client)
+    settings = text(client.get("/settings").get_data(as_text=True))
+    assert "only your email address" not in settings.lower() and "buckets" in settings and "SEBI-registered" in settings
+    assert "never alerted from stale prices" not in text(client.get("/markets").get_data(as_text=True))

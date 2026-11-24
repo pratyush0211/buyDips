@@ -25,20 +25,21 @@
   <p>Running buyDips involves these providers, which handle data on our behalf:</p>
   <ul>
     <li><strong>Render</strong>: hosts the website.</li>
-    <li><strong>Supabase</strong>: stores accounts and watchlists (database region: Seoul, South Korea).</li>
-    <li><strong>GitHub</strong>: runs the scheduled price check.</li>
-    <li><strong>Email delivery</strong>: currently Brevo and Google Mail.</li>
+    <li><strong>Supabase</strong>: stores accounts, watchlists, buckets and alert history (database region: Seoul, South Korea).</li>
+    <li><strong>GitHub</strong>: runs the price check.</li>
+    <li><strong>cron-job.org</strong>: starts the price check on a schedule. It receives no personal data.</li>
+    <li><strong>Resend</strong>: delivers our emails (sign-in links and alerts), so it handles your email address.</li>
     <li><strong>Yahoo Finance</strong>: source of market prices. No personal data is sent to it.</li>
   </ul>
 
   <h2>Your choices</h2>
   <ul>
     <li><strong>Unsubscribe</strong> with the link at the bottom of every alert email.</li>
-    <li><strong>Delete everything</strong> with the "Delete my account" button on your watchlist page. It permanently removes your email, watchlist and alert history.</li>
+    <li><strong>Delete everything</strong> with the "Delete my account" button in Settings. It permanently removes your email, watchlist, buckets, shared links and alert history.</li>
   </ul>
   {% if contact_email %}<p>Questions? Email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>{% endif %}
 
   <h2>Not investment advice</h2>
-  <p>buyDips sends automated price alerts for information only. Prices come from a third-party source and may be delayed or inaccurate. Nothing here is a recommendation to buy or sell.</p>
+  <p>buyDips sends automated price alerts for information only. Nothing here is investment advice or a recommendation to buy or sell anything, and buyDips is not a SEBI-registered investment adviser or research analyst. Prices come from a third-party source and may be delayed or inaccurate.</p>
 </div>
 {% endblock %}

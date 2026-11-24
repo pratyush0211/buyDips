@@ -34,10 +34,10 @@
       <form method="post" action="/logout" class="rowform"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn">Sign out</button></form>
     </li>
     <li class="lrow">
-      <form method="post" action="/delete-account" class="rowform" data-confirm="Permanently delete your account and watchlist?"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn danger">Delete my account</button></form>
+      <form method="post" action="/delete-account" class="rowform" data-confirm="Permanently delete your account, watchlist, buckets and alert history? This can't be undone."><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn danger">Delete my account</button></form>
     </li>
   </ul>
-  <p class="fine">We store only your email address and your watchlist. Deleting your account removes both, and your alert history, permanently.</p>
-  <p class="fine">buyDips sends automated price alerts for information only. It is not investment advice. Prices come from a third-party source and may be delayed or inaccurate.</p>
+  <p class="fine">We store your email address, watchlist, buckets and a record of the alerts we sent you. Deleting your account removes all of it, and any shared bucket links, permanently.</p>
+  <p class="fine">buyDips sends automated price alerts for information only. It is not investment advice or a recommendation to buy or sell anything, and buyDips is not a SEBI-registered investment adviser or research analyst. Prices come from a third-party source and may be delayed or inaccurate.</p>
 </div>
 {% endblock %}

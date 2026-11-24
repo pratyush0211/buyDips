@@ -5,7 +5,7 @@ Pick the indexes, stocks and gold and silver ETFs you follow (Nifty 500, Nasdaq-
 ## How it works
 
 - **Website** (`buydips/web.py`, Flask): passwordless sign-in by emailed link, a watchlist page, one-click unsubscribe, account deletion.
-- **Scheduled job** (`run_check.py`, run by `.github/workflows/check.yml` every 20 minutes, Mon–Fri): fetches each distinct watched symbol once, then emails every user whose alert level was crossed. Each (user, symbol, trading session) alerts at most once. The run fails loudly if most prices can't be fetched.
+- **Scheduled job** (`run_check.py`, started by `.github/workflows/check.yml` on a 20-minute GitHub schedule, Mon–Fri, which GitHub often delays or skips, so an external trigger (cron-job.org) also starts it about hourly; in practice, expect a check about once an hour): fetches each distinct watched symbol once, then emails every user whose alert level was crossed. Each (user, symbol, trading session) alerts at most once. The run fails loudly if most prices can't be fetched.
 - **Data** (`buydips/data.py`): Yahoo Finance via `yfinance`, behind a small provider interface so it can be swapped for a licensed source.
 - **Catalog** (`buydips/catalog.json`): the curated, Yahoo-verified list users can choose from.
 - **Storage**: Postgres (Supabase) in production, SQLite locally. Tables: `users`, `subscriptions`, `alerts_sent`.
