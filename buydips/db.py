@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import event, exc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import (
-    Boolean, Column, DateTime, false, Float, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
+    Boolean, Column, Date, DateTime, false, Float, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
     String, Table, bindparam, create_engine, delete, exists, func, insert, inspect, literal, select, text, update,
 )
 
@@ -67,6 +67,8 @@ bucket_items = Table(
     Column("added_price", Float),   # price when the stock was added; filled by the next sync if it wasn't known yet
     Column("added_at", DateTime, nullable=False),
     Column("flagged_at", DateTime),  # set once, when the red-flag email for this stock has been sent
+    Column("split_through", Date),       # splits/bonuses up to this ex-date are already folded into added_price
+    Column("split_checked_at", DateTime),  # last time we looked for splits, so a stock is not re-checked every run
     PrimaryKeyConstraint("bucket_id", "symbol"),
 )
 
@@ -142,6 +144,7 @@ def _migrate() -> None:
     wanted = [("users", "first_signin_at", "TIMESTAMP"), ("alerts_sent", "change_pct", "DOUBLE PRECISION"),
               ("alerts_sent", "price", "DOUBLE PRECISION"), ("alerts_sent", "prev_close", "DOUBLE PRECISION"),
               ("alerts_sent", "threshold_pct", "DOUBLE PRECISION"),
+              ("bucket_items", "split_through", "DATE"), ("bucket_items", "split_checked_at", "TIMESTAMP"),
               ("users", "alerts_seen_at", "TIMESTAMP"), ("users", "buckets_seen_at", "TIMESTAMP"),
               ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE")]
     for table, column, ddl in wanted:
@@ -530,6 +533,7 @@ def iter_open_bucket_items(batch: int = 5000):
     """Bucket stocks that haven't been red-flagged yet, with their owner, streamed in batches so memory stays flat
     however many there are. (Already-flagged stocks never need looking at again.)"""
     stmt = (select(bucket_items.c.bucket_id, bucket_items.c.symbol, bucket_items.c.added_price, bucket_items.c.flagged_at,
+                   bucket_items.c.added_at, bucket_items.c.split_through, bucket_items.c.split_checked_at,
                    buckets.c.name.label("bucket_name"), buckets.c.user_id, users.c.email, users.c.active)
             .select_from(bucket_items.join(buckets, buckets.c.id == bucket_items.c.bucket_id)
                          .join(users, users.c.id == buckets.c.user_id))
@@ -537,6 +541,21 @@ def iter_open_bucket_items(batch: int = 5000):
     with engine().connect() as conn:
         for row in conn.execution_options(stream_results=True, yield_per=batch).execute(stmt).mappings():
             yield dict(row)
+
+
+def update_baseline(bucket_id: int, symbol: str, added_price: float, split_through) -> None:
+    """A split or bonus happened after the stock was added: restate its starting price in today's terms, once."""
+    with _auto() as conn:
+        conn.execute(update(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol))
+                     .values(added_price=added_price, split_through=split_through, split_checked_at=_now()))
+
+
+def mark_split_checked(pairs: List[tuple]) -> None:
+    """Nothing to adjust: remember we looked, so this stock isn't re-checked on every run."""
+    with engine().begin() as conn:
+        for bucket_id, symbol in pairs:
+            conn.execute(update(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol))
+                         .values(split_checked_at=_now()))
 
 
 def set_added_price(bucket_id: int, symbol: str, price: float) -> None:

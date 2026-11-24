@@ -37,7 +37,7 @@ def view(items: List[dict], quotes: Dict[str, dict]) -> dict:
         rows.append({
             "symbol": it["symbol"], "name": catalog.name_of(it["symbol"]), "pct": pct, "pct_text": fmt_pct(pct), "tone": tone(pct),
             "flagged": flagged, "added": None if it.get("added_price") is None else f"{cur}{it['added_price']:,.2f}",
-            "now": None if price is None else f"{cur}{price:,.2f}", "waiting": pct is None,
+            "now": None if price is None else f"{cur}{price:,.2f}", "waiting": pct is None, "adjusted": bool(it.get("split_through")),
         })
     avg = sum(moves) / len(moves) if moves else None
     return {"rows": rows, "average": avg, "average_text": fmt_pct(avg), "tone": tone(avg), "n": len(rows),

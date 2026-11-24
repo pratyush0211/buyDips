@@ -80,7 +80,7 @@
     <li class="lrow brow">
       <div class="lmain">
         <span class="lname">{{ r.name }}{% if r.flagged %} <span class="flagtag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>Down {{ flag_pct }}%+</span>{% endif %}</span>
-        <span class="lsub">{% if r.waiting %}{{ r.symbol }} &middot; waiting for a price{% else %}{{ r.added }} when added &middot; {{ r.now }} now{% endif %}</span>
+        <span class="lsub">{% if r.waiting %}{{ r.symbol }} &middot; waiting for a price{% else %}{{ r.added }} when added{% if r.adjusted %} (adjusted for a split){% endif %} &middot; {{ r.now }} now{% endif %}</span>
       </div>
       <div class="lside">
         <span class="bpct tone-{{ r.tone }}">{{ r.pct_text }}</span>

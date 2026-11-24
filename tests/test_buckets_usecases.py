@@ -672,3 +672,138 @@ def test_share_image_urls_are_same_origin_so_the_browser_can_fetch_them(client):
     token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
     assert f'data-image="/b/{token}/story.png"' in html          # relative: the CSP only allows fetching from the site itself
     assert f'href="/b/{token}/story.png?download=1"' in html
+
+
+# ---------------- stock splits and bonus issues ----------------
+
+from datetime import date  # noqa: E402
+
+
+class SplitProvider(FakeProvider):
+    """A provider that also knows split history: {symbol: [(ex-date, ratio)]}, or an exception to raise."""
+    def __init__(self, quotes, splits=None, error=None):
+        super().__init__(quotes)
+        self.split_data, self.error, self.split_calls = splits or {}, error, []
+
+    def splits(self, symbol):
+        self.split_calls.append(symbol)
+        if self.error:
+            raise self.error
+        return self.split_data.get(symbol, [])
+
+
+def _today():
+    return datetime.utcnow().date()
+
+
+def _item(bid, symbol="TCS.NS"):
+    return [i for i in db.bucket_items_for([bid])[bid] if i["symbol"] == symbol][0]
+
+
+def test_a_split_after_adding_is_not_treated_as_a_loss():
+    u, bid = _bucket_for("a@x.com", "TCS.NS", 1000.0)
+    ex = _today() + timedelta(days=1)                       # a 5-for-1 split after the stock was added
+    out = Outbox()
+    run_check(SplitProvider({"TCS.NS": bq("TCS.NS", 200.0)}, {"TCS.NS": [(ex, 5.0)]}), out, now=IN_OPEN)
+    assert out.sent == []                                   # price fell 80%, but nobody lost money
+    it = _item(bid)
+    assert it["added_price"] == pytest.approx(200.0) and it["split_through"] == ex
+    from buydips import buckets as bm
+    assert bm.view([it], {"TCS.NS": {"price": 200.0}})["rows"][0]["pct"] == pytest.approx(0.0)
+
+
+def test_a_bonus_issue_and_a_later_real_fall_is_judged_on_the_adjusted_price_once():
+    u, bid = _bucket_for("a@x.com", "TCS.NS", 1000.0)
+    ex = _today() + timedelta(days=1)
+    p = SplitProvider({"TCS.NS": bq("TCS.NS", 500.0)}, {"TCS.NS": [(ex, 2.0)]})   # 1:1 bonus: 1000 -> 500, no loss
+    out = Outbox()
+    run_check(p, out, now=IN_OPEN)
+    assert out.sent == [] and _item(bid)["added_price"] == pytest.approx(500.0)
+    p.quotes["TCS.NS"] = bq("TCS.NS", 400.0)                # then a real 20% fall; the split must not be applied twice
+    with db.engine().begin() as c:
+        c.execute(text("update bucket_items set split_checked_at = null"))
+    run_check(p, out, now=IN_OPEN)
+    assert _item(bid)["added_price"] == pytest.approx(500.0)
+    assert len(out.sent) == 1 and "down 20.0%" in out.sent[0][1]
+
+
+def test_a_real_crash_still_flags_and_old_splits_are_ignored():
+    u, bid = _bucket_for("a@x.com", "TCS.NS", 100.0)
+    old = _today() - timedelta(days=400)                    # a split long before it was added: already in the price
+    out = Outbox()
+    run_check(SplitProvider({"TCS.NS": bq("TCS.NS", 50.0)}, {"TCS.NS": [(old, 2.0)]}), out, now=IN_OPEN)
+    assert len(out.sent) == 1 and "down 50.0%" in out.sent[0][1]
+    assert _item(bid)["added_price"] == 100.0
+
+
+def test_a_stock_whose_splits_cannot_be_checked_is_not_flagged_yet():
+    u, bid = _bucket_for("a@x.com", "TCS.NS", 100.0)
+    out = Outbox()
+    run_check(SplitProvider({"TCS.NS": bq("TCS.NS", 50.0)}, error=RuntimeError("yahoo down")), out, now=IN_OPEN)
+    assert out.sent == [] and _item(bid)["flagged_at"] is None and _item(bid)["split_checked_at"] is None
+    run_check(SplitProvider({"TCS.NS": bq("TCS.NS", 50.0)}), out, now=IN_OPEN)       # next run: Yahoo is back
+    assert len(out.sent) == 1
+
+
+def test_a_reverse_split_is_restated_too():
+    u, bid = _bucket_for("a@x.com", "TCS.NS", 10.0)
+    ex = _today() + timedelta(days=1)
+    out = Outbox()
+    run_check(SplitProvider({"TCS.NS": bq("TCS.NS", 100.0)}, {"TCS.NS": [(ex, 0.1)]}), out, now=IN_OPEN)   # 10-to-1 consolidation
+    assert _item(bid)["added_price"] == pytest.approx(100.0)
+
+
+def test_splits_are_looked_up_only_for_stocks_that_moved_and_not_again_for_six_hours():
+    _bucket_for("a@x.com", "TCS.NS", 100.0)
+    u = db.get_or_create_user("a@x.com")
+    bid = db.list_buckets(u["id"])[0]["id"]
+    db.add_bucket_item(bid, "INFY.NS", 100.0)
+    p = SplitProvider({"TCS.NS": bq("TCS.NS", 80.0), "INFY.NS": bq("INFY.NS", 101.0)})   # INFY barely moved
+    run_check(p, Outbox(), now=IN_OPEN)
+    assert p.split_calls == ["TCS.NS"]
+    run_check(p, Outbox(), now=IN_OPEN)                      # an hour later: the "no split" answer is still trusted
+    assert p.split_calls == ["TCS.NS"]
+
+
+def test_one_lookup_per_symbol_however_many_people_hold_it_and_a_cap_per_run():
+    for i in range(3):
+        _bucket_for(f"u{i}@x.com", "TCS.NS", 100.0)
+    p = SplitProvider({"TCS.NS": bq("TCS.NS", 50.0)})
+    run_check(p, Outbox(), now=IN_OPEN)
+    assert p.split_calls == ["TCS.NS"]
+    u = db.get_or_create_user("big@x.com"); bid = db.create_bucket(u["id"], "Big")
+    for sym in IN_STOCKS[:60]:
+        db.add_bucket_item(bid, sym, 100.0)
+    p2 = SplitProvider({s: bq(s, 50.0) for s in IN_STOCKS[:60]})
+    out = Outbox()
+    run_check(p2, out, now=IN_OPEN)
+    assert len(p2.split_calls) == 40                          # capped; the other 20 wait for the next run, unflagged
+    run_check(p2, out, now=IN_OPEN)
+    assert len(set(p2.split_calls)) >= 55
+
+
+def test_the_page_says_when_a_starting_price_was_adjusted(client):
+    sign_in(client)
+    me = db.get_or_create_user("a@x.com")["id"]
+    bid = db.create_bucket(me, "B")
+    db.add_bucket_item(bid, "TCS.NS", 1000.0)
+    db.save_quotes([Quote("TCS.NS", 200.0, 1, 0, "d")])
+    assert "adjusted for a split" not in client.get(f"/buckets/{bid}").get_data(as_text=True)
+    db.update_baseline(bid, "TCS.NS", 200.0, _today())
+    page = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "adjusted for a split" in page and "0.00%" in page
+
+
+def test_old_bucket_items_gain_the_split_columns(tmp_path):
+    url = f"sqlite:///{tmp_path}/old.db"
+    old = create_engine(url)
+    with old.begin() as c:
+        c.execute(text("create table bucket_items (bucket_id integer not null, symbol varchar(40) not null, added_price float,"
+                       " added_at timestamp not null, flagged_at timestamp, primary key (bucket_id, symbol))"))
+        c.execute(text("insert into bucket_items values (1, 'TCS.NS', 100.0, '2026-11-20 00:00:00', null)"))
+    db.reset_engine(url)
+    db.init_db(); db.init_db()
+    cols = {c["name"] for c in inspect(db.engine()).get_columns("bucket_items")}
+    assert {"split_through", "split_checked_at"} <= cols
+    with db.engine().connect() as c:
+        assert c.execute(text("select added_price, split_through from bucket_items")).first() == (100.0, None)

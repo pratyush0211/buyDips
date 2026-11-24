@@ -3,7 +3,7 @@ was crossed today. Each (user, symbol, trading session) is alerted at most once.
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
 from . import buckets as bucketmath, catalog, config, db, emails, links, markets
@@ -86,7 +86,7 @@ def run_check(
         else:
             log.error("Alert email to user %s failed; will retry on the next run", user_id)
 
-    _flag_bucket_stocks(quotes, now, send, summary)
+    _flag_bucket_stocks(provider, quotes, now, send, summary)
 
     failed = len(summary["failed_symbols"])
     log.info("Checked %d symbols (%d failed) for %d users; sent %d emails",
@@ -98,11 +98,29 @@ def run_check(
     return summary
 
 
-def _flag_bucket_stocks(quotes, now, send, summary) -> None:
+SPLIT_RECHECK = timedelta(hours=6)   # how long a "no split found" answer is trusted for one stock
+SPLIT_LOOKUPS_PER_RUN = 40           # a safety cap on provider calls; the rest wait for the next run
+SPLIT_LOOK_AT_PCT = 5.0              # a stock that has moved this far (either way) since it was added might have split
+
+
+def _split_factor(splits, since) -> tuple:
+    """(product of split ratios with an ex-date after `since`, the latest such ex-date)."""
+    factor, latest = 1.0, None
+    for day, ratio in splits:
+        if day > since:
+            factor *= ratio
+            latest = day if latest is None else max(latest, day)
+    return factor, latest
+
+
+def _flag_bucket_stocks(provider, quotes, now, send, summary) -> None:
     """Fill in missing starting prices, then send the one-time red-flag email for any bucket stock that is
     down BUCKET_FLAG_PCT or more since it was added. Only fresh prices from an open market can flag a stock.
-    One streamed pass over the not-yet-flagged rows; only the few that need action are kept in memory."""
-    fills, pending = [], defaultdict(list)
+
+    A split or bonus issue makes the price fall without anyone losing money, so before a stock is judged its starting
+    price is restated for any split since it was added (once), and a stock whose splits can't be checked is not flagged
+    this run. One streamed pass over the not-yet-flagged rows; only the few that need action are kept in memory."""
+    fills, candidates = [], []
     for r in db.iter_open_bucket_items():
         q = quotes.get(r["symbol"])
         if q is None:
@@ -110,9 +128,42 @@ def _flag_bucket_stocks(quotes, now, send, summary) -> None:
         if r["added_price"] is None:
             fills.append((r["bucket_id"], r["symbol"], q.price))
             r["added_price"] = q.price
-        if (not r["active"] or r["added_price"] is None or not markets.is_live(r["symbol"], now)
-                or not markets.is_fresh(r["symbol"], q.session, now)):
+        if not r["active"] or not markets.is_live(r["symbol"], now) or not markets.is_fresh(r["symbol"], q.session, now):
             continue
+        pct = bucketmath.since_pct(q.price, r["added_price"])
+        if pct is None or abs(pct) < SPLIT_LOOK_AT_PCT:
+            continue
+        r["quote"] = q
+        candidates.append(r)
+    for bucket_id, symbol, price in fills:  # written after the read finishes, so the two never contend
+        db.set_added_price(bucket_id, symbol, price)
+
+    lookup = getattr(provider, "splits", None)
+    cache, lookups, unchanged, pending = {}, 0, [], defaultdict(list)
+    for r in candidates:
+        q = r["quote"]
+        recently = r["split_checked_at"] and now.replace(tzinfo=None) - r["split_checked_at"] < SPLIT_RECHECK
+        if lookup and not recently:
+            if r["symbol"] not in cache:
+                if lookups >= SPLIT_LOOKUPS_PER_RUN:
+                    cache[r["symbol"]] = None
+                else:
+                    lookups += 1
+                    try:
+                        cache[r["symbol"]] = lookup(r["symbol"])
+                    except Exception as exc:  # noqa: BLE001
+                        log.warning("Could not check splits for %s: %s", r["symbol"], exc)
+                        cache[r["symbol"]] = None
+            splits = cache[r["symbol"]]
+            if splits is None:
+                continue  # unverified: do not judge this stock on a possibly split-distorted price; try again next run
+            since = r["split_through"] or r["added_at"].date()
+            factor, latest = _split_factor(splits, since)
+            if factor != 1.0:
+                r["added_price"] = r["added_price"] / factor
+                db.update_baseline(r["bucket_id"], r["symbol"], r["added_price"], latest)
+            else:
+                unchanged.append((r["bucket_id"], r["symbol"]))
         pct = bucketmath.since_pct(q.price, r["added_price"])
         if pct is None or pct > -config.BUCKET_FLAG_PCT:
             continue
@@ -121,8 +172,8 @@ def _flag_bucket_stocks(quotes, now, send, summary) -> None:
             "bucket_id": r["bucket_id"], "symbol": r["symbol"], "bucket": r["bucket_name"], "name": catalog.name_of(r["symbol"]),
             "pct": pct, "added_price": f"{cur}{r['added_price']:,.2f}", "price": f"{cur}{q.price:,.2f}",
         })
-    for bucket_id, symbol, price in fills:  # written after the read finishes, so the two never contend
-        db.set_added_price(bucket_id, symbol, price)
+    if unchanged:
+        db.mark_split_checked(unchanged)
     for (user_id, email), items in pending.items():
         unsub = links.unsubscribe_url(user_id)
         subject, body, html = emails.flagged(items, unsub)

@@ -48,6 +48,14 @@ class YahooProvider:
             log.error("Failed to fetch %s: %s", symbol, exc)
             return None
 
+    def splits(self, symbol: str):
+        """[(ex-date, ratio)] for stock splits and bonus issues (a 1:1 bonus is 2.0, a 10-for-1 split is 10.0, a
+        reverse split is below 1). Raises if Yahoo can't be reached, so callers never mistake "unknown" for "none"."""
+        import yfinance as yf
+
+        series = yf.Ticker(symbol).splits
+        return [(d.date(), float(v)) for d, v in series.items() if v and v == v and v > 0]
+
     def fetch(self, symbols: Iterable[str]) -> Dict[str, Quote]:
         symbols = list(dict.fromkeys(symbols))
         with ThreadPoolExecutor(self.workers) as pool:
