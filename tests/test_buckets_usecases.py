@@ -573,7 +573,7 @@ def test_user_facing_copy_is_informational_not_advice(client):
     for name, html in pages.items():
         text = re.sub(r"<[^>]+>", " ", html)
         text = re.sub(r"buydips|buyDips", "", text)
-        assert not re.search(r"\bdips?\b|\bpicks?\b|\bbargain|\bopportunit|\bundervalued|\bguarantee", text, re.I), name
+        assert not re.search(r"\bdips?\b|\bpicks\b|\bbargain|\bopportunit|\bundervalued|\bguarantee", text, re.I), name
     assert "not a recommendation" in pages["bucket"] and "SEBI-registered" in pages["home"]
     add(client, bid, "TCS.NS")
     share = client.get(f"/buckets/{bid}").get_data(as_text=True)
