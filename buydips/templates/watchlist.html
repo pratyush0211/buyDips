@@ -7,6 +7,11 @@
     <p>Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
   </header>
 
+  <a class="mstrip" href="/markets" aria-label="Market hours and holidays">
+    {% for c in mkts %}<span class="mchip"><i class="{{ 'is-open' if c.open else 'is-closed' }}"></i>{{ "India" if c.label.startswith("India") else "US" }} {{ "open" if c.open else "closed" }}</span>{% endfor %}
+    <span class="mmore">Hours &rsaquo;</span>
+  </a>
+
   {% if saved %}<div class="notice" role="status">Saved. You'll be emailed when something on your list drops past your level.</div>{% endif %}
   {% if not active %}<div class="warnbox">Alerts are paused because you unsubscribed. Saving your watchlist turns them back on.</div>{% endif %}
 

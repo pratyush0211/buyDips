@@ -24,6 +24,8 @@ users = Table(
     Column("created_at", DateTime, nullable=False),
     Column("last_login_sent_at", DateTime),
     Column("first_signin_at", DateTime),  # set once, when the person first clicks a sign-in link
+    Column("alerts_seen_at", DateTime),   # when they last opened Alerts: newer alerts show as a badge on the bell
+    Column("buckets_seen_at", DateTime),  # when they last opened Buckets: newer red flags show as a badge on the tab
 )
 
 subscriptions = Table(
@@ -111,6 +113,7 @@ def _migrate() -> None:
     wanted = [("users", "first_signin_at", "TIMESTAMP"), ("alerts_sent", "change_pct", "DOUBLE PRECISION"),
               ("alerts_sent", "price", "DOUBLE PRECISION"), ("alerts_sent", "prev_close", "DOUBLE PRECISION"),
               ("alerts_sent", "threshold_pct", "DOUBLE PRECISION"),
+              ("users", "alerts_seen_at", "TIMESTAMP"), ("users", "buckets_seen_at", "TIMESTAMP"),
               ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE")]
     for table, column, ddl in wanted:
         if column in {c["name"] for c in inspect(engine()).get_columns(table)}:
@@ -118,6 +121,9 @@ def _migrate() -> None:
         try:
             with engine().begin() as conn:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+                if column in ("alerts_seen_at", "buckets_seen_at"):
+                    # Everything that already happened counts as seen, so nobody opens to a pile of badges.
+                    conn.execute(text(f"UPDATE users SET {column} = :t"), {"t": _now()})
                 if column == "first_signin_at":
                     # Everyone who already exists counts as already welcomed, so they don't trigger notices.
                     conn.execute(text("UPDATE users SET first_signin_at = created_at WHERE first_signin_at IS NULL"))
@@ -172,6 +178,29 @@ def get_user(user_id: int) -> Optional[dict]:
     with engine().connect() as conn:
         row = conn.execute(select(users).where(users.c.id == user_id)).mappings().first()
         return dict(row) if row else None
+
+
+_EPOCH = datetime(1970, 1, 1)
+
+
+def mark_seen(user_id: int, what: str) -> datetime:
+    """Record that the person has just looked at "alerts" or "buckets"; returns the time stored."""
+    col = {"alerts": users.c.alerts_seen_at, "buckets": users.c.buckets_seen_at}[what]
+    now = _now()
+    with engine().begin() as conn:
+        conn.execute(update(users).where(users.c.id == user_id).values({col.key: now}))
+    return now
+
+
+def badge_counts(user_id: int, alerts_seen: Optional[datetime], buckets_seen: Optional[datetime]) -> tuple:
+    """(alerts since they last looked, red flags since they last looked): one statement, two index-backed counts."""
+    a = (select(func.count()).select_from(alerts_sent)
+         .where((alerts_sent.c.user_id == user_id) & (alerts_sent.c.sent_at > (alerts_seen or _EPOCH))).scalar_subquery())
+    f = (select(func.count()).select_from(bucket_items.join(buckets, buckets.c.id == bucket_items.c.bucket_id))
+         .where((buckets.c.user_id == user_id) & (bucket_items.c.flagged_at > (buckets_seen or _EPOCH))).scalar_subquery())
+    with engine().connect() as conn:
+        row = conn.execute(select(a, f)).first()
+    return int(row[0] or 0), int(row[1] or 0)
 
 
 def seconds_since_login_link(email: str) -> Optional[float]:

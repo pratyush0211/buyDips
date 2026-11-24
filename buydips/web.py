@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, Response, abort, g, redirect, render_template, request, send_from_directory, session, url_for
 
 from . import buckets as bucketmath, card, catalog, config, db, emails, links, markets
 from .data import YahooProvider
@@ -136,7 +136,28 @@ def create_app() -> Flask:
 
     def current_user():
         uid = session.get("uid")
-        return db.get_user(uid) if uid else None
+        if not uid:
+            return None
+        if "user" not in g:  # one lookup per request, shared by the page and the header badges
+            g.user = db.get_user(uid)
+        return g.user
+
+    def _seen(kind: str) -> None:
+        """They are looking at Alerts/Buckets now: clear that badge for this page and the next."""
+        u = current_user()
+        if u:
+            u[f"{kind}_seen_at"] = db.mark_seen(u["id"], kind)
+
+    @app.context_processor
+    def header_badges():
+        try:
+            u = current_user()
+            if not u:
+                return {}
+            a, f = db.badge_counts(u["id"], u.get("alerts_seen_at"), u.get("buckets_seen_at"))
+            return {"bell_n": a, "bucket_n": f}
+        except Exception:  # noqa: BLE001  (a badge must never take a page down)
+            return {}
 
     def safe_user():
         try:
@@ -273,6 +294,7 @@ def create_app() -> Flask:
             "watchlist.html", user=user, tab="watchlist", sections=catalog.grouped(), totals=catalog.tab_totals(), subs=db.get_subscriptions(user["id"]),
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
+            mkts=[markets.market_status(m, datetime.now(timezone.utc)) for m in ("India", "US")],
         )
 
     # ---------- buckets ----------
@@ -304,6 +326,7 @@ def create_app() -> Flask:
             if new_id is None:
                 return page("Too many buckets", f"You can have up to {config.MAX_BUCKETS} buckets.", 400)
             return redirect(url_for("bucket_page", bucket_id=new_id))
+        _seen("buckets")
         rows = db.list_buckets(user["id"])
         items = db.bucket_items_for([b["id"] for b in rows])
         quotes = db.quotes_for({i["symbol"] for v in items.values() for i in v})
@@ -317,6 +340,7 @@ def create_app() -> Flask:
         if not user:
             return redirect(url_for("index"))
         b = _bucket_or_404(user, bucket_id)
+        _seen("buckets")
         items = db.bucket_items_for([b["id"]])[b["id"]]
         quotes = db.quotes_for([i["symbol"] for i in items])
         q = " ".join(request.args.get("q", "").lower().split())[:40]
@@ -451,6 +475,7 @@ def create_app() -> Flask:
         user = current_user()
         if not user:
             return redirect(url_for("index"))
+        _seen("alerts")
         return render_template("alerts.html", user=user, tab="alerts", groups=_alert_groups(user["id"]),
                                active=user["active"], n_watched=len(db.get_subscriptions(user["id"])))
 
@@ -462,7 +487,7 @@ def create_app() -> Flask:
         now = datetime.now(timezone.utc)
         cards = [{**markets.market_status(m, now), "holidays": markets.upcoming_holidays(m, now)}
                  for m in ("India", "US")]
-        return render_template("markets.html", user=user, tab="markets", cards=cards)
+        return render_template("markets.html", user=user, tab="watchlist", cards=cards)
 
     @app.route("/settings")
     def settings():

@@ -210,26 +210,45 @@ def test_watchlist_page_has_tabs_for_each_market(client):
     assert 'id="jump"' in html and 'class="navbar"' in html  # A-Z bar, filled in by watchlist.js
 
 
-# ---------- the iOS-style app shell: Watchlist / Alerts / Markets / Settings ----------
+# ---------- the iOS-style app shell: two tabs (Watchlist, Buckets), Alerts and Settings as header icons ----------
 
-TABS = ["/watchlist", "/buckets", "/alerts", "/markets", "/settings"]
+PAGES = ["/watchlist", "/buckets", "/alerts", "/markets", "/settings"]
+TABS = PAGES
 
 
 def test_tab_pages_need_sign_in(client):
-    for path in TABS:
+    for path in PAGES:
         r = client.get(path)
         assert r.status_code == 302 and r.headers["Location"].endswith("/"), path
 
 
-def test_every_tab_shows_the_tab_bar_with_the_right_one_selected(client):
+def _bar(html):
+    return html.split('<nav class="tabbar"')[1].split("</nav>")[0]
+
+
+def test_the_bar_has_two_tabs_and_alerts_and_settings_are_header_icons(client):
     sign_in(client)
-    for path in TABS:
+    selected = {"/watchlist": "/watchlist", "/markets": "/watchlist", "/buckets": "/buckets"}  # Markets is a sub-page of Watchlist
+    for path in PAGES:
         html = client.get(path).get_data(as_text=True)
         assert 'class="app"' in html and 'class="tabbar"' in html, path
-        assert html.count('aria-current="page"') == 2  # tab bar + desktop header
-        for other in TABS:
-            assert f'href="{other}"' in html
-        assert f'aria-current="page" href="{path}"' in html or f'href="{path}" aria-current="page"' in html, path
+        bar = _bar(html)
+        assert bar.count("<a ") == 2 and 'href="/watchlist"' in bar and 'href="/buckets"' in bar, path
+        assert 'href="/alerts"' not in bar and 'href="/settings"' not in bar and 'href="/markets"' not in bar
+        header = html.split("</header>")[0]
+        assert 'class="iconbtn"' in header and 'href="/alerts"' in header and 'href="/settings"' in header, path
+        if path in selected:
+            assert 'aria-current="page"' in bar and f'href="{selected[path]}"' in bar.split('aria-current="page"')[0].rsplit("<a", 1)[1] + '"', path
+        else:
+            assert 'aria-current="page"' not in bar, path          # Alerts/Settings: the header icon is selected, not a tab
+            assert html.count('aria-current="page"') == 1, path
+
+
+def test_watchlist_shows_market_status_that_leads_to_hours_and_holidays(client):
+    sign_in(client)
+    html = client.get("/watchlist").get_data(as_text=True)
+    assert 'class="mstrip"' in html and 'href="/markets"' in html and "India" in html and "US" in html
+    assert 'class="backlink" href="/watchlist"' in client.get("/markets").get_data(as_text=True)
 
 
 def test_signed_out_pages_have_no_tab_bar_but_every_signed_in_page_does(client):
@@ -238,7 +257,7 @@ def test_signed_out_pages_have_no_tab_bar_but_every_signed_in_page_does(client):
     sign_in(client)
     html = client.get("/privacy").get_data(as_text=True)
     assert 'class="tabbar"' in html and 'class="app"' in html
-    assert 'aria-current="page"' not in html  # no tab is selected on a page that isn't one of the four
+    assert 'aria-current="page"' not in html  # no tab is selected on a page that isn't one of them
     assert "Sign out</button>" not in html.split("</header>")[0]  # the old header with its Sign out button is gone
 
 

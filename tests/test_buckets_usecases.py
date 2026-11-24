@@ -584,3 +584,75 @@ def test_user_facing_copy_is_informational_not_advice(client):
                                 emails.flagged([{"bucket": "B", "name": "N", "symbol": "TCS.NS", "pct": -12.0, "added_price": "1", "price": "2"}], "u")):
         assert "SEBI-registered" in text and "SEBI-registered" in html
         assert not re.search(r"\b(buy now|opportunity|bargain|good time)\b", subject + text, re.I)
+
+
+# ---------------- header badges ----------------
+
+def _badges(client, path="/privacy"):
+    """(new alerts on the bell, new flags on the Buckets tab) as shown on a page, or None when there is no badge."""
+    import re
+    html = client.get(path).get_data(as_text=True)
+    bell = re.search(r'href="/alerts"[^>]*aria-label="Alerts(?:, (\d+) new)?"', html)
+    tab = html.split('<nav class="tabbar"')[1].split('href="/buckets"')[1].split("</a>")[0]
+    flags = re.search(r'<b class="badge"[^>]*>([^<]+)</b>', tab)
+    return (bell.group(1) if bell else None), (flags.group(1) if flags else None)
+
+
+def test_alerts_badge_counts_new_alerts_and_clears_when_alerts_are_opened(client):
+    sign_in(client)
+    me = db.get_or_create_user("a@x.com")
+    assert _badges(client)[0] is None
+    db.record_alerts(me["id"], [("^NSEI", "2026-11-20"), ("TCS.NS", "2026-11-20"), ("INFY.NS", "2026-11-20")])
+    assert _badges(client)[0] == "3"
+    client.get("/alerts")                       # looking at them clears the badge, even on that very page
+    assert _badges(client, "/alerts")[0] is None and _badges(client)[0] is None
+    db.record_alerts(me["id"], [("WIPRO.NS", "2026-11-23")])
+    assert _badges(client)[0] == "1"
+
+
+def test_buckets_badge_counts_new_red_flags_and_clears_when_buckets_are_opened(client):
+    sign_in(client)
+    me = db.get_or_create_user("a@x.com")["id"]
+    bid = db.create_bucket(me, "B")
+    db.add_bucket_item(bid, "TCS.NS", 100.0); db.add_bucket_item(bid, "INFY.NS", 100.0)
+    assert _badges(client)[1] is None
+    db.mark_flagged([(bid, "TCS.NS"), (bid, "INFY.NS")])
+    assert _badges(client)[1] == "2"
+    client.get(f"/buckets/{bid}")               # opening the bucket (or the list) counts as seeing the flags
+    assert _badges(client)[1] is None
+
+
+def test_badges_cap_at_nine_plus_and_belong_to_one_person_only(client):
+    sign_in(client, "a@x.com")
+    a = db.get_or_create_user("a@x.com")["id"]
+    db.record_alerts(a, [(s, "2026-11-20") for s in IN_STOCKS[:12]])
+    assert "9+" in client.get("/privacy").get_data(as_text=True)
+    sign_in(client, "b@x.com")
+    assert _badges(client)[0] is None           # b@ sees nothing of a@'s alerts
+
+
+def test_existing_users_start_with_nothing_unseen_after_the_migration(tmp_path):
+    url = f"sqlite:///{tmp_path}/old.db"
+    old = create_engine(url)
+    with old.begin() as c:
+        c.execute(text("create table users (id integer primary key, email varchar(320) unique not null, active boolean not null,"
+                       " created_at timestamp not null, last_login_sent_at timestamp, first_signin_at timestamp)"))
+        c.execute(text("create table alerts_sent (user_id integer not null, symbol varchar(40) not null, session varchar(10) not null,"
+                       " sent_at timestamp not null, change_pct float, price float, prev_close float, threshold_pct float,"
+                       " primary key (user_id, symbol, session))"))
+        c.execute(text("insert into users values (1, 'a@x.com', 1, '2026-11-01 00:00:00', null, '2026-11-01 00:00:00')"))
+        c.execute(text("insert into alerts_sent (user_id, symbol, session, sent_at) values (1, '^NSEI', '2026-11-10', '2026-11-10 05:00:00')"))
+    db.reset_engine(url)
+    db.init_db(); db.init_db()
+    u = db.get_user(1)
+    assert u["alerts_seen_at"] is not None and u["buckets_seen_at"] is not None
+    assert db.badge_counts(1, u["alerts_seen_at"], u["buckets_seen_at"]) == (0, 0)   # the old alert is not "new"
+
+
+def test_badge_lookup_is_one_statement_and_never_breaks_a_page(client, monkeypatch):
+    sign_in(client)
+    with count_queries() as q:
+        db.badge_counts(1, None, None)
+    assert len(q) == 1
+    monkeypatch.setattr(db, "badge_counts", lambda *a: (_ for _ in ()).throw(RuntimeError("db hiccup")))
+    assert client.get("/watchlist").status_code == 200

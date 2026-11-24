@@ -324,8 +324,9 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 
 @media (max-width: 800px) {
   .app .tabbar { display: flex; }
-  .app .site-header { display: none; }
-  .app main { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .app .site-header { padding: calc(env(safe-area-inset-top, 0px) + 8px) 0 0; }
+  .app .site-header .nav .hide-sm { display: none; }
+  .app main { padding-top: 0; }
   .app { padding-bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0px) + 14px); }
   .app .site-footer { display: none; }
   .app .navbar { top: env(safe-area-inset-top, 0px); }
@@ -461,3 +462,27 @@ a.lval { color: var(--brand); }
 .emptybucket p { margin: 0 auto; max-width: 340px; }
 .sharewarn { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2, var(--bg)); border: 1px solid var(--line); color: var(--text); font-size: 13.5px; line-height: 1.45; }
 .fine.tight { margin: -2px 0 8px; }
+
+/* header icons: alerts and settings live top right, the bar below keeps only the two daily destinations */
+.iconbtn { position: relative; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--muted); }
+.iconbtn:hover { color: var(--text); background: var(--surface-2); }
+.iconbtn[aria-current="page"] { color: var(--brand); }
+.iconbtn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.iconbtn[aria-current="page"] svg.fillable { fill: currentColor; }
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 99px;
+  background: var(--down); color: #fff; font: 700 11px/1 var(--sans); font-style: normal; box-sizing: border-box; }
+.iconbtn .badge { position: absolute; top: 5px; right: 3px; box-shadow: 0 0 0 2px var(--bg); }
+.navtab .badge { margin-left: 6px; vertical-align: 1px; }
+.tabbar .ico { position: relative; display: inline-flex; }
+.tabbar .ico .badge { position: absolute; top: -4px; left: 15px; box-shadow: 0 0 0 2px var(--bg); }
+.tabbar a { font-size: 12px; }
+@media (max-width: 800px) { .tabbar svg { width: 27px; height: 27px; } }
+
+/* market status strip on the watchlist */
+.mstrip { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin: 12px 0 4px; padding: 10px 14px; border-radius: 12px; background: var(--surface);
+  border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 560; }
+.mstrip:active { background: var(--surface-2); }
+.mchip { display: inline-flex; align-items: center; gap: 7px; }
+.mchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.mchip i.is-open { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft, rgba(22,101,52,.15)); }
+.mmore { margin-left: auto; color: var(--brand); font-weight: 600; }
