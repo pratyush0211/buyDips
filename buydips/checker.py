@@ -24,6 +24,9 @@ def run_check(
 ) -> dict:
     provider = provider or YahooProvider()
     now = now or datetime.now(timezone.utc)
+    stale_year = markets.missing_holiday_year(now)
+    if stale_year:
+        log.warning("holidays.json has no dates for %s: market holidays are not being skipped", stale_year)
     all_subs = db.active_subscriptions()
     # Only symbols whose own market is open right now (or just closed) are looked at.
     subs = [s for s in all_subs if markets.is_live(s["symbol"], now)]

@@ -166,3 +166,29 @@ def test_us_market_follows_new_york_time():
     assert p.requested == []
     run_check(p, out, now=utc(20, 15, 0))  # 10:00 ET Fri: open
     assert len(out.sent) == 1
+
+
+def test_market_holidays_are_skipped():
+    from buydips import markets
+
+    # Tue 24 Nov 2026 is an NSE holiday: India is closed all day, the US is not.
+    assert not markets.is_live("^NSEI", utc(24, 5, 0))
+    assert markets.is_live("^NSEI", utc(25, 5, 0))
+    # Thanksgiving, Thu 26 Nov: NYSE closed, NSE open.
+    assert not markets.is_live("^GSPC", utc(26, 16, 0)) and markets.is_live("^NSEI", utc(26, 5, 0))
+    user("a@x.com", {"^NSEI": 1.0})
+    p, out = FakeProvider({"^NSEI": q("^NSEI", -5, session="2026-11-24")}), Outbox()
+    run_check(p, out, now=utc(24, 5, 0))
+    assert p.requested == [] and out.sent == []
+
+
+def test_every_holiday_is_a_real_weekday_date():
+    from datetime import date
+
+    from buydips import markets
+
+    for market, days in markets.HOLIDAYS.items():
+        for d in days:
+            assert date.fromisoformat(d).weekday() < 5, (market, d)
+    assert markets.missing_holiday_year(utc(24, 5, 0)) is None
+    assert markets.missing_holiday_year(datetime(2027, 1, 4, tzinfo=timezone.utc)) == 2027

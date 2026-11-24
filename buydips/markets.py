@@ -4,7 +4,9 @@ An alert is only valid while its own market is open (plus a short window after t
 the final price), and only for *that market's current trading day*. That keeps a closed market, a
 weekend, a holiday or a stale Yahoo bar from ever producing an alert."""
 
+import json
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
 
@@ -15,6 +17,9 @@ MARKETS = {
     "India": ("Asia/Kolkata", time(9, 15), time(15, 30)),
     "US": ("America/New_York", time(9, 30), time(16, 0)),
 }
+# Full-day closures that fall on weekdays (weekends are handled separately). Refresh every December.
+HOLIDAYS = {k: set(v) for k, v in json.loads((Path(__file__).parent / "holidays.json").read_text()).items()
+            if not k.startswith("_")}
 GRACE = timedelta(minutes=60)  # still alert this long after the close, for the closing price
 
 
@@ -35,12 +40,12 @@ def local_today(symbol: str, now: datetime) -> Optional[date]:
 
 
 def is_live(symbol: str, now: datetime) -> bool:
-    """True on a weekday between the market's open and (close + grace), local time."""
+    """True on a weekday that isn't a listed holiday, between the market's open and (close + grace), local time."""
     market = market_of(symbol)
     if market is None:
         return False
     here = local_now(market, now)
-    if here.weekday() >= 5:
+    if here.weekday() >= 5 or here.date().isoformat() in HOLIDAYS.get(market, ()):
         return False
     _, opens, closes = MARKETS[market]
     start = here.replace(hour=opens.hour, minute=opens.minute, second=0, microsecond=0)
@@ -52,3 +57,9 @@ def is_fresh(symbol: str, session: str, now: datetime) -> bool:
     """True only if `session` (YYYY-MM-DD) is today's trading day in the symbol's own market."""
     today = local_today(symbol, now)
     return today is not None and session == today.isoformat()
+
+
+def missing_holiday_year(now: datetime) -> Optional[int]:
+    """The current year if the holiday list has no dates for it (so someone should refresh it), else None."""
+    year = str(now.year)
+    return None if all(any(d.startswith(year) for d in HOLIDAYS[m]) for m in HOLIDAYS) else now.year

@@ -34,3 +34,9 @@ With no email configured, sign-in links are printed to the server log instead of
 
 - Alerts are for information only, not investment advice. Prices come from a third-party source and may be delayed.
 - Yahoo data is unofficial and fine for a small beta; use a licensed provider before a wide public launch.
+
+## Market holidays (refresh every December)
+
+`buydips/holidays.json` lists weekday closures for India (from NSE's "Trading holidays" circular) and the US
+(from NYSE's hours-and-calendars page). Alerts are skipped on those days. If the current year has no dates,
+each run logs a warning. Weekends need no entry. Early closes and Diwali Muhurat sessions are not special-cased.
