@@ -200,3 +200,86 @@ def test_unsupported_symbols_are_reported_not_silently_dropped():
     s = run_check(p, out, now=IN_OPEN)
     assert s["unknown_symbols"] == ["^N225"] and s["skipped_closed"] == 0
     assert p.requested == [["^NSEI"]] and len(out.sent) == 1
+
+
+# ---- buckets: since-added performance and the one-time red flag ----
+
+def bucket(email, symbol, added_price, name="Tech"):
+    u = db.get_or_create_user(email)
+    bid = db.create_bucket(u["id"], name)
+    db.add_bucket_item(bid, symbol, added_price)
+    return u, bid
+
+
+def bq(symbol, price, session="2026-11-20"):
+    return Quote(symbol, price, price, 0.0, session)
+
+
+def test_red_flag_email_goes_out_once_for_a_stock_down_ten_percent():
+    bucket("a@x.com", "RELIANCE.NS", 100.0)
+    out = Outbox()
+    s = run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 85.0)}), out, now=IN_OPEN)
+    assert s["flag_emails"] == 1 and len(out.sent) == 1
+    assert "Reliance" in out.sent[0][1] and "down 15.0% since you added it" in out.sent[0][1]
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 80.0)}), out, now=IN_OPEN)   # worse: still no second email
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 99.0)}), out, now=IN_OPEN)   # recovered...
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 70.0)}), out, now=IN_OPEN)   # ...and fell again: still only once
+    assert len(out.sent) == 1
+
+
+def test_flag_line_is_exactly_ten_percent():
+    bucket("a@x.com", "TCS.NS", 100.0)
+    out = Outbox()
+    run_check(FakeProvider({"TCS.NS": bq("TCS.NS", 90.01)}), out, now=IN_OPEN)  # down 9.99%
+    assert out.sent == []
+    run_check(FakeProvider({"TCS.NS": bq("TCS.NS", 90.0)}), out, now=IN_OPEN)   # down 10.00%
+    assert len(out.sent) == 1
+
+
+def test_no_flag_from_stale_data_or_a_closed_market():
+    bucket("a@x.com", "RELIANCE.NS", 100.0)
+    out = Outbox()
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 50.0, session="2026-11-19")}), out, now=IN_OPEN)  # yesterday's bar
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 50.0, session="2026-11-23")}), out, now=utc(23, 19, 1))  # 00:31 IST, closed
+    assert out.sent == []
+
+
+def test_flags_are_per_stock_and_grouped_into_one_email_per_user():
+    u, bid = bucket("a@x.com", "RELIANCE.NS", 100.0)
+    db.add_bucket_item(bid, "TCS.NS", 100.0)
+    db.add_bucket_item(bid, "INFY.NS", 100.0)
+    out = Outbox()
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 80.0), "TCS.NS": bq("TCS.NS", 95.0), "INFY.NS": bq("INFY.NS", 60.0)}),
+              out, now=IN_OPEN)
+    assert len(out.sent) == 1 and "2 stocks in your buckets" in out.sent[0][1]
+    assert "TCS" not in out.sent[0][2]  # down only 5%
+
+
+def test_paused_users_get_no_flag_email_and_failed_sends_are_retried():
+    u, _ = bucket("a@x.com", "RELIANCE.NS", 100.0)
+    p = FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 80.0)})
+    run_check(p, Outbox(ok=False), now=IN_OPEN)           # send fails: not marked as flagged
+    out = Outbox()
+    run_check(p, out, now=IN_OPEN)
+    assert len(out.sent) == 1
+    u2, _ = bucket("b@x.com", "RELIANCE.NS", 100.0)
+    db.set_active(u2["id"], False)
+    out2 = Outbox()
+    run_check(p, out2, now=IN_OPEN)
+    assert [m[0] for m in out2.sent] == []                # a@ already flagged; b@ is paused
+
+
+def test_a_new_stock_gets_its_starting_price_from_the_next_sync_even_after_hours():
+    u, bid = bucket("a@x.com", "RELIANCE.NS", None)       # added when no price was known
+    out = Outbox()
+    run_check(FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 120.0, session="2026-11-23")}), out, now=utc(23, 19, 1))
+    item = db.bucket_items_for([bid])[bid][0]
+    assert item["added_price"] == 120.0 and out.sent == []
+    assert db.quotes_for(["RELIANCE.NS"])["RELIANCE.NS"]["price"] == 120.0   # and the price is cached for the pages
+
+
+def test_bucket_stocks_in_a_closed_market_are_not_fetched_once_priced():
+    bucket("a@x.com", "RELIANCE.NS", 100.0)
+    p = FakeProvider({"RELIANCE.NS": bq("RELIANCE.NS", 50.0)})
+    run_check(p, Outbox(), now=utc(23, 19, 1))
+    assert p.requested == []

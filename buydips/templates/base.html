@@ -32,7 +32,7 @@
     </a>
     <nav class="nav" aria-label="Main">
       {% if user %}
-        {% for key, label, href in [("watchlist", "Watchlist", "/watchlist"), ("alerts", "Alerts", "/alerts"), ("markets", "Markets", "/markets"), ("settings", "Settings", "/settings")] %}
+        {% for key, label, href in [("watchlist", "Watchlist", "/watchlist"), ("buckets", "Buckets", "/buckets"), ("alerts", "Alerts", "/alerts"), ("markets", "Markets", "/markets"), ("settings", "Settings", "/settings")] %}
           <a class="navtab"{% if tab == key %} aria-current="page"{% endif %} href="{{ href }}">{{ label }}</a>
         {% endfor %}
       {% else %}
@@ -50,6 +50,8 @@
 <nav class="tabbar" aria-label="Sections">
   <a href="/watchlist"{% if tab == "watchlist" %} aria-current="page"{% endif %}>
     <svg class="fillable" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.5 15.1 8.8 22 9.8 17 14.6 18.2 21.5 12 18.2 5.8 21.5 7 14.6 2 9.8 8.9 8.8 12 2.5"/></svg>Watchlist</a>
+  <a href="/buckets"{% if tab == "buckets" %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 2.5 7.5 12 12.5l9.5-5z"/><path d="m2.5 12 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5"/></svg>Buckets</a>
   <a href="/alerts"{% if tab == "alerts" %} aria-current="page"{% endif %}>
     <svg class="fillable" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Alerts</a>
   <a href="/markets"{% if tab == "markets" %} aria-current="page"{% endif %}>

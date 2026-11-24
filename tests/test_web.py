@@ -212,7 +212,7 @@ def test_watchlist_page_has_tabs_for_each_market(client):
 
 # ---------- the iOS-style app shell: Watchlist / Alerts / Markets / Settings ----------
 
-TABS = ["/watchlist", "/alerts", "/markets", "/settings"]
+TABS = ["/watchlist", "/buckets", "/alerts", "/markets", "/settings"]
 
 
 def test_tab_pages_need_sign_in(client):
@@ -302,3 +302,123 @@ def test_manifest_and_icons_are_served(client):
     for icon in data["icons"] + [{"src": "/static/icons/apple-touch-icon.png"}]:
         assert client.get(icon["src"]).status_code == 200, icon["src"]
     assert 'rel="manifest"' in client.get("/").get_data(as_text=True)
+
+
+# ---------- buckets ----------
+
+from buydips.data import Quote  # noqa: E402
+
+
+def new_bucket(client, name="Banks"):
+    r = client.post("/buckets", data={"csrf": csrf(client, "/buckets"), "name": name})
+    assert r.status_code == 302
+    return int(r.headers["Location"].rsplit("/", 1)[1])
+
+
+def test_create_bucket_and_see_it_on_the_list(client):
+    sign_in(client)
+    assert "No buckets yet" in client.get("/buckets").get_data(as_text=True)
+    bid = new_bucket(client, "  US   tech ")
+    html = client.get("/buckets").get_data(as_text=True)
+    assert "US tech" in html and f"/buckets/{bid}" in html
+
+
+def test_bucket_name_rules_and_limit(client, monkeypatch):
+    from buydips import config
+    sign_in(client)
+    assert client.post("/buckets", data={"csrf": csrf(client, "/buckets"), "name": "   "}).status_code == 400
+    assert client.post("/buckets", data={"name": "x"}).status_code == 400  # no csrf
+    monkeypatch.setattr(config, "MAX_BUCKETS", 2)
+    new_bucket(client, "One"); new_bucket(client, "Two")
+    assert client.post("/buckets", data={"csrf": csrf(client, "/buckets"), "name": "Three"}).status_code == 400
+
+
+def test_adding_a_stock_records_its_starting_price_and_shows_performance(client, monkeypatch):
+    sign_in(client)
+    monkeypatch.setattr(web, "_fetch_quote", lambda sym: Quote(sym, 100.0, 99.0, 1.0, "2026-11-20"))
+    bid = new_bucket(client)
+    t = csrf(client, f"/buckets/{bid}")
+    assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "HDFCBANK.NS"}).status_code == 302
+    assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "HDFCBANK.NS"}).status_code == 302  # twice is harmless
+    item = db.bucket_items_for([bid])[bid]
+    assert len(item) == 1 and item[0]["added_price"] == 100.0
+    db.save_quotes([Quote("HDFCBANK.NS", 90.0, 91.0, -1.0, "2026-11-20")])   # a later sync: down 10%
+    html = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "−10.00%" in html and "Down 10%+" in html and "HDFC Bank" in html
+    assert "−10.00%" in client.get("/buckets").get_data(as_text=True) and "1 flagged" in client.get("/buckets").get_data(as_text=True)
+
+
+def test_adding_when_the_price_source_is_down_still_works_and_waits(client, monkeypatch):
+    sign_in(client)
+    monkeypatch.setattr(web, "_fetch_quote", lambda sym: None)
+    bid = new_bucket(client)
+    client.post(f"/buckets/{bid}/add", data={"csrf": csrf(client, f"/buckets/{bid}"), "symbol": "TCS.NS"})
+    assert db.bucket_items_for([bid])[bid][0]["added_price"] is None
+    assert "waiting for a price" in client.get(f"/buckets/{bid}").get_data(as_text=True)
+
+
+def test_average_is_equal_weighted(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "TCS.NS", 100.0); db.add_bucket_item(bid, "INFY.NS", 100.0); db.add_bucket_item(bid, "WIPRO.NS", None)
+    db.save_quotes([Quote("TCS.NS", 120.0, 1, 0, "d"), Quote("INFY.NS", 100.0, 1, 0, "d")])  # +20% and 0%; Wipro has no price yet
+    html = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "+10.00%" in html and "1 still waiting for a price" in html
+
+
+def test_only_real_stocks_can_be_added_and_bucket_size_is_limited(client, monkeypatch):
+    from buydips import config
+    sign_in(client)
+    monkeypatch.setattr(web, "_fetch_quote", lambda sym: None)
+    bid = new_bucket(client)
+    t = csrf(client, f"/buckets/{bid}")
+    assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "^NSEI"}).status_code == 400   # an index, not a stock
+    assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "NOPE"}).status_code == 400
+    monkeypatch.setattr(config, "MAX_BUCKET_ITEMS", 1)
+    client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "TCS.NS"})
+    assert client.post(f"/buckets/{bid}/add", data={"csrf": t, "symbol": "INFY.NS"}).status_code == 400
+
+
+def test_search_finds_stocks_and_hides_ones_already_in_the_bucket(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "RELIANCE.NS", 100.0)
+    html = client.get(f"/buckets/{bid}?q=apple").get_data(as_text=True)
+    assert "AAPL" in html
+    assert "RELIANCE.NS" not in client.get(f"/buckets/{bid}?q=reliance").get_data(as_text=True).split("Add a stock")[1]
+
+
+def test_rename_remove_and_delete(client):
+    sign_in(client)
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "TCS.NS", 100.0)
+    t = csrf(client, f"/buckets/{bid}")
+    client.post(f"/buckets/{bid}/rename", data={"csrf": t, "name": "Renamed"})
+    assert "Renamed" in client.get(f"/buckets/{bid}").get_data(as_text=True)
+    client.post(f"/buckets/{bid}/remove", data={"csrf": t, "symbol": "TCS.NS"})
+    assert db.bucket_items_for([bid])[bid] == []
+    assert client.post(f"/buckets/{bid}/delete", data={"csrf": t}).status_code == 302
+    assert client.get(f"/buckets/{bid}").status_code == 404
+
+
+def test_buckets_are_private_to_their_owner(client):
+    sign_in(client, "a@x.com")
+    bid = new_bucket(client, "Mine")
+    t = csrf(client, "/buckets")
+    sign_in(client, "b@x.com")
+    assert client.get(f"/buckets/{bid}").status_code == 404
+    t2 = csrf(client, "/buckets")
+    for path, data in [("add", {"symbol": "TCS.NS"}), ("remove", {"symbol": "TCS.NS"}), ("rename", {"name": "x"}), ("delete", {})]:
+        assert client.post(f"/buckets/{bid}/{path}", data={"csrf": t2, **data}).status_code == 404, path
+    assert "Mine" not in client.get("/buckets").get_data(as_text=True)
+    assert db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid) is not None  # untouched
+
+
+def test_bucket_pages_need_sign_in_and_deleting_the_account_removes_buckets(client):
+    assert client.get("/buckets").status_code == 302 and client.get("/buckets/1").status_code == 302
+    sign_in(client)
+    bid = new_bucket(client)
+    db.add_bucket_item(bid, "TCS.NS", 100.0)
+    uid = db.get_or_create_user("a@x.com")["id"]
+    client.post("/delete-account", data={"csrf": csrf(client, "/settings")})
+    assert db.list_buckets(uid) == [] and db.bucket_items_for([bid])[bid] == []

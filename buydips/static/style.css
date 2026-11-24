@@ -398,3 +398,38 @@ a.lval { color: var(--brand); }
   .lgroup, .mcard, .empty-state { animation: rise .5s cubic-bezier(.2, .7, .2, 1) backwards; }
   .mcard:nth-child(2) { animation-delay: .08s; }
 }
+
+/* ===== Buckets ===== */
+:root { --up: var(--ok); }
+.tone-up { color: var(--ok); } .tone-down { color: var(--down); } .tone-flat, .tone-none { color: var(--muted); }
+.backlink { display: inline-flex; align-items: center; gap: 4px; margin-top: 14px; color: var(--brand); text-decoration: none; font-weight: 560; font-size: 16px; }
+.backlink::before { content: ""; width: 9px; height: 9px; border-left: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(45deg); margin: 0 3px 0 2px; }
+.large-head.tight { padding-top: 6px; }
+.newbucket { display: flex; gap: 8px; margin: 22px 0 8px; }
+.newbucket input { flex: 1; min-width: 0; padding: 12px 14px; font-size: 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--text); }
+.newbucket .btn { flex: none; }
+.bcards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+@media (max-width: 520px) { .bcards { grid-template-columns: 1fr; } }
+.bcard { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 16px; text-decoration: none; color: var(--text); transition: transform .12s, background .15s; }
+.bcard:hover { color: var(--text); }
+.bcard:active { transform: scale(.985); background: var(--surface-2); }
+.btop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.btop h2 { font: 650 18px/1.25 var(--sans); letter-spacing: -.01em; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bnum { font: 700 34px/1.1 var(--sans); letter-spacing: -.03em; margin: 10px 0 2px; font-variant-numeric: tabular-nums; }
+.bsub { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.flagpill, .flagtag { display: inline-flex; align-items: center; gap: 4px; background: var(--down-soft); color: var(--down); font: 650 12px/1 var(--sans); padding: 5px 9px; border-radius: 99px; white-space: nowrap; }
+.flagtag { padding: 3px 8px; margin-left: 6px; vertical-align: 1px; }
+.flagpill svg, .flagtag svg, .flagbanner svg { width: 14px; height: 14px; fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; flex: none; }
+.bhero { text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px 20px 20px; margin: 14px 0 0; }
+.bhero-label { font: 600 12.5px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.bhero-num { font: 700 clamp(44px, 12vw, 60px)/1.05 var(--sans); letter-spacing: -.035em; margin: 10px 0 8px; font-variant-numeric: tabular-nums; }
+.flagbanner { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--down-soft); color: var(--down); font-weight: 600; font-size: 14.5px; }
+.brows { margin-top: 16px; }
+.brow .lname { display: block; }
+.bpct { font: 650 17px/1.2 var(--mono); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.rm { margin: 0; }
+.linkbtn { background: none; border: 0; padding: 4px 0 0; color: var(--muted); font: 500 13px var(--sans); cursor: pointer; }
+.linkbtn:hover { color: var(--down); }
+.renameform input { flex: 1; min-width: 0; padding: 9px 12px; font-size: 16px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); }
+.lrow-tight { padding-top: 0; padding-bottom: 0; }
+@media (prefers-reduced-motion: no-preference) { .bcard, .bhero { animation: rise .5s cubic-bezier(.2, .7, .2, 1) backwards; } }

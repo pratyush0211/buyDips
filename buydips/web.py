@@ -4,11 +4,13 @@ import logging
 import re
 import secrets
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, abort, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import catalog, config, db, emails, links, markets
+from . import buckets as bucketmath, catalog, config, db, emails, links, markets
+from .data import YahooProvider
 from .mailer import send_email
 
 log = logging.getLogger("buyDips.web")
@@ -45,6 +47,37 @@ def _presets() -> list:
     india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India"]
     us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US"]
     return [("Indian indexes", "|".join(india)), ("US indexes", "|".join(us))]
+
+
+_price_pool = ThreadPoolExecutor(2)
+
+
+def _fetch_quote(symbol: str):
+    """One live price for a newly added stock, or None if the provider is slow or down (the next sync fills it in)."""
+    try:
+        return _price_pool.submit(YahooProvider().fetch, [symbol]).result(timeout=6).get(symbol)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _starting_price(symbol: str):
+    """The price to measure a new bucket stock from: a recent synced price, else a live look, else unknown."""
+    cached = db.quotes_for([symbol]).get(symbol)
+    if cached and datetime.utcnow() - cached["updated_at"] < timedelta(hours=6):
+        return cached["price"]
+    q = _fetch_quote(symbol)
+    if q is None:
+        return None
+    db.save_quotes([q])
+    return q.price
+
+
+def _synced_text(quotes: dict) -> str:
+    stamps = [q["updated_at"] for q in quotes.values()]
+    if not stamps:
+        return "Prices sync while markets are open"
+    when = max(stamps).replace(tzinfo=timezone.utc).astimezone(markets.IST)
+    return f"Prices synced {when.strftime('%a %d %b, ')}{markets._clock(when)} IST"
 
 
 def _alert_groups(user_id: int) -> list:
@@ -238,6 +271,105 @@ def create_app() -> Flask:
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
         )
+
+    # ---------- buckets ----------
+
+    def _clean_name(raw: str) -> str:
+        return " ".join(raw.split())[:40]
+
+    def _bucket_or_404(user, bucket_id: int) -> dict:
+        b = db.get_bucket(user["id"], bucket_id)
+        if not b:
+            abort(404)
+        return b
+
+    @app.route("/buckets", methods=["GET", "POST"])
+    def buckets_tab():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        if request.method == "POST":
+            check_csrf()
+            name = _clean_name(request.form.get("name", ""))
+            if not name:
+                return page("Name your bucket", "Give the bucket a name, like \u201cBanks\u201d or \u201cUS tech\u201d.", 400)
+            if db.count_buckets(user["id"]) >= config.MAX_BUCKETS:
+                return page("Too many buckets", f"You can have up to {config.MAX_BUCKETS} buckets.", 400)
+            return redirect(url_for("bucket_page", bucket_id=db.create_bucket(user["id"], name)))
+        rows = db.list_buckets(user["id"])
+        items = db.bucket_items_for([b["id"] for b in rows])
+        quotes = db.quotes_for({i["symbol"] for v in items.values() for i in v})
+        cards = [{**b, **bucketmath.view(items[b["id"]], quotes)} for b in rows]
+        return render_template("buckets.html", user=user, tab="buckets", cards=cards,
+                               flag_pct=f"{config.BUCKET_FLAG_PCT:g}", limit=config.MAX_BUCKETS)
+
+    @app.route("/buckets/<int:bucket_id>")
+    def bucket_page(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        b = _bucket_or_404(user, bucket_id)
+        items = db.bucket_items_for([b["id"]])[b["id"]]
+        quotes = db.quotes_for([i["symbol"] for i in items])
+        q = " ".join(request.args.get("q", "").lower().split())[:40]
+        have = {i["symbol"] for i in items}
+        results = []
+        if q:
+            results = [i for i in catalog.ITEMS if i["type"] == "stock" and i["symbol"] not in have
+                       and q in catalog.search_text(i)][:12]
+        return render_template("bucket.html", user=user, tab="buckets", b=b, v=bucketmath.view(items, quotes),
+                               synced=_synced_text(quotes), q=q, results=results, flag_pct=f"{config.BUCKET_FLAG_PCT:g}",
+                               full=len(items) >= config.MAX_BUCKET_ITEMS, max_items=config.MAX_BUCKET_ITEMS,
+                               changed=request.args.get("changed"))
+
+    @app.route("/buckets/<int:bucket_id>/add", methods=["POST"])
+    def bucket_add(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        b = _bucket_or_404(user, bucket_id)
+        symbol = request.form.get("symbol", "")
+        item = catalog.BY_SYMBOL.get(symbol)
+        if not item or item["type"] != "stock":
+            return page("Couldn't add that", "That stock isn't available.", 400)
+        if len(db.bucket_items_for([b["id"]])[b["id"]]) >= config.MAX_BUCKET_ITEMS:
+            return page("Bucket is full", f"A bucket can hold up to {config.MAX_BUCKET_ITEMS} stocks.", 400)
+        if symbol not in {i["symbol"] for i in db.bucket_items_for([b["id"]])[b["id"]]}:
+            db.add_bucket_item(b["id"], symbol, _starting_price(symbol))
+        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="added"))
+
+    @app.route("/buckets/<int:bucket_id>/remove", methods=["POST"])
+    def bucket_remove(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        b = _bucket_or_404(user, bucket_id)
+        db.remove_bucket_item(b["id"], request.form.get("symbol", ""))
+        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="removed"))
+
+    @app.route("/buckets/<int:bucket_id>/rename", methods=["POST"])
+    def bucket_rename(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        b = _bucket_or_404(user, bucket_id)
+        name = _clean_name(request.form.get("name", ""))
+        if not name:
+            return page("Name your bucket", "A bucket needs a name.", 400)
+        db.rename_bucket(b["id"], name)
+        return redirect(url_for("bucket_page", bucket_id=b["id"], changed="renamed"))
+
+    @app.route("/buckets/<int:bucket_id>/delete", methods=["POST"])
+    def bucket_delete(bucket_id):
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        db.delete_bucket(_bucket_or_404(user, bucket_id)["id"])
+        return redirect(url_for("buckets_tab"))
 
     @app.route("/alerts")
     def alerts():

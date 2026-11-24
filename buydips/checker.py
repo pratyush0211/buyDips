@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
-from . import catalog, config, db, emails, links, markets
+from . import buckets as bucketmath, catalog, config, db, emails, links, markets
 from .data import Provider, YahooProvider
 from .mailer import send_email
 
@@ -30,19 +30,27 @@ def run_check(
     all_subs = db.active_subscriptions()
     # Only symbols whose own market is open right now (or just closed) are looked at.
     subs = [s for s in all_subs if markets.is_live(s["symbol"], now)]
-    symbols = sorted({s["symbol"] for s in subs})
+    sub_symbols = {s["symbol"] for s in subs}
+    # Bucket stocks are tracked too: the ones whose market is open, plus any that have no price yet (so a
+    # newly added stock gets its starting price even after hours).
+    bucket_rows = db.all_bucket_items()
+    live_bucket = {r["symbol"] for r in bucket_rows if markets.is_live(r["symbol"], now)}
+    unpriced = {r["symbol"] for r in bucket_rows if r["added_price"] is None}
+    symbols = sorted(sub_symbols | live_bucket | unpriced)
     unknown = sorted({s["symbol"] for s in all_subs if markets.market_of(s["symbol"]) is None})
     if unknown:
         log.warning("Ignoring subscriptions to symbols that are not in the catalog: %s", ", ".join(unknown))
     summary = {"users": len({s["user_id"] for s in subs}), "symbols": len(symbols),
                "fetched": 0, "emails": 0, "failed_symbols": [], "unknown_symbols": unknown,
-               "skipped_closed": len({s["symbol"] for s in all_subs}) - len(symbols) - len(unknown)}
+               "skipped_closed": len({s["symbol"] for s in all_subs}) - len(sub_symbols) - len(unknown),
+               "flag_emails": 0}
     if not symbols:
         log.info("No watched market is open right now; nothing to check.")
         return summary
 
     quotes = provider.fetch(symbols)
     summary["fetched"] = len(quotes)
+    db.save_quotes(quotes.values())
     summary["failed_symbols"] = [s for s in symbols if s not in quotes]
 
     by_user = defaultdict(list)
@@ -78,6 +86,8 @@ def run_check(
         else:
             log.error("Alert email to user %s failed; will retry on the next run", user_id)
 
+    _flag_bucket_stocks(bucket_rows, quotes, now, send, summary)
+
     failed = len(summary["failed_symbols"])
     log.info("Checked %d symbols (%d failed) for %d users; sent %d emails",
              len(symbols), failed, summary["users"], summary["emails"])
@@ -86,3 +96,36 @@ def run_check(
             f"{failed}/{len(symbols)} symbols failed to load: {', '.join(summary['failed_symbols'][:10])}"
         )
     return summary
+
+
+def _flag_bucket_stocks(rows, quotes, now, send, summary) -> None:
+    """Fill in missing starting prices, then send the one-time red-flag email for any bucket stock that is
+    down BUCKET_FLAG_PCT or more since it was added. Only fresh prices from an open market can flag a stock."""
+    for r in rows:
+        q = quotes.get(r["symbol"])
+        if r["added_price"] is None and q is not None:
+            db.set_added_price(r["bucket_id"], r["symbol"], q.price)
+            r["added_price"] = q.price
+
+    pending = defaultdict(list)
+    for r in rows:
+        q = quotes.get(r["symbol"])
+        if (not r["active"] or r["flagged_at"] or r["added_price"] is None or q is None
+                or not markets.is_live(r["symbol"], now) or not markets.is_fresh(r["symbol"], q.session, now)):
+            continue
+        pct = bucketmath.since_pct(q.price, r["added_price"])
+        if pct is None or pct > -config.BUCKET_FLAG_PCT:
+            continue
+        cur = catalog.currency_symbol(r["symbol"])
+        pending[(r["user_id"], r["email"])].append({
+            "bucket_id": r["bucket_id"], "symbol": r["symbol"], "bucket": r["bucket_name"], "name": catalog.name_of(r["symbol"]),
+            "pct": pct, "added_price": f"{cur}{r['added_price']:,.2f}", "price": f"{cur}{q.price:,.2f}",
+        })
+    for (user_id, email), items in pending.items():
+        unsub = links.unsubscribe_url(user_id)
+        subject, body, html = emails.flagged(items, unsub)
+        if send(email, subject, body, unsubscribe_url=unsub, html=html):
+            db.mark_flagged([(i["bucket_id"], i["symbol"]) for i in items])
+            summary["flag_emails"] += 1
+        else:
+            log.error("Red-flag email to user %s failed; will retry on the next run", user_id)

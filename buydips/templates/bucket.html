@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ b.name }} · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <a class="backlink" href="/buckets">Buckets</a>
+  <header class="large-head tight">
+    <h1>{{ b.name }}</h1>
+  </header>
+
+  {% if changed == "added" %}<div class="notice" role="status">Added. It's measured from today's price.</div>{% elif changed == "removed" %}<div class="notice" role="status">Removed.</div>{% elif changed == "renamed" %}<div class="notice" role="status">Renamed.</div>{% endif %}
+
+  <section class="bhero">
+    <div class="bhero-label">Average since added</div>
+    <div class="bhero-num tone-{{ v.tone }}">{{ v.average_text }}</div>
+    <div class="bsub">
+      {% if v.n == 0 %}Add your first stock below.
+      {% elif v.n_priced == 0 %}Waiting for the first prices. They arrive within a few minutes.
+      {% else %}Equal weight across {{ v.n_priced }} {{ "stock" if v.n_priced == 1 else "stocks" }}{% if v.n_priced < v.n %} ({{ v.n - v.n_priced }} still waiting for a price){% endif %}.{% endif %}
+    </div>
+    <div class="bsub">{{ synced }}</div>
+  </section>
+
+  {% if v.n_flagged %}
+  <div class="flagbanner" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>
+    {{ v.n_flagged }} {{ "stock is" if v.n_flagged == 1 else "stocks are" }} down {{ flag_pct }}% or more since you added {{ "it" if v.n_flagged == 1 else "them" }}.</div>
+  {% endif %}
+
+  {% if v.rows %}
+  <ul class="lrows brows">
+    {% for r in v.rows %}
+    <li class="lrow brow">
+      <div class="lmain">
+        <span class="lname">{{ r.name }}{% if r.flagged %} <span class="flagtag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>Down {{ flag_pct }}%+</span>{% endif %}</span>
+        <span class="lsub">{% if r.waiting %}{{ r.symbol }} &middot; waiting for a price{% else %}{{ r.added }} when added &middot; {{ r.now }} now{% endif %}</span>
+      </div>
+      <div class="lside">
+        <span class="bpct tone-{{ r.tone }}">{{ r.pct_text }}</span>
+        <form method="post" action="/buckets/{{ b.id }}/remove" class="rm" data-confirm="Remove {{ r.name }} from this bucket?">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ r.symbol }}">
+          <button class="linkbtn" aria-label="Remove {{ r.name }}">Remove</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <h2 class="lgroup-title">Add a stock</h2>
+  {% if full %}
+    <p class="fine">This bucket is full ({{ max_items }} stocks). Remove one to add another.</p>
+  {% else %}
+  <form class="newbucket" method="get" action="/buckets/{{ b.id }}">
+    <label class="sr-only" for="q">Search stocks</label>
+    <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search, e.g. Reliance, Apple or HDFC" autocomplete="off">
+    <button class="btn btn-ghost">Search</button>
+  </form>
+  {% if q %}
+    {% if results %}
+    <ul class="lrows">
+      {% for it in results %}
+      <li class="lrow">
+        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
+        <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
+          <button class="btn btn-primary btn-sm">Add</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="fine">No stocks match &ldquo;{{ q }}&rdquo;, or they're already in this bucket.</p>{% endif %}
+  {% endif %}
+  {% endif %}
+
+  <h2 class="lgroup-title">Manage</h2>
+  <ul class="lrows">
+    <li class="lrow">
+      <form method="post" action="/buckets/{{ b.id }}/rename" class="rowform renameform">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label class="sr-only" for="rn">Bucket name</label>
+        <input id="rn" name="name" value="{{ b.name }}" maxlength="40" required>
+        <button class="btn btn-ghost btn-sm">Rename</button>
+      </form>
+    </li>
+    <li class="lrow lrow-tight">
+      <form method="post" action="/buckets/{{ b.id }}/delete" class="rowform" data-confirm="Delete this bucket? This can't be undone.">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="rowbtn danger">Delete bucket</button>
+      </form>
+    </li>
+  </ul>
+  <p class="fine">Each stock is measured from its price on the day you added it. We email you once, the first time a stock is down {{ flag_pct }}% or more. Prices come from a third-party source and may be delayed.</p>
+</div>
+{% endblock %}

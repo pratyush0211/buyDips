@@ -44,6 +44,34 @@ alerts_sent = Table(
     PrimaryKeyConstraint("user_id", "symbol", "session"),
 )
 
+buckets = Table(
+    "buckets", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("name", String(60), nullable=False),
+    Column("created_at", DateTime, nullable=False),
+)
+
+bucket_items = Table(
+    "bucket_items", metadata,
+    Column("bucket_id", Integer, ForeignKey("buckets.id", ondelete="CASCADE"), nullable=False),
+    Column("symbol", String(40), nullable=False),
+    Column("added_price", Float),   # price when the stock was added; filled by the next sync if it wasn't known yet
+    Column("added_at", DateTime, nullable=False),
+    Column("flagged_at", DateTime),  # set once, when the red-flag email for this stock has been sent
+    PrimaryKeyConstraint("bucket_id", "symbol"),
+)
+
+# The latest price per symbol, refreshed by the alert job, so pages never call the data provider.
+quotes_cache = Table(
+    "quotes_cache", metadata,
+    Column("symbol", String(40), primary_key=True),
+    Column("price", Float, nullable=False),
+    Column("prev_close", Float, nullable=False),
+    Column("session", String(10), nullable=False),
+    Column("updated_at", DateTime, nullable=False),
+)
+
 login_codes = Table(
     "login_codes", metadata,
     Column("code_hash", String(64), primary_key=True),  # SHA-256 of the code; the code itself is never stored
@@ -163,6 +191,10 @@ def unsubscribe_user(user_id: int) -> None:
 
 def delete_user(user_id: int) -> None:
     with engine().begin() as conn:
+        ids = [r[0] for r in conn.execute(select(buckets.c.id).where(buckets.c.user_id == user_id))]
+        if ids:
+            conn.execute(delete(bucket_items).where(bucket_items.c.bucket_id.in_(ids)))
+        conn.execute(delete(buckets).where(buckets.c.user_id == user_id))
         conn.execute(delete(alerts_sent).where(alerts_sent.c.user_id == user_id))
         conn.execute(delete(subscriptions).where(subscriptions.c.user_id == user_id))
         conn.execute(delete(users).where(users.c.id == user_id))
@@ -277,3 +309,112 @@ def email_for_login_code(code: str) -> Optional[str]:
     if not row or row[1] < _now():
         return None
     return row[0]
+
+
+# ---------- buckets ----------
+
+def count_buckets(user_id: int) -> int:
+    with engine().connect() as conn:
+        return conn.execute(select(func.count()).select_from(buckets).where(buckets.c.user_id == user_id)).scalar()
+
+
+def create_bucket(user_id: int, name: str) -> int:
+    with engine().begin() as conn:
+        res = conn.execute(insert(buckets).values(user_id=user_id, name=name, created_at=_now()))
+        return int(res.inserted_primary_key[0])
+
+
+def list_buckets(user_id: int) -> List[dict]:
+    with engine().connect() as conn:
+        rows = conn.execute(select(buckets).where(buckets.c.user_id == user_id).order_by(buckets.c.created_at, buckets.c.id)).mappings().all()
+    return [dict(r) for r in rows]
+
+
+def get_bucket(user_id: int, bucket_id: int) -> Optional[dict]:
+    """The bucket, but only if it belongs to this user (anyone else's looks like it doesn't exist)."""
+    with engine().connect() as conn:
+        row = conn.execute(select(buckets).where((buckets.c.id == bucket_id) & (buckets.c.user_id == user_id))).mappings().first()
+    return dict(row) if row else None
+
+
+def rename_bucket(bucket_id: int, name: str) -> None:
+    with engine().begin() as conn:
+        conn.execute(update(buckets).where(buckets.c.id == bucket_id).values(name=name))
+
+
+def delete_bucket(bucket_id: int) -> None:
+    with engine().begin() as conn:
+        conn.execute(delete(bucket_items).where(bucket_items.c.bucket_id == bucket_id))
+        conn.execute(delete(buckets).where(buckets.c.id == bucket_id))
+
+
+def bucket_items_for(bucket_ids: List[int]) -> Dict[int, List[dict]]:
+    out: Dict[int, List[dict]] = {i: [] for i in bucket_ids}
+    if not bucket_ids:
+        return out
+    with engine().connect() as conn:
+        rows = conn.execute(select(bucket_items).where(bucket_items.c.bucket_id.in_(bucket_ids))
+                            .order_by(bucket_items.c.added_at, bucket_items.c.symbol)).mappings().all()
+    for r in rows:
+        out[r["bucket_id"]].append(dict(r))
+    return out
+
+
+def add_bucket_item(bucket_id: int, symbol: str, added_price: Optional[float]) -> bool:
+    """False if the stock is already in the bucket."""
+    with engine().begin() as conn:
+        if conn.execute(select(bucket_items.c.symbol).where(
+                (bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol))).first():
+            return False
+        conn.execute(insert(bucket_items).values(bucket_id=bucket_id, symbol=symbol, added_price=added_price, added_at=_now()))
+    return True
+
+
+def remove_bucket_item(bucket_id: int, symbol: str) -> None:
+    with engine().begin() as conn:
+        conn.execute(delete(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol)))
+
+
+def quotes_for(symbols) -> Dict[str, dict]:
+    symbols = list(symbols)
+    if not symbols:
+        return {}
+    with engine().connect() as conn:
+        rows = conn.execute(select(quotes_cache).where(quotes_cache.c.symbol.in_(symbols))).mappings().all()
+    return {r["symbol"]: dict(r) for r in rows}
+
+
+def save_quotes(quotes) -> None:
+    """Remember the latest price per symbol. `quotes` are objects with symbol, price, prev_close, session."""
+    with engine().begin() as conn:
+        for q in quotes:
+            vals = dict(price=q.price, prev_close=q.prev_close, session=q.session, updated_at=_now())
+            if conn.execute(select(quotes_cache.c.symbol).where(quotes_cache.c.symbol == q.symbol)).first():
+                conn.execute(update(quotes_cache).where(quotes_cache.c.symbol == q.symbol).values(**vals))
+            else:
+                conn.execute(insert(quotes_cache).values(symbol=q.symbol, **vals))
+
+
+def all_bucket_items() -> List[dict]:
+    """Every bucket stock across all users, with who owns it. Used by the alert job."""
+    with engine().connect() as conn:
+        rows = conn.execute(
+            select(bucket_items.c.bucket_id, bucket_items.c.symbol, bucket_items.c.added_price, bucket_items.c.flagged_at,
+                   buckets.c.name.label("bucket_name"), buckets.c.user_id, users.c.email, users.c.active)
+            .select_from(bucket_items.join(buckets, buckets.c.id == bucket_items.c.bucket_id)
+                         .join(users, users.c.id == buckets.c.user_id))
+        ).mappings().all()
+    return [dict(r) for r in rows]
+
+
+def set_added_price(bucket_id: int, symbol: str, price: float) -> None:
+    with engine().begin() as conn:
+        conn.execute(update(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol)
+                                                & (bucket_items.c.added_price.is_(None))).values(added_price=price))
+
+
+def mark_flagged(pairs: List[tuple]) -> None:
+    with engine().begin() as conn:
+        for bucket_id, symbol in pairs:
+            conn.execute(update(bucket_items).where((bucket_items.c.bucket_id == bucket_id) & (bucket_items.c.symbol == symbol)
+                                                    & (bucket_items.c.flagged_at.is_(None))).values(flagged_at=_now()))

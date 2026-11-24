@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Buckets · buyDips{% endblock %}
+{% block body %}
+<div class="container app-page">
+  <header class="large-head">
+    <h1>Buckets</h1>
+    <p>Group stocks, Indian and US, and see how they've done since you added them.</p>
+  </header>
+
+  <form class="newbucket" method="post" action="/buckets">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label class="sr-only" for="bname">Bucket name</label>
+    <input id="bname" name="name" maxlength="40" placeholder="New bucket, e.g. Banks or US tech" autocomplete="off" required>
+    <button class="btn btn-primary">Create</button>
+  </form>
+
+  {% if cards %}
+  <div class="bcards">
+    {% for c in cards %}
+    <a class="bcard" href="/buckets/{{ c.id }}">
+      <div class="btop">
+        <h2>{{ c.name }}</h2>
+        {% if c.n_flagged %}<span class="flagpill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>{{ c.n_flagged }} flagged</span>{% endif %}
+      </div>
+      <div class="bnum tone-{{ c.tone }}">{{ c.average_text }}</div>
+      <div class="bsub">{% if c.n == 0 %}No stocks yet{% elif c.n_priced == 0 %}Waiting for first prices{% else %}Average since added &middot; {{ c.n }} {{ "stock" if c.n == 1 else "stocks" }}{% endif %}</div>
+    </a>
+    {% endfor %}
+  </div>
+  <p class="fine">Each stock is measured from its price on the day you added it, and every stock counts equally. A stock down {{ flag_pct }}% or more gets a red flag and one email. You can have up to {{ limit }} buckets.</p>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5 2.5 7.5 12 12.5l9.5-5z"/><path d="m2.5 12 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5"/></svg></div>
+    <h2>No buckets yet</h2>
+    <p>Name one above, add a few stocks, and you'll see how the group is doing since the day you added them.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
