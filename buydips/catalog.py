@@ -43,10 +43,18 @@ def default_threshold(symbol: str) -> float:
 _GROUP_ORDER = ["India", "US"]
 
 
-def grouped() -> List[dict]:
-    """Sections for the watchlist page: indexes by region (India first), then Indian stocks, US stocks, gold & silver ETFs."""
+def offered(item: dict) -> bool:
+    """False for items we no longer offer. They stay in BY_SYMBOL so people already following one keep their alerts."""
+    return not item.get("retired")
+
+
+def grouped(keep=()) -> List[dict]:
+    """Sections for the watchlist page: indexes by region (India first), then Indian stocks, US stocks, gold & silver ETFs.
+    Retired items appear only if their symbol is in `keep` (the ones this user already follows)."""
     sections: Dict[str, List[dict]] = {}
     for item in ITEMS:
+        if not offered(item) and item["symbol"] not in keep:
+            continue
         if item["type"] == "index":
             title = f"Indexes: {item['group']}"
         elif item["type"] == "etf":
@@ -76,7 +84,7 @@ def grouped() -> List[dict]:
 
 
 def tab_totals() -> Dict[str, int]:
-    """How many items each tab of the watchlist page holds."""
+    """How many items each tab of the watchlist page offers (retired ones are not counted)."""
     totals = {"indexes": 0, "india": 0, "us": 0, "metals": 0}
     for sec in grouped():
         totals[sec["tab"]] += len(sec["items"])

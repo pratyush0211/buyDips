@@ -6,12 +6,6 @@
   "group": "India"
  },
  {
-  "symbol": "^BSESN",
-  "name": "Sensex",
-  "type": "index",
-  "group": "India"
- },
- {
   "symbol": "^NSEBANK",
   "name": "Nifty Bank",
   "type": "index",
@@ -24,28 +18,44 @@
   "group": "India"
  },
  {
-  "symbol": "^GSPC",
-  "name": "S&P 500",
-  "type": "index",
-  "group": "US"
- },
- {
   "symbol": "^IXIC",
   "name": "Nasdaq Composite",
   "type": "index",
   "group": "US"
  },
  {
+  "symbol": "^NDX",
+  "name": "Nasdaq-100",
+  "type": "index",
+  "group": "US"
+ },
+ {
+  "symbol": "^BSESN",
+  "name": "Sensex",
+  "type": "index",
+  "group": "India",
+  "retired": true
+ },
+ {
+  "symbol": "^GSPC",
+  "name": "S&P 500",
+  "type": "index",
+  "group": "US",
+  "retired": true
+ },
+ {
   "symbol": "^DJI",
   "name": "Dow Jones",
   "type": "index",
-  "group": "US"
+  "group": "US",
+  "retired": true
  },
  {
   "symbol": "^RUT",
   "name": "Russell 2000",
   "type": "index",
-  "group": "US"
+  "group": "US",
+  "retired": true
  },
  {
   "symbol": "GOLDBEES.NS",

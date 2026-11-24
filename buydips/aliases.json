@@ -21,5 +21,6 @@
  "TMPV.NS": "tata motors cars",
  "TMCV.NS": "tata motors trucks",
  "GOLDBEES.NS": "gold etf gold bees physical gold bullion nippon",
- "SILVERBEES.NS": "silver etf silver bees bullion nippon"
+ "SILVERBEES.NS": "silver etf silver bees bullion nippon",
+ "^NDX": "nasdaq 100 ndx qqq"
 }

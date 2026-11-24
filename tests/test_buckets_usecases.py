@@ -905,3 +905,58 @@ def test_bucket_page_wires_up_live_search_and_still_works_without_javascript(cli
     assert "RELIANCE.NS" in client.get(f"/buckets/{bid}?q=reliance").get_data(as_text=True)
     # the CSP must allow the script (self only, no inline)
     assert "script-src 'self'" in client.get(f"/buckets/{bid}").headers["Content-Security-Policy"]
+
+
+# ---------------- retired indexes: Sensex, S&P 500, Dow, Russell 2000 ----------------
+
+RETIRED = ["^BSESN", "^GSPC", "^DJI", "^RUT"]
+
+
+def test_only_nifty_and_nasdaq_indexes_are_offered_and_the_landing_count_says_so(client):
+    from buydips import catalog
+    offered = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and catalog.offered(i)]
+    assert offered == ["^NSEI", "^NSEBANK", "^CNXIT", "^IXIC", "^NDX"]
+    assert all(catalog.BY_SYMBOL[s].get("retired") for s in RETIRED)
+    anon = client.application.test_client()
+    home = anon.get("/").get_data(as_text=True)
+    assert 'data-count="5"' in home and "Major indexes" not in home and "Sensex" not in home and "S&amp;P 500" not in home
+    sign_in(client)
+    page = client.get("/watchlist").get_data(as_text=True)
+    assert "Nasdaq-100" in page and "^NDX" in page
+    assert not any(f'value="{s}"' in page for s in RETIRED)           # not offered to someone who doesn't follow them
+    presets = dict(web_presets())
+    assert presets["US indexes"] == "^IXIC|^NDX" and presets["Indian indexes"] == "^NSEI|^NSEBANK|^CNXIT"
+
+
+def web_presets():
+    from buydips import web
+    return web._presets()
+
+
+def test_someone_already_following_a_retired_index_keeps_it_and_its_alerts(client):
+    u = db.get_or_create_user("old@x.com")
+    db.set_subscriptions(u["id"], {"^GSPC": 1.0, "^NSEI": 1.0})
+    out = Outbox()
+    run_check(FakeProvider({"^GSPC": Quote("^GSPC", 97.0, 100.0, -3.0, "2026-11-20"),
+                            "^NSEI": Quote("^NSEI", 100.0, 100.0, 0.0, "2026-11-20")}), out, now=US_OPEN)
+    assert len(out.sent) == 1 and "S&P 500" in out.sent[0][1]          # still named properly, still alerts
+    sign_in(client, "old@x.com")
+    page = client.get("/watchlist").get_data(as_text=True)
+    assert 'value="^GSPC"' in page and "no longer offered to new followers" in page
+    assert 'value="^DJI"' not in page                                   # others who don't follow it don't see it
+    # saving the page must not silently drop it
+    client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["^GSPC", "^NSEI"],
+                                    "th_^GSPC": "1", "th_^NSEI": "1"})
+    assert set(db.get_subscriptions(u["id"])) == {"^GSPC", "^NSEI"}
+    # unticking it is final: it can't be added back
+    client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["^NSEI"], "th_^NSEI": "1"})
+    client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["^NSEI", "^GSPC"], "th_^NSEI": "1", "th_^GSPC": "1"})
+    assert set(db.get_subscriptions(u["id"])) == {"^NSEI"}
+
+
+def test_a_new_person_cannot_add_a_retired_index_by_posting_it_directly(client):
+    sign_in(client)
+    r = client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["^DJI", "^NDX"],
+                                        "th_^DJI": "1", "th_^NDX": "1"})
+    assert r.status_code == 302
+    assert set(db.get_subscriptions(db.get_or_create_user("a@x.com")["id"])) == {"^NDX"}

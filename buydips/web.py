@@ -45,8 +45,8 @@ def _announce_new_user(email: str) -> None:
 
 def _presets() -> list:
     """Quick-pick buttons on the watchlist page: (label, 'SYM|SYM|...')."""
-    india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India"]
-    us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US"]
+    india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India" and catalog.offered(i)]
+    us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US" and catalog.offered(i)]
     return [("Indian indexes", "|".join(india)), ("US indexes", "|".join(us))]
 
 
@@ -225,8 +225,8 @@ def create_app() -> Flask:
     def index():
         if safe_user():  # signed in: open straight on the app, like an iPhone app would
             return redirect(url_for("watchlist"))
-        indexes = [i for i in catalog.ITEMS if i["type"] == "index"]
-        examples = ["Nifty 50", "Sensex", "Nifty Bank", "S&P 500", "Nasdaq", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft", "Gold BeES"]
+        indexes = [i for i in catalog.ITEMS if i["type"] == "index" and catalog.offered(i)]
+        examples = ["Nifty 50", "Nifty Bank", "Nasdaq-100", "Reliance", "TCS", "HDFC Bank", "Infosys", "Apple", "NVIDIA", "Microsoft", "Gold BeES"]
         return render_template(
             "index.html", user=safe_user(), n_indexes=len(indexes),
             n_india=sum(i["type"] == "stock" and i["group"] == "India" for i in catalog.ITEMS),
@@ -285,9 +285,11 @@ def create_app() -> Flask:
         if request.method == "POST":
             check_csrf()
             chosen, errors = {}, []
+            following = db.get_subscriptions(user["id"])
             for symbol in request.form.getlist("sym"):
-                if symbol not in catalog.BY_SYMBOL:
-                    continue
+                item = catalog.BY_SYMBOL.get(symbol)
+                if not item or (not catalog.offered(item) and symbol not in following):
+                    continue   # unknown, or no longer offered to new followers
                 raw = request.form.get(f"th_{symbol}", "")
                 try:
                     pct = float(raw)
@@ -305,8 +307,9 @@ def create_app() -> Flask:
             db.set_subscriptions(user["id"], chosen)
             return redirect(url_for("watchlist", saved=1))
 
+        subs = db.get_subscriptions(user["id"])
         return render_template(
-            "watchlist.html", user=user, tab="watchlist", sections=catalog.grouped(), totals=catalog.tab_totals(), subs=db.get_subscriptions(user["id"]),
+            "watchlist.html", user=user, tab="watchlist", sections=catalog.grouped(keep=subs), totals=catalog.tab_totals(), subs=subs,
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
             limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
             mkts=[markets.market_status(m, datetime.now(timezone.utc)) for m in ("India", "US")],

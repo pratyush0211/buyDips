@@ -56,8 +56,8 @@ def test_currency_symbols():
 
 def test_tab_totals_cover_every_item_once():
     totals = catalog.tab_totals()
-    assert sum(totals.values()) == len(catalog.ITEMS)
-    assert totals["indexes"] == 8 and totals["india"] >= 450 and totals["us"] >= 95 and totals["metals"] == 2
+    assert sum(totals.values()) == len([i for i in catalog.ITEMS if catalog.offered(i)])
+    assert totals["indexes"] == 5 and totals["india"] >= 450 and totals["us"] >= 95 and totals["metals"] == 2
     assert {s["tab"] for s in catalog.grouped()} == {"indexes", "india", "us", "metals"}
 
 
