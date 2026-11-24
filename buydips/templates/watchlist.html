@@ -49,6 +49,7 @@
         <div class="item{% if on %} is-on{% endif %}" data-name="{{ it.search }}">
           <label class="item-main">
             <input type="checkbox" class="switch" name="sym" value="{{ it.symbol }}" {% if on %}checked{% endif %}>
+            {{ icon(it.symbol) }}
             <span class="item-text"><span class="item-name">{{ it.name }}</span><span class="item-sym">{{ it.symbol }}{% if it.retired %} &middot; no longer offered to new followers{% endif %}</span></span>
           </label>
           <div class="thr">

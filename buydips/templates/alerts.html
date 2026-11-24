@@ -15,9 +15,11 @@
     <ul class="lrows">
       {% for r in g.rows %}
       <li class="lrow">
+        <div class="lident">{{ icon(r.symbol) }}
         <div class="lmain">
           <span class="lname">{{ r.name }}</span>
           <span class="lsub">{% if r.detail %}{{ r.detail }}{% else %}{{ r.symbol }}{% endif %}{% if r.level %} &middot; level {{ r.level }}{% endif %}</span>
+        </div>
         </div>
         <div class="lside">
           {% if r.drop %}<span class="drop">{{ r.drop }}</span>{% else %}<span class="drop plain">Alerted</span>{% endif %}

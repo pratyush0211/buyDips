@@ -1042,3 +1042,44 @@ def test_the_page_has_a_staging_area_that_only_saves_on_one_request(client):
     page = client.get(f"/buckets/{bid}").get_data(as_text=True)
     assert 'id="stage"' in page and 'id="stage-form"' in page and "Nothing is saved until you tap Save" in page
     assert 'data-room="24"' in page
+
+
+# ---------------- stock badges ----------------
+
+def test_badge_letters_colours_and_special_cases():
+    from buydips import icons
+    assert icons.initials("Tata Consultancy Services") == "TC" and icons.initials("Apple") == "AP"
+    assert icons.initials("Reliance Industries") == "RI" and icons.initials("Infosys Ltd") == "IN"
+    assert icons.initials("HDFC Bank") == "HB" and icons.initials("3M") == "3M" and icons.initials("") == "?"
+    assert icons.spec("GOLDBEES.NS") == ("gold", "Au") and icons.spec("SILVERBEES.NS") == ("silver", "Ag")
+    assert icons.spec("^NSEI") == ("idx", "") and icons.spec("^NDX")[0] == "idx"
+    cls, text = icons.spec("RELIANCE.NS")
+    assert cls in "01234567" and text == "RI"
+    assert icons.spec("RELIANCE.NS") == icons.spec("RELIANCE.NS")                   # stable
+    # the public page only has names, yet shows the same colour as the app does for the same stock
+    for sym in ("RELIANCE.NS", "AAPL", "TCS.NS", "GOLDBEES.NS", "SILVERBEES.NS"):
+        assert icons.spec(sym) == icons.spec(None, catalog.name_of(sym))
+    used = {icons.spec(i["symbol"])[0] for i in catalog.ITEMS if i["type"] == "stock"}
+    assert used == set("01234567")                                                     # the colours are spread, none unused
+
+
+def test_badges_appear_on_every_page_that_lists_stocks_and_stay_markup_safe(client):
+    sign_in(client)
+    wl = client.get("/watchlist").get_data(as_text=True)
+    assert 'class="ico ico-gold"' in wl and 'class="ico ico-silver"' in wl and 'class="ico ico-idx"' in wl
+    bid = new_bucket(client)
+    add_many(client, bid, ["RELIANCE.NS", "GOLDBEES.NS"])
+    page = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert 'ico-gold' in page and ">RI</span>" in page
+    u = db.get_or_create_user("a@x.com")
+    db.record_alerts(u["id"], [("RELIANCE.NS", "2026-11-20", {"change_pct": -4.0, "price": 1.0, "prev_close": 2.0, "threshold": 3.0})])
+    assert ">RI</span>" in client.get("/alerts").get_data(as_text=True)
+    share_on(client, bid)
+    token = db.get_bucket(u["id"], bid)["share_token"]
+    shared = client.application.test_client().get(f"/b/{token}").get_data(as_text=True)
+    assert ">RI</span>" in shared and "ico-gold" in shared
+    rows = client.application.test_client().get("/catalog.json").get_json()
+    rel = next(r for r in rows if r["s"] == "RELIANCE.NS")
+    assert rel["i"] == "RI" and rel["c"] in list("01234567")
+    assert next(r for r in rows if r["s"] == "GOLDBEES.NS")["c"] == "gold"
+    assert 'ico-' in client.get("/static/bucketsearch.js").get_data(as_text=True)

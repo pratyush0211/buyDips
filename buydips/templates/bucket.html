@@ -26,7 +26,7 @@
     <ul class="lrows">
       {% for it in results %}
       <li class="lrow">
-        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
+        <div class="lident">{{ icon(it.symbol) }}<div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div></div>
         <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
           <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
           <button class="btn btn-primary btn-sm">Add</button>
@@ -42,7 +42,7 @@
     <ul class="lrows">
       {% for it in popular %}
       <li class="lrow">
-        <div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div>
+        <div class="lident">{{ icon(it.symbol) }}<div class="lmain"><span class="lname">{{ it.name }}</span><span class="lsub">{{ it.symbol }} &middot; {{ "India" if it.group == "India" else "US" }}</span></div></div>
         <form method="post" action="/buckets/{{ b.id }}/add" class="rm">
           <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="symbol" value="{{ it.symbol }}">
           <button class="btn btn-primary btn-sm">Add</button>
@@ -89,9 +89,11 @@
   <ul class="lrows brows">
     {% for r in v.rows %}
     <li class="lrow brow">
+      <div class="lident">{{ icon(r.symbol) }}
       <div class="lmain">
         <span class="lname">{{ r.name }}{% if r.flagged %} <span class="flagtag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>Down {{ flag_pct }}%+</span>{% endif %}</span>
         <span class="lsub">{% if r.waiting %}{{ r.symbol }} &middot; waiting for a price{% else %}{{ r.added }} when added{% if r.adjusted %} (adjusted for a split){% endif %} &middot; {{ r.now }} now{% endif %}</span>
+      </div>
       </div>
       <div class="lside">
         <span class="bpct tone-{{ r.tone }}">{{ r.pct_text }}</span>

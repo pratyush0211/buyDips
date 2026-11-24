@@ -29,7 +29,7 @@
     load.started = true;
     fetch("/catalog.json").then(function (r) { return r.json(); }).then(function (rows) {
       items = rows.map(function (r) {
-        return { s: r.s, n: r.n, e: !!r.e, g: r.g === "I" ? "India" : "US",
+        return { s: r.s, n: r.n, c: r.c, i: r.i, e: !!r.e, g: r.g === "I" ? "India" : "US",
                  name: r.n.toLowerCase(), sym: r.s.toLowerCase(), hay: (r.n + " " + r.s + " " + (r.a || "")).toLowerCase() };
       });
       render();
@@ -53,11 +53,16 @@
     return f;
   }
 
+  function badge(it) {             // same badge the server draws: letters in a circle whose colour was chosen server-side
+    var b = el("span", "ico ico-" + it.c, it.i); b.setAttribute("aria-hidden", "true"); return b;
+  }
+
   function row(it) {
-    var li = el("li", "lrow"), main = el("div", "lmain");
+    var li = el("li", "lrow"), ident = el("div", "lident"), main = el("div", "lmain");
     main.appendChild(el("span", "lname", it.n));
     main.appendChild(el("span", "lsub", it.s + " · " + it.g + (it.e ? " ETF" : "")));
-    li.appendChild(main); li.appendChild(addForm(it.s));
+    ident.appendChild(badge(it)); ident.appendChild(main);
+    li.appendChild(ident); li.appendChild(addForm(it.s));
     return li;
   }
 
@@ -81,12 +86,14 @@
   function renderStage() {
     stageList.textContent = "";
     staged.forEach(function (x) {
-      var li = el("li", "lrow"), main = el("div", "lmain");
+      var li = el("li", "lrow"), ident = el("div", "lident"), main = el("div", "lmain");
       main.appendChild(el("span", "lname", x.n)); main.appendChild(el("span", "lsub", x.d));
+      if (x.ico) ident.appendChild(x.ico.cloneNode(true));
+      ident.appendChild(main);
       var rm = el("button", "btn btn-ghost btn-sm", "Remove"); rm.type = "button";
       rm.setAttribute("aria-label", "Remove " + x.n + " from the list to add");
       rm.addEventListener("click", function () { unstage(x.s); });
-      li.appendChild(main); li.appendChild(rm); stageList.appendChild(li);
+      li.appendChild(ident); li.appendChild(rm); stageList.appendChild(li);
     });
     stage.hidden = staged.length === 0;
     stageCount.textContent = staged.length ? "not saved yet" : "";
@@ -105,7 +112,8 @@
     if (isStaged(sym) || have[sym] || atCapacity()) return;
     var li = f.closest(".lrow");
     var name = li && li.querySelector(".lname"), detail = li && li.querySelector(".lsub");
-    staged.push({ s: sym, n: name ? name.textContent : sym, d: detail ? detail.textContent : sym });
+    staged.push({ s: sym, n: name ? name.textContent : sym, d: detail ? detail.textContent : sym,
+                  ico: li && li.querySelector(".ico") });
     renderStage();
   }
 

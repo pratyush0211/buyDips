@@ -62,6 +62,9 @@ def _fetch_quotes(symbols: list) -> dict:
         return {}
 
 
+from . import icons  # noqa: E402
+
+
 def _build_catalog_json() -> bytes:
     rows = []
     for i in catalog.ITEMS:
@@ -72,6 +75,7 @@ def _build_catalog_json() -> bytes:
             row["a"] = catalog.ALIASES[i["symbol"]]
         if i["type"] == "etf":
             row["e"] = 1
+        row["c"], row["i"] = icons.spec(i["symbol"])   # badge class suffix and letters
         rows.append(row)
     return json.dumps(rows, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
@@ -191,7 +195,7 @@ def create_app() -> Flask:
 
     app.jinja_env.globals.update(
         csrf_token=csrf_token, year=datetime.utcnow().year, contact_email=config.CONTACT_EMAIL,
-        base_url=config.BASE_URL
+        base_url=config.BASE_URL, icon=icons.badge
     )
 
     @app.after_request

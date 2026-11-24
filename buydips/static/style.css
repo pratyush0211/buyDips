@@ -492,3 +492,23 @@ a.lval { color: var(--brand); }
 #bsearch-results .btn[disabled] { opacity: .6; }
 .stage { margin-top: 14px; }
 .stage .btn-block { width: 100%; margin-top: 10px; }
+
+/* Stock badges: initials in a coloured circle, no image files. Colour comes from the name (icons.py). */
+.ico { flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font: 600 12.5px/1 var(--mono); letter-spacing: .02em; user-select: none; }
+.ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ico-0 { background: #dff0ec; color: #14564e; } .ico-1 { background: #e2ebf8; color: #234b86; }
+.ico-2 { background: #e8e6f7; color: #3f3a8c; } .ico-3 { background: #f1e4f3; color: #6b2b78; }
+.ico-4 { background: #f8e3e6; color: #8a2c3d; } .ico-5 { background: #f7ebd2; color: #7a5200; }
+.ico-6 { background: #e9eed5; color: #4c5b13; } .ico-7 { background: #e4e8ec; color: #38454f; }
+.ico-idx { background: var(--brand-soft); color: var(--brand); }
+.ico-gold { background: linear-gradient(135deg, #f6d97f, #c99a2e); color: #4a3500; }
+.ico-silver { background: linear-gradient(135deg, #f1f3f4, #a9b3ba); color: #2f3a41; }
+@media (prefers-color-scheme: dark) {
+  .ico-0 { background: #12332f; color: #7fe0d0; } .ico-1 { background: #16253d; color: #8db4f0; }
+  .ico-2 { background: #1f1d3d; color: #aaa4f0; } .ico-3 { background: #2e1a33; color: #dba0e8; }
+  .ico-4 { background: #35191f; color: #f0a0ae; } .ico-5 { background: #33280f; color: #f0cb7a; }
+  .ico-6 { background: #262c10; color: #c6d77a; } .ico-7 { background: #1d262d; color: #a9bac6; }
+}
+.lident { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.item-main .ico { width: 34px; height: 34px; }

@@ -24,7 +24,7 @@
 
   <ul class="lrows brows">
     {% for s in m.stocks %}
-    <li class="lrow"><div class="lmain"><span class="lname">{{ s.name }}</span></div><span class="mkt mkt-{{ s.market }}">{{ s.market }}</span></li>
+    <li class="lrow"><div class="lident">{{ icon(None, s.name) }}<div class="lmain"><span class="lname">{{ s.name }}</span></div></div><span class="mkt mkt-{{ s.market }}">{{ s.market }}</span></li>
     {% endfor %}
   </ul>
 
