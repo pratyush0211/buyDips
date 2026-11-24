@@ -108,11 +108,12 @@ def build(current: list, wanted: dict, group: str) -> tuple:
 def main(write: bool) -> None:
     current = json.loads(CATALOG.read_text(encoding="utf-8"))
     indexes = [i for i in current if i["type"] == "index"]
+    etfs = [i for i in current if i["type"] == "etf"]  # hand-picked (gold and silver), not part of any index list
     india = build(current, nifty500(), "India")
     us = build(current, nasdaq100(), "US")
-    print(f"{len(indexes)} indexes + {len(india)} Indian + {len(us)} US stocks")
+    print(f"{len(indexes)} indexes + {len(etfs)} ETFs + {len(india)} Indian + {len(us)} US stocks")
     if write:
-        CATALOG.write_text(json.dumps(indexes + india + us, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        CATALOG.write_text(json.dumps(indexes + etfs + india + us, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         print("catalog.json updated")
     else:
         print("(preview only; use --write to save)")

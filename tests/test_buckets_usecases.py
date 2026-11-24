@@ -807,3 +807,45 @@ def test_old_bucket_items_gain_the_split_columns(tmp_path):
     assert {"split_through", "split_checked_at"} <= cols
     with db.engine().connect() as c:
         assert c.execute(text("select added_price, split_through from bucket_items")).first() == (100.0, None)
+
+
+# ---------------- gold and silver ETFs ----------------
+
+def test_etfs_show_on_the_watchlist_in_their_own_tab_and_can_be_followed(client):
+    sign_in(client)
+    html = client.get("/watchlist").get_data(as_text=True)
+    assert 'data-tab="metals"' in html and "Gold &amp; silver" in html and "GOLDBEES.NS" in html and "SILVERBEES.NS" in html
+    assert "differs a little from the spot or MCX price" in html
+    r = client.post("/watchlist", data={"csrf": csrf(client, "/watchlist"), "sym": ["GOLDBEES.NS", "SILVERBEES.NS"],
+                                        "th_GOLDBEES.NS": "2", "th_SILVERBEES.NS": "2.5"})
+    assert r.status_code == 302
+    subs = db.get_subscriptions(db.get_or_create_user("a@x.com")["id"])
+    assert subs == {"GOLDBEES.NS": 2.0, "SILVERBEES.NS": 2.5}
+
+
+def test_etfs_can_be_found_and_added_to_buckets_and_are_priced_in_rupees(client):
+    sign_in(client)
+    bid = new_bucket(client, "Metals")
+    assert "GOLDBEES.NS" in client.get(f"/buckets/{bid}?q=gold").get_data(as_text=True)
+    assert "SILVERBEES.NS" in client.get(f"/buckets/{bid}?q=silver").get_data(as_text=True)
+    assert add(client, bid, "GOLDBEES.NS").status_code == 302 and add(client, bid, "SILVERBEES.NS").status_code == 302
+    assert add(client, bid, "^NSEI").status_code == 400          # indexes still can't be bucketed
+    db.save_quotes([Quote("GOLDBEES.NS", 110.0, 1, 0, "d")])
+    page = client.get(f"/buckets/{bid}").get_data(as_text=True)
+    assert "Nippon India ETF Gold BeES" in page and "₹100.00 when added" in page and "+10.00%" in page
+
+
+def test_a_gold_etf_alerts_in_indian_hours_only_and_a_shared_bucket_marks_it_india(client):
+    u = db.get_or_create_user("a@x.com")
+    db.set_subscriptions(u["id"], {"GOLDBEES.NS": 2.0})
+    out = Outbox()
+    run_check(FakeProvider({"GOLDBEES.NS": Quote("GOLDBEES.NS", 97.0, 100.0, -3.0, "2026-11-20")}), out, now=US_OPEN)   # 21:30 IST: closed
+    assert out.sent == []
+    run_check(FakeProvider({"GOLDBEES.NS": Quote("GOLDBEES.NS", 97.0, 100.0, -3.0, "2026-11-20")}), out, now=IN_OPEN)
+    assert len(out.sent) == 1 and "Gold BeES" in out.sent[0][1] and "₹97.00" in out.sent[0][2]
+    sign_in(client)
+    bid = new_bucket(client)
+    add(client, bid, "GOLDBEES.NS"); share_on(client, bid)
+    token = db.get_bucket(db.get_or_create_user("a@x.com")["id"], bid)["share_token"]
+    html = client.application.test_client().get(f"/b/{token}").get_data(as_text=True)
+    assert "Gold BeES" in html and 'class="mkt mkt-IN"' in html

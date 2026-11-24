@@ -20,7 +20,7 @@
 
     <div class="toolbar">
       <label class="sr-only" for="filter">Search</label>
-      <input type="search" id="filter" placeholder="Search, e.g. Reliance, Apple or Nifty" autocomplete="off">
+      <input type="search" id="filter" placeholder="Search, e.g. Reliance, Nifty or Gold" autocomplete="off">
       {% for label, symbols in presets %}
         <button type="button" class="btn btn-ghost btn-sm" data-symbols="{{ symbols }}">{{ label }}</button>
       {% endfor %}
@@ -32,6 +32,7 @@
       <button type="button" role="tab" class="tab" data-tab="indexes">Indexes <span class="tab-n">{{ totals.indexes }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="india">Indian stocks <span class="tab-n">{{ totals.india }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="us">US stocks <span class="tab-n">{{ totals.us }}</span><span class="tab-sel" hidden></span></button>
+      <button type="button" role="tab" class="tab" data-tab="metals">Gold &amp; silver <span class="tab-n">{{ totals.metals }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="selected">Selected <span class="tab-sel-total" id="sel-total"></span></button>
     </div>
     <div class="jump" id="jump" role="navigation" aria-label="Jump to a letter" hidden></div>
@@ -41,6 +42,7 @@
     {% for sec in sections %}
     <section class="group" data-tab="{{ sec.tab }}">
       <h2>{{ sec.title }} <span class="n" data-total="{{ sec['items']|length }}">{{ sec['items']|length }} available</span></h2>
+      {% if sec.tab == "metals" %}<p class="sec-note">Funds that track the metal, priced in rupees on the NSE. Their price differs a little from the spot or MCX price.</p>{% endif %}
       <div class="items">
         {% for it in sec["items"] %}
         {% set on = it.symbol in subs %}

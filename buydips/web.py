@@ -346,7 +346,7 @@ def create_app() -> Flask:
         have = {i["symbol"] for i in items}
         results = []
         if q:
-            results = [i for i in catalog.ITEMS if i["type"] == "stock" and i["symbol"] not in have
+            results = [i for i in catalog.ITEMS if i["type"] in catalog.TRADED and i["symbol"] not in have
                        and q in catalog.search_text(i)][:12]
         popular = [catalog.BY_SYMBOL[x] for x in _POPULAR if x in catalog.BY_SYMBOL and x not in have] if not items and not q else []
         return render_template("bucket.html", user=user, tab="buckets", b=b, popular=popular, v=bucketmath.view(items, quotes),
@@ -364,7 +364,7 @@ def create_app() -> Flask:
         b = _bucket_or_404(user, bucket_id)
         symbol = request.form.get("symbol", "")
         item = catalog.BY_SYMBOL.get(symbol)
-        if not item or item["type"] != "stock":
+        if not item or item["type"] not in catalog.TRADED:
             return page("Couldn't add that", "That stock isn't available.", 400)
         have = db.bucket_items_for([b["id"]])[b["id"]]
         if symbol in {i["symbol"] for i in have}:  # already there: nothing to do, and no price lookup

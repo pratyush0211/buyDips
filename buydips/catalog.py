@@ -12,9 +12,9 @@ BY_SYMBOL: Dict[str, dict] = {i["symbol"]: i for i in ITEMS}
 # tools/refresh_catalog.py can rebuild the list without losing them.
 ALIASES: Dict[str, str] = json.loads((Path(__file__).parent / "aliases.json").read_text(encoding="utf-8"))
 
-CURRENCY = {"India": "\u20b9", "US": "$"}  # stocks only: index levels are points, not money
+CURRENCY = {"India": "\u20b9", "US": "$"}  # stocks and ETFs only: index levels are points, not money
 
-DEFAULT_THRESHOLD = {"index": 1.0, "stock": 3.0}
+DEFAULT_THRESHOLD = {"index": 1.0, "stock": 3.0, "etf": 2.0}  # a gold or silver ETF moves less than a typical stock
 MIN_THRESHOLD, MAX_THRESHOLD = 0.5, 20.0
 
 
@@ -23,9 +23,12 @@ def name_of(symbol: str) -> str:
 
 
 def currency_symbol(symbol: str) -> str:
-    """'₹' for Indian stocks, '$' for US stocks, '' for indexes and anything unknown."""
+    """'₹' for Indian stocks and ETFs, '$' for US stocks, '' for indexes and anything unknown."""
     item = BY_SYMBOL.get(symbol)
-    return CURRENCY.get(item["group"], "") if item and item["type"] == "stock" else ""
+    return CURRENCY.get(item["group"], "") if item and item["type"] in ("stock", "etf") else ""
+
+# What a bucket can hold: anything that trades like a share.
+TRADED = ("stock", "etf")
 
 
 def search_text(item: dict) -> str:
@@ -41,11 +44,13 @@ _GROUP_ORDER = ["India", "US"]
 
 
 def grouped() -> List[dict]:
-    """Sections for the watchlist page: indexes by region (India first), then Indian stocks, then US stocks."""
+    """Sections for the watchlist page: indexes by region (India first), then Indian stocks, US stocks, gold & silver ETFs."""
     sections: Dict[str, List[dict]] = {}
     for item in ITEMS:
         if item["type"] == "index":
             title = f"Indexes: {item['group']}"
+        elif item["type"] == "etf":
+            title = "Gold & silver ETFs (NSE)"
         else:
             title = "Indian stocks (NSE)" if item["group"] == "India" else "US stocks (Nasdaq-100)"
         sections.setdefault(title, []).append(item)
@@ -55,11 +60,14 @@ def grouped() -> List[dict]:
             return len(_GROUP_ORDER) + 1
         if title.startswith("US stocks"):
             return len(_GROUP_ORDER) + 2
+        if title.startswith("Gold"):
+            return len(_GROUP_ORDER) + 3
         region = title.split(": ", 1)[1]
         return _GROUP_ORDER.index(region) if region in _GROUP_ORDER else len(_GROUP_ORDER)
 
     def tab(title: str) -> str:
-        return "india" if title.startswith("Indian stocks") else "us" if title.startswith("US stocks") else "indexes"
+        return ("india" if title.startswith("Indian stocks") else "us" if title.startswith("US stocks")
+                else "metals" if title.startswith("Gold") else "indexes")
 
     return [
         {"title": t, "tab": tab(t), "items": [{**i, "search": search_text(i)} for i in items]}
@@ -69,7 +77,7 @@ def grouped() -> List[dict]:
 
 def tab_totals() -> Dict[str, int]:
     """How many items each tab of the watchlist page holds."""
-    totals = {"indexes": 0, "india": 0, "us": 0}
+    totals = {"indexes": 0, "india": 0, "us": 0, "metals": 0}
     for sec in grouped():
         totals[sec["tab"]] += len(sec["items"])
     return totals

@@ -48,6 +48,18 @@
   "group": "US"
  },
  {
+  "symbol": "GOLDBEES.NS",
+  "name": "Nippon India ETF Gold BeES",
+  "type": "etf",
+  "group": "India"
+ },
+ {
+  "symbol": "SILVERBEES.NS",
+  "name": "Nippon India Silver ETF",
+  "type": "etf",
+  "group": "India"
+ },
+ {
   "symbol": "360ONE.NS",
   "name": "360 ONE WAM",
   "type": "stock",
