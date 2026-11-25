@@ -66,6 +66,7 @@ CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "").strip()
 
 LOGIN_LINK_MINUTES = 15
 LOGIN_LINK_COOLDOWN_SECONDS = 60
+LOGIN_PIN_TRIES = 5   # wrong guesses allowed on one emailed 6-digit code before it is thrown away
 MAX_WATCHLIST_ITEMS = 25
 # If more than this share of symbols fail to load in one run, the run is marked failed.
 MAX_FETCH_FAILURE_RATIO = 0.5

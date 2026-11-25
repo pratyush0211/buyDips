@@ -29,7 +29,7 @@ def sign_in(client, email="a@x.com"):
     token = csrf(client)
     client.post("/login", data={"email": email, "csrf": token})
     code = db.create_login_code(email, 15)
-    client.get(links.login_url(code).split("http://127.0.0.1:5000")[1])
+    client.post(f"/signin/{code}", data={"csrf": csrf(client, f"/signin/{code}")})
 
 
 def test_login_requires_csrf(client):
@@ -164,8 +164,8 @@ def test_home_page_declares_its_canonical_address(client, monkeypatch):
 
 def test_old_go_links_still_sign_you_in(client):
     code = db.create_login_code("a@x.com", 15)
-    assert client.get(f"/go/{code}").status_code == 302
-    assert client.get(f"/signin/{code}").status_code == 302
+    assert client.get(f"/go/{code}").status_code == 200                      # shows the Continue button
+    assert client.post(f"/go/{code}", data={"csrf": csrf(client, f"/go/{code}")}).status_code == 302
 
 
 def test_owner_is_told_once_when_someone_signs_in_for_the_first_time(client, monkeypatch):
@@ -199,7 +199,7 @@ def test_failed_notice_never_breaks_sign_in(client, monkeypatch):
         return True
     monkeypatch.setattr(web, "send_email", boom)
     code = db.create_login_code("newbie@x.com", 15)
-    assert client.get(f"/signin/{code}").status_code == 302
+    assert client.post(f"/signin/{code}", data={"csrf": csrf(client, f"/signin/{code}")}).status_code == 302
 
 
 def test_watchlist_page_has_tabs_for_each_market(client):

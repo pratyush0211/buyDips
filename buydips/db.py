@@ -111,6 +111,15 @@ login_codes = Table(
     Column("expires_at", DateTime, nullable=False),
 )
 
+# The 6-digit code that comes with a sign-in email, as an alternative to tapping the link. One per email.
+login_pins = Table(
+    "login_pins", metadata,
+    Column("email", String(320), primary_key=True),
+    Column("pin_hash", String(64), nullable=False),     # SHA-256 of email + code; the code itself is never stored
+    Column("tries", Integer, nullable=False, default=0),
+    Column("expires_at", DateTime, nullable=False),
+)
+
 _engine = None
 
 
@@ -394,6 +403,52 @@ def create_login_code(email: str, minutes: int) -> str:
             code_hash=_hash(code), email=normalize_email(email), expires_at=_now() + timedelta(minutes=minutes)
         ))
     return code
+
+
+def create_login_pin(email: str, minutes: int) -> str:
+    """A fresh 6-digit code for this email (replacing any earlier one), valid for `minutes`."""
+    email = normalize_email(email)
+    pin = f"{secrets.randbelow(10 ** 6):06d}"
+    with engine().begin() as conn:
+        conn.execute(delete(login_pins).where(login_pins.c.expires_at < _now()))  # tidy up
+        conn.execute(delete(login_pins).where(login_pins.c.email == email))
+        conn.execute(insert(login_pins).values(email=email, pin_hash=_hash(f"{email}:{pin}"), tries=0,
+                                               expires_at=_now() + timedelta(minutes=minutes)))
+    return pin
+
+
+def check_login_pin(email: str, pin: str, max_tries: int) -> bool:
+    """True once, for the right unexpired code. Every guess uses up one of `max_tries` before it is compared, so
+    parallel guesses cannot get extra attempts; at the limit the code is deleted and a new link must be requested."""
+    email = normalize_email(email)
+    with engine().begin() as conn:
+        used = conn.execute(update(login_pins).where(
+            (login_pins.c.email == email) & (login_pins.c.expires_at >= _now()) & (login_pins.c.tries < max_tries)
+        ).values(tries=login_pins.c.tries + 1)).rowcount
+        if used != 1:
+            conn.execute(delete(login_pins).where((login_pins.c.email == email) & (login_pins.c.tries >= max_tries)))
+            return False
+        right = conn.execute(delete(login_pins).where(
+            (login_pins.c.email == email) & (login_pins.c.pin_hash == _hash(f"{email}:{pin}")))).rowcount
+        return right == 1
+
+
+def consume_login_code(code: str) -> Optional[str]:
+    """Use up a sign-in link: the email it belongs to the first time, None after that or once expired."""
+    email = email_for_login_code(code)
+    if not email:
+        return None
+    with engine().begin() as conn:
+        gone = conn.execute(delete(login_codes).where(login_codes.c.code_hash == _hash(code))).rowcount
+    return email if gone == 1 else None
+
+
+def clear_login_credentials(email: str) -> None:
+    """After someone signs in, neither the other way in (link or code) for that email works any more."""
+    email = normalize_email(email)
+    with engine().begin() as conn:
+        conn.execute(delete(login_pins).where(login_pins.c.email == email))
+        conn.execute(delete(login_codes).where(login_codes.c.email == email))
 
 
 def email_for_login_code(code: str) -> Optional[str]:

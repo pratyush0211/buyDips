@@ -14,13 +14,14 @@ _env = Environment(
 )
 
 
-def signin(url: str, minutes: int) -> Tuple[str, str, str]:
-    """(subject, plain text, html) for the sign-in email."""
-    text = (
-        f"Click to sign in to buyDips (valid for {minutes} minutes):\n\n{url}\n\n"
-        "If you didn't ask for this, ignore this email."
-    )
-    html = _env.get_template("signin.html").render(url=url, minutes=minutes)
+def signin(url: str, minutes: int, pin: str = "") -> Tuple[str, str, str]:
+    """(subject, plain text, html) for the sign-in email. `pin` is the 6-digit alternative to the link."""
+    shown = f"{pin[:3]} {pin[3:]}" if pin else ""
+    text = f"Click to sign in to buyDips (valid for {minutes} minutes):\n\n{url}\n\n"
+    if pin:
+        text += f"Or, on another device, type this code on the sign-in page: {shown}\n\n"
+    text += "If you didn't ask for this, ignore this email."
+    html = _env.get_template("signin.html").render(url=url, minutes=minutes, pin=shown)
     return "Your buyDips sign-in link", text, html
 
 

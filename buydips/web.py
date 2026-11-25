@@ -262,28 +262,52 @@ def create_app() -> Flask:
         if wait is None or wait >= config.LOGIN_LINK_COOLDOWN_SECONDS:
             db.get_or_create_user(email)
             code = db.create_login_code(email, config.LOGIN_LINK_MINUTES)
-            subject, text, html = emails.signin(links.login_url(code), config.LOGIN_LINK_MINUTES)
+            pin = db.create_login_pin(email, config.LOGIN_LINK_MINUTES)
+            subject, text, html = emails.signin(links.login_url(code), config.LOGIN_LINK_MINUTES, pin)
             sent = send_email(email, subject, text, html=html)
             if not sent:
                 return page("Couldn't send the email",
                             "Something went wrong on our side while sending your sign-in link. "
                             "Please try again in a few minutes.", 503)
             db.mark_login_link_sent(email)
-        return page("Check your inbox", f"If {email} is valid, a sign-in link is on its way. It expires in "
-                                        f"{config.LOGIN_LINK_MINUTES} minutes.", icon="✉")
+        return render_template("checkinbox.html", email=email, minutes=config.LOGIN_LINK_MINUTES, error=False, user=safe_user())
 
-    @app.route("/signin/<code>")
-    @app.route("/go/<code>")  # earlier short-link format; kept so links already emailed still work
-    def signin(code):
-        email = db.email_for_login_code(code)
-        if not email:
-            return page("Link expired", "That sign-in link is invalid or has expired. Request a new one.", 400)
+    @app.route("/login/code", methods=["POST"])
+    def login_with_code():
+        """Sign in with the 6-digit code from the email (for when the link is opened on a different device)."""
+        check_csrf()
+        email = db.normalize_email(request.form.get("email", ""))
+        pin = "".join(request.form.get("pin", "").split())
+        if not EMAIL_RE.match(email) or len(email) > 254:
+            return page("Check your email address", "That doesn't look like a valid email address.", 400)
+        if not (len(pin) == 6 and pin.isascii() and pin.isdigit()) or not db.check_login_pin(email, pin, config.LOGIN_PIN_TRIES):
+            # one message for every failure: wrong, expired, used up, or an address that has no code
+            return render_template("checkinbox.html", email=email, minutes=config.LOGIN_LINK_MINUTES, error=True, user=safe_user()), 400
+        return _finish_signin(email)
+
+    def _finish_signin(email: str):
+        db.clear_login_credentials(email)
         user = db.get_or_create_user(email)
         if db.mark_first_signin(user["id"]):
             _background(_announce_new_user, email)
         session.clear()
         session["uid"] = user["id"]
         return redirect(url_for("watchlist"))
+
+    @app.route("/signin/<code>", methods=["GET", "POST"])
+    @app.route("/go/<code>", methods=["GET", "POST"])  # earlier short-link format; kept so links already emailed still work
+    def signin(code):
+        """Opening the link only shows a Continue button; tapping it signs in and uses the link up. That way an email
+        program that pre-opens links to scan them cannot use up the link before the person taps it."""
+        if request.method == "GET":
+            if not db.email_for_login_code(code):
+                return page("Link expired", "That sign-in link is invalid or has expired. Request a new one.", 400)
+            return render_template("continue.html", code=code, user=safe_user())
+        check_csrf()
+        email = db.consume_login_code(code)
+        if not email:
+            return page("Link expired", "That sign-in link is invalid, already used or has expired. Request a new one.", 400)
+        return _finish_signin(email)
 
     @app.route("/auth/<token>")
     def legacy_auth(token):  # long-format links from before 22 Nov 2026; they expire in 15 minutes anyway
