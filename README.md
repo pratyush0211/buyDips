@@ -4,7 +4,7 @@ Pick the indexes, stocks and gold and silver ETFs you follow (Nifty 500, Nasdaq-
 
 ## How it works
 
-- **Website** (`buydips/web.py`, Flask): passwordless sign-in by emailed link or 6-digit code, a watchlist page, a performance page (with an optional AI-written summary and share link), one-click unsubscribe, account deletion.
+- **Website** (`buydips/web.py`, Flask): passwordless sign-in by emailed link or 6-digit code, a watchlist page, a daily AI brief (researched once each morning for followed stocks that triggered a technical signal, shown only when notable, with sources, charts, share cards and an optional email) and a performance page, one-click unsubscribe, account deletion.
 - **Scheduled job** (`run_check.py`, started by `.github/workflows/check.yml` on a 20-minute GitHub schedule, Mon–Fri, which GitHub often delays or skips, so an external trigger (cron-job.org) also starts it about hourly; in practice, expect a check about once an hour): fetches each distinct watched symbol once, then emails every user whose alert level was crossed. Each (user, symbol, trading session) alerts at most once. The run fails loudly if most prices can't be fetched.
 - **Data** (`buydips/data.py`): Yahoo Finance via `yfinance`, behind a small provider interface so it can be swapped for a licensed source.
 - **Catalog** (`buydips/catalog.json`): the curated, Yahoo-verified list users can choose from.
@@ -27,7 +27,7 @@ With no email configured, sign-in links and codes are printed to the server log 
 ## Deploy
 
 - **Website**: Render (`render.yaml`). Set `DATABASE_URL`, `SECRET_KEY`, `EMAIL_API_KEY`, `MAIL_FROM`, `EMAIL_PROVIDER`.
-- **Scheduled job**: GitHub Actions. Secrets: `DATABASE_URL`, `SECRET_KEY`, `EMAIL_API_KEY`. Repository variable: `BASE_URL`.
+- **Scheduled job**: GitHub Actions. Secrets: `DATABASE_URL`, `SECRET_KEY`, `EMAIL_API_KEY`, and `ANTHROPIC_API_KEY` for the daily brief (the AI research runs in this job, not on the website). Repository variable: `BASE_URL`.
 - `SECRET_KEY` must be **identical** in both places: it signs the unsubscribe links in emails.
 
 ## Notes

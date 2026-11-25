@@ -1,0 +1,26 @@
+{% macro brief_card(b, full=False) %}
+<article class="bcard">
+  <div class="bc-top">
+    <div class="lident">{{ icon(b.symbol) }}<div class="lmain"><span class="lname">{{ b.name }}</span><span class="lsub">{{ b.symbol }} &middot; {{ b.day_label }}</span></div></div>
+    {% if b.move %}<div class="lside"><span class="bpct tone-{{ b.tone }}">{{ b.move }}</span><span class="lsub">past year</span></div>{% endif %}
+  </div>
+  {% if b.signals %}<div class="chips">{% for s in b.signals[:3] %}<span class="chip">{{ s }}</span>{% endfor %}</div>{% endif %}
+  <h3 class="bc-head">{% if full %}{{ b.headline }}{% else %}<a href="{{ b.path }}">{{ b.headline }}</a>{% endif %}</h3>
+  {% if b.chart %}
+  <svg class="chart-svg tone-{{ b.tone }}" viewBox="0 0 {{ b.chart.w }} {{ b.chart.h }}" role="img" aria-label="Price over the past year, {{ b.move }}" preserveAspectRatio="none">
+    <path class="cs-area" d="{{ b.chart.area }}"/><path class="cs-line" d="{{ b.chart.line }}" fill="none"/><circle class="cs-dot" cx="{{ b.chart.dot_x }}" cy="{{ b.chart.dot_y }}" r="3.5"/>
+  </svg>
+  {% endif %}
+  <ul class="bc-points">
+    {% for p in b.points %}<li>{{ p.t }} <a href="{{ p.u }}" target="_blank" rel="noopener nofollow">{{ p.d }} &#8599;</a></li>{% endfor %}
+  </ul>
+  {% if b.targets or b.consensus %}
+  <p class="bc-targets">{% for t in b.targets %}Reported by {{ t.by }}: {{ t.price }} <a href="{{ t.u }}" target="_blank" rel="noopener nofollow">{{ t.d }} &#8599;</a><br>{% endfor %}{% if b.consensus %}{{ b.consensus }}{% endif %}</p>
+  {% endif %}
+  <div class="sharebtns">
+    <button type="button" class="btn btn-ghost btn-sm" data-share data-url="{{ b.url }}" data-title="{{ b.name }}: {{ b.headline }}" data-image="{{ b.path }}/story.png">Share</button>
+    <a class="btn btn-ghost btn-sm" href="{{ b.path }}/story.png?download=1">Save image</a>
+    {% if not full %}<a class="btn btn-ghost btn-sm" href="{{ b.path }}">Open</a>{% endif %}
+  </div>
+</article>
+{% endmacro %}

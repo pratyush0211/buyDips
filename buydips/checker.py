@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
-from . import buckets as bucketmath, catalog, config, db, emails, links, markets, performance
+from . import briefs, buckets as bucketmath, catalog, config, db, emails, links, markets, performance
 from .data import Provider, YahooProvider
 from .mailer import send_email
 
@@ -31,7 +31,7 @@ def _refresh_performance(provider) -> int:
     if not stale:
         return 0
     got = fetch_history(stale)
-    db.save_perf({s: performance.metrics(got[s]) if s in got else None for s in stale if s in got})
+    db.save_perf({s: performance.snapshot(got[s]) for s in stale if s in got})
     return len(got)
 
 
@@ -47,7 +47,52 @@ def run_check(
     except Exception as exc:  # noqa: BLE001
         log.error("performance refresh failed: %s", exc)
         summary["performance_refreshed"] = 0
+    try:                       # once a day: research what is notable, then email those who asked for the brief
+        summary["briefs"] = briefs.run_daily(provider, now)
+        summary["brief_emails"] = _send_brief_emails(send, now)
+    except Exception as exc:  # noqa: BLE001
+        log.error("daily brief failed: %s", exc)
+        summary.setdefault("briefs", {"researched": 0, "worthy": 0, "skipped": "error"})
+        summary.setdefault("brief_emails", 0)
     return summary
+
+
+def _attach_briefs(hits: list, now: Optional[datetime]) -> None:
+    """Give a dip alert the researched reason behind the fall, when today's brief for that stock is notable."""
+    found = db.worthy_briefs([h["symbol"] for h in hits], briefs.since_day(now))
+    for h in hits:
+        b = found.get(h["symbol"])
+        if b:
+            h["brief"] = {"headline": b["headline"], "points": b["body"].get("points", [])[:2], "url": briefs.url(h["symbol"], b["day"])}
+
+
+def _send_brief_emails(send, now: Optional[datetime]) -> int:
+    """One email per opted-in person on days a stock they follow has a notable brief. Nothing on quiet days."""
+    now = now or datetime.now(timezone.utc)
+    day = now.date().isoformat()
+    if not db.brief_run_done(day):
+        return 0
+    people = {u["user_id"]: u for u in db.users_for_brief_email(day)}
+    if not people:
+        return 0
+    held = defaultdict(set)
+    for s in db.active_subscriptions():
+        if s["user_id"] in people:
+            held[s["user_id"]].add(s["symbol"])
+    today = db.worthy_briefs(set().union(*held.values()) if held else set(), day)
+    perf = db.perf_for(list(today))
+    sent = 0
+    for uid, symbols in held.items():
+        items = sorted((briefs.view(s, today[s], perf.get(s)) for s in symbols if s in today and today[s]["day"] == day),
+                       key=lambda v: -v["material"])
+        if not items:
+            continue
+        unsub = links.unsubscribe_url(uid)
+        subject, body, html = emails.brief(items, unsub)
+        if send(people[uid]["email"], subject, body, unsubscribe_url=unsub, html=html):
+            db.mark_brief_sent(uid, day)
+            sent += 1
+    return sent
 
 
 def _run_check(provider, send, now) -> dict:
@@ -103,6 +148,7 @@ def _run_check(provider, send, now) -> dict:
             })
         if not hits:
             continue
+        _attach_briefs(hits, now)
         unsub = links.unsubscribe_url(user_id)
         subject, body, html = emails.alert(hits, unsub)
         if send(email, subject, body, unsubscribe_url=unsub, html=html):

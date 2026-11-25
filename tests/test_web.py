@@ -186,7 +186,7 @@ def test_no_notice_when_admin_email_not_set(client, monkeypatch):
     monkeypatch.setattr(web, "_background", lambda fn, *a: fn(*a))
     client.sent.clear()
     sign_in(client, "newbie@x.com")
-    assert all(m[1] == "Your buyDips sign-in link" for m in client.sent)
+    assert client.sent and all(m[1].endswith(" is your buyDips sign-in code") for m in client.sent)   # no admin notice among them
 
 
 def test_failed_notice_never_breaks_sign_in(client, monkeypatch):
@@ -519,7 +519,7 @@ def test_cards_cope_with_long_names_and_many_stocks():
 
 def test_wording_matches_how_sign_in_and_performance_now_work(client):
     html = client.get("/").get_data(as_text=True)
-    assert "6-digit code" in html and "How do I sign in?" in html and "Can I see how my stocks have done?" in html
+    assert "6-digit code" in html and "How do I sign in?" in html and "What is the daily AI brief?" in html
     priv = client.get("/privacy").get_data(as_text=True)
     assert "sign-in codes" in priv and "How your list has done" in priv
 
@@ -527,7 +527,7 @@ def test_wording_matches_how_sign_in_and_performance_now_work(client):
 def test_watchlist_header_has_an_ai_icon_and_import_and_no_clutter(client):
     sign_in(client)
     html = client.get("/watchlist?start=india").get_data(as_text=True)
-    assert 'class="pill pill-ai" href="/performance"' in html and "How they've done: AI summary" in html
+    assert 'class="pill pill-ai" href="/performance"' in html and "Your daily AI brief" in html
     assert 'class="pill" href="/import"' in html
     assert "Import from your broker" not in html and "Indian indexes" not in html and "US indexes" not in html
     assert 'id="clearall"' in html and html.count("Clear all") == 1

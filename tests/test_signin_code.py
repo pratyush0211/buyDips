@@ -88,15 +88,14 @@ def test_the_failure_reason_is_logged_without_the_code_or_the_address(client, ca
     assert wrong not in text and "secret.person" not in text and pin not in text
 
 
-def test_deleting_an_account_removes_waiting_codes_and_summaries(client):
+def test_deleting_an_account_removes_waiting_codes(client):
     uid = db.get_or_create_user("a@x.com")["id"]
     db.create_login_pin("a@x.com", 15)
     db.create_login_code("a@x.com", 15)
-    db.save_summary(uid, "abc", "Two items are up.")
     db.delete_user(uid)
     from sqlalchemy import func, select
     with db.engine().connect() as c:
-        for table in (db.signin_pins, db.login_codes, db.summaries):
+        for table in (db.signin_pins, db.login_codes):
             assert c.execute(select(func.count()).select_from(table)).scalar() == 0
 
 
@@ -208,3 +207,35 @@ def test_signing_in_one_way_cancels_the_other(client):
     code2, pin2 = request_link(second)
     assert second.post(f"/signin/{code2}", data={"csrf": csrf(second, f"/signin/{code2}")}).status_code == 302
     assert not db.check_login_pin("a@x.com", pin2, 5)               # signing in by link cancelled the code
+
+
+# ---------------- what a phone notification shows, and the "working on it" state ----------------
+
+def test_the_code_leads_the_subject_and_the_preview_so_a_notification_shows_it(client):
+    client.post("/login", data={"email": "a@x.com", "csrf": csrf(client)})
+    subject, text = client.sent[-1][1], client.sent[-1][2]
+    pin = re.match(r"(\d{6}) is your buyDips sign-in code$", subject).group(1)
+    assert text.startswith(f"Your buyDips sign-in code is {pin}.") and "/signin/" in text
+    _, _, html = emails.signin("https://x/signin/abc", 15, pin)
+    preview = re.search(r'opacity:0;[^>]*>(.*?)</div>', html).group(1)
+    assert preview.startswith(f"Your sign-in code is {pin}") and "tap the button" in preview
+    assert "http" not in subject and "http" not in preview               # nothing that crowds the code out of the notification
+
+
+def test_without_a_code_the_email_keeps_the_old_subject_and_preview():
+    subject, text, html = emails.signin("https://x/signin/abc", 15)
+    assert subject == "Your buyDips sign-in link" and text.startswith("Click to sign in")
+    assert "Your sign-in link for buyDips" in html
+
+
+def test_sign_in_forms_show_a_working_state_and_ignore_a_second_tap(client):
+    home = client.application.test_client().get("/").get_data(as_text=True)
+    assert 'id="signup" method="post" action="/login" data-busy="Sending your link&hellip;"' in home
+    code, _ = request_link(client)
+    assert 'data-busy="Signing you in&hellip;"' in client.get(f"/signin/{code}").get_data(as_text=True)
+    inbox = client.post("/login", data={"email": "b@x.com", "csrf": csrf(client)}).get_data(as_text=True)
+    assert 'data-busy="Checking&hellip;"' in inbox
+    js = client.get("/static/site.js").get_data(as_text=True)
+    assert "data-busy" in js and "f.dataset.sent" in js and "e.preventDefault()" in js and "pageshow" in js
+    css = client.get("/static/style.css").get_data(as_text=True)
+    assert ".btn.is-busy" in css and "@keyframes spin" in css and "prefers-reduced-motion" in css

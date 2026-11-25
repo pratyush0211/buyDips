@@ -205,6 +205,77 @@ def _link(model: dict) -> Image.Image:
     return img.resize((W, H), Image.LANCZOS)
 
 
+def _series_chart(d, box, values, tone, width=6):
+    """A line chart with a soft fill inside box = (x0, y0, x1, y1), in card pixels."""
+    x0, y0, x1, y1 = box
+    lo, hi = min(values), max(values)
+    span = (hi - lo) or 1.0
+    n = len(values)
+    pts = [(x0 + (x1 - x0) * i / (n - 1), y1 - (y1 - y0) * (v - lo) / span) for i, v in enumerate(values)]
+    color = UP if tone == "up" else DOWN
+    fill = "#dcefe3" if tone == "up" else "#f6dcdc"
+    d.polygon([(x * S, y * S) for x, y in pts] + [(x1 * S, (y1 + 14) * S), (x0 * S, (y1 + 14) * S)], fill=fill)
+    d.line([(x * S, y * S) for x, y in pts], fill=color, width=width * S, joint="curve")
+    lx, ly = pts[-1]
+    r = 11
+    d.ellipse([(lx - r) * S, (ly - r) * S, (lx + r) * S, (ly + r) * S], fill=WHITE, outline=color, width=5 * S)
+
+
+def _signal_line(model: dict) -> str:
+    return "  ·  ".join(model.get("signals", [])[:2])
+
+
+def _brief_story(m: dict) -> Image.Image:
+    W, H = SIZES["story"]
+    img = Image.new("RGB", (W * S, H * S), PAPER)
+    d = ImageDraw.Draw(img)
+    _logo(d, 72, 70, 64)
+    _wordmark(d, 152, 120, 62)
+    _t(d, (72, 236), "NOTABLE TODAY", font("Geist-Bold.ttf", 28), TEAL, spacing=5)
+    f, nm = _name_fit(d, m["name"], "Geist-Bold.ttf", 40, W - 330, 28)
+    _t(d, (72, 296), nm, f, INK, anchor="lm")
+    _chip(d, W - 72, 275, m["market"])
+    end = _title(d, m["headline"], 330, W - 144, 92, 760, 72)
+    top = end + 36
+    _box(d, 56, top, W - 56, top + 400, 34, WHITE, LINE)
+    _t(d, (96, top + 40), "PAST YEAR", font("Geist-Bold.ttf", 24), MUTED, spacing=4)
+    if m.get("move"):
+        _t(d, (W - 96, top + 52), m["move"], font("Geist-Bold.ttf", 40), UP if m["tone"] == "up" else DOWN, anchor="rm")
+    _series_chart(d, (110, top + 110, W - 110, top + 360), m["series"], m["tone"])
+    if m.get("signals"):
+        f2, sg = _name_fit(d, _signal_line(m), "Geist-Medium.ttf", 30, W - 144, 22)
+        _t(d, (72, top + 446), sg, f2, MUTED)
+    _t(d, (72, H - 112), "Sources and more at buydips.in", font("Geist-Bold.ttf", 34), INK)
+    _t(d, (72, H - 64), "AI-assisted from linked sources. Not investment advice.", font("Geist-Regular.ttf", 26), MUTED)
+    return img.resize((W, H), Image.LANCZOS)
+
+
+def _brief_link(m: dict) -> Image.Image:
+    W, H = SIZES["link"]
+    img = Image.new("RGB", (W * S, H * S), PAPER)
+    d = ImageDraw.Draw(img)
+    _logo(d, 64, 56, 56)
+    _wordmark(d, 134, 102, 54)
+    _t(d, (64, 186), "NOTABLE TODAY", font("Geist-Bold.ttf", 24), TEAL, spacing=4)
+    f, nm = _name_fit(d, m["name"], "Geist-Bold.ttf", 34, 600, 24)
+    _t(d, (64, 236), nm, f, INK, anchor="lm")
+    _title(d, m["headline"], 262, 640, 64, H - 70, 64)
+    _box(d, 760, 56, W - 56, H - 56, 30, WHITE, LINE)
+    _t(d, (800, 106), "PAST YEAR", font("Geist-Bold.ttf", 22), MUTED, spacing=4)
+    if m.get("move"):
+        _t(d, (W - 96, 118), m["move"], font("Geist-Bold.ttf", 38), UP if m["tone"] == "up" else DOWN, anchor="rm")
+    _series_chart(d, (800, 190, W - 100, H - 130), m["series"], m["tone"], width=5)
+    _t(d, (800, H - 92), "Not investment advice", font("Geist-Medium.ttf", 24), MUTED)
+    return img.resize((W, H), Image.LANCZOS)
+
+
+def _chart_png(m: dict, w: int = 1000, h: int = 300) -> Image.Image:
+    img = Image.new("RGB", (w * S, h * S), WHITE)
+    d = ImageDraw.Draw(img)
+    _series_chart(d, (30, 34, w - 40, h - 50), m["series"], m["tone"], width=5)
+    return img.resize((w, h), Image.LANCZOS)
+
+
 _cache: Dict[str, bytes] = {}
 _lock = threading.Lock()
 
@@ -218,6 +289,25 @@ def render(model: dict, kind: str = "story") -> bytes:
         if key in _cache:
             return _cache[key]
     img = _story(model) if kind == "story" else _link(model)
+    buf = io.BytesIO()
+    img.save(buf, "PNG", optimize=True)
+    data = buf.getvalue()
+    with _lock:
+        if len(_cache) > 64:
+            _cache.clear()
+        _cache[key] = data
+    return data
+
+
+def render_brief(model: dict, kind: str = "story") -> bytes:
+    """PNG for a daily brief. `model`: name, market, headline, series (closes), tone, move, signals. kind: story, link, chart."""
+    key = repr(("brief", kind, model["name"], model["headline"], model.get("move"), model["tone"], len(model["series"]),
+                round(model["series"][-1], 2), tuple(model.get("signals", [])[:2])))
+    with _lock:
+        if key in _cache:
+            return _cache[key]
+    model = {**model, "name": printable(model["name"], "Geist-Bold.ttf"), "headline": printable(model["headline"])}
+    img = {"story": _brief_story, "link": _brief_link, "chart": _chart_png}[kind](model)
     buf = io.BytesIO()
     img.save(buf, "PNG", optimize=True)
     data = buf.getvalue()

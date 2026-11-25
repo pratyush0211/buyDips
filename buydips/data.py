@@ -61,14 +61,34 @@ class YahooProvider:
             import yfinance as yf
 
             # auto_adjust (the default) restates old prices for splits and dividends, so returns are like for like
-            closes = yf.Ticker(symbol).history(period="1y", interval="1d")["Close"].dropna()
-            return symbol, [(i.date().isoformat(), float(v)) for i, v in closes.items()]
+            hist = yf.Ticker(symbol).history(period="1y", interval="1d")
+            vol = hist["Volume"] if "Volume" in hist else None
+            rows = []
+            for i, c in hist["Close"].dropna().items():
+                v = float(vol.get(i, 0) or 0) if vol is not None else 0.0
+                rows.append((i.date().isoformat(), float(c), v if v > 0 else None))
+            return symbol, rows
         except Exception as exc:  # noqa: BLE001
             log.error("Failed to fetch history for %s: %s", symbol, exc)
             return symbol, None
 
+    def analyst(self, symbols: Iterable[str]) -> Dict[str, dict]:
+        """{symbol: {mean, low, high}} analyst price-target consensus where Yahoo has one (patchy for Indian stocks)."""
+        out = {}
+        for s in dict.fromkeys(symbols):
+            try:
+                import yfinance as yf
+
+                t = yf.Ticker(s).analyst_price_targets or {}
+                mean = t.get("mean")
+                if mean and mean == mean and mean > 0:
+                    out[s] = {k: round(float(t[k]), 2) for k in ("mean", "low", "high") if t.get(k) and t[k] == t[k]}
+            except Exception as exc:  # noqa: BLE001
+                log.info("No analyst targets for %s: %s", s, exc)
+        return out
+
     def history(self, symbols: Iterable[str]) -> Dict[str, list]:
-        """{symbol: [(YYYY-MM-DD, adjusted close), ...] oldest first} for roughly the last year. Failed symbols are absent."""
+        """{symbol: [(YYYY-MM-DD, adjusted close, volume or None), ...] oldest first} for roughly the last year. Failed symbols are absent."""
         symbols = list(dict.fromkeys(symbols))
         with ThreadPoolExecutor(self.workers) as pool:
             results = list(pool.map(self._history_one, symbols))

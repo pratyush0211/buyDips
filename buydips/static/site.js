@@ -4,6 +4,31 @@ document.addEventListener("submit", function (e) {
   if (msg && !window.confirm(msg)) e.preventDefault();
 });
 
+// Forms marked data-busy="..." show that something is happening as soon as they are sent (the server can take a few
+// seconds to answer), and ignore a second tap. The page is restored if the browser brings it back from its cache.
+document.addEventListener("submit", function (e) {
+  var f = e.target, text = f.getAttribute && f.getAttribute("data-busy");
+  if (e.defaultPrevented || !text) return;
+  if (f.dataset.sent) { e.preventDefault(); return; }
+  var b = f.querySelector("button:not([type=button])");
+  if (!b) return;
+  f.dataset.sent = "1";
+  b.dataset.label = b.innerHTML;
+  b.textContent = text;
+  b.insertBefore(Object.assign(document.createElement("span"), { className: "spinner" }), b.firstChild);
+  b.classList.add("is-busy");
+  f.setAttribute("aria-busy", "true");
+});
+window.addEventListener("pageshow", function (e) {
+  if (!e.persisted) return;
+  Array.prototype.forEach.call(document.querySelectorAll("form[data-busy]"), function (f) {
+    var b = f.querySelector("button.is-busy");
+    if (b) { b.innerHTML = b.dataset.label; b.classList.remove("is-busy"); }
+    delete f.dataset.sent;
+    f.removeAttribute("aria-busy");
+  });
+});
+
 // Scroll reveals and count-up numbers. Only things below the fold are hidden (so nothing flashes),
 // and people who prefer reduced motion, or browsers without IntersectionObserver, just see the finished page.
 (function () {

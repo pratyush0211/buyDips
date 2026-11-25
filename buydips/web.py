@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, abort, g, redirect, render_template, request, send_from_directory, session, url_for
 
-from . import buckets as bucketmath, card, catalog, config, db, emails, importer, links, markets, performance, summarize
+from . import briefs, buckets as bucketmath, card, catalog, config, db, emails, importer, links, markets, performance
 from .data import YahooProvider
 from .mailer import send_email
 
@@ -559,6 +559,16 @@ def create_app() -> Flask:
                                n_watched=len(db.get_subscriptions(user["id"])),
                                changed=request.args.get("changed"))
 
+    @app.route("/settings/brief", methods=["POST"])
+    def settings_brief():
+        user = current_user()
+        if not user:
+            return redirect(url_for("index"))
+        check_csrf()
+        on = request.form.get("on") == "1"
+        db.set_brief_email(user["id"], on)
+        return redirect(url_for("settings", changed="brief_on" if on else "brief_off"))
+
     @app.route("/settings/alerts", methods=["POST"])
     def settings_alerts():
         user = current_user()
@@ -617,11 +627,45 @@ def create_app() -> Flask:
             return redirect(url_for("index"))
         subs = db.get_subscriptions(user["id"])
         model = performance.build(subs, db.perf_for(list(subs) + list(performance.BENCH.values())))
-        text, by_ai = summarize.get(user["id"], model) if subs else ("", False)
+        text = performance.template_summary(model) if subs else ""
+        found = db.worthy_briefs(list(subs), briefs.since_day())
+        perf = db.perf_for(list(found))
+        cards = sorted((briefs.view(s, b, perf.get(s)) for s, b in found.items()), key=lambda v: (-v["material"], v["name"]))
         token = user.get("perf_share_token")
-        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, by_ai=by_ai, pct=performance.pct,
+        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, cards=cards, pct=performance.pct,
                                can_share=performance.share_model(model) is not None, token=token,
                                share_url=f"{config.BASE_URL}/p/{token}" if token else None, changed=request.args.get("changed"))
+
+    def _brief_or_404(day: str, symbol: str):
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day) or symbol not in catalog.BY_SYMBOL:
+            abort(404)
+        b = db.get_brief(symbol, day)
+        if not b or not b["worthy"]:
+            abort(404)        # a brief that wasn't notable is never public
+        return briefs.view(symbol, b, db.perf_for([symbol]).get(symbol))
+
+    @app.route("/brief/<day>/<symbol>")
+    def brief_page(day, symbol):
+        v = _brief_or_404(day, symbol)
+        resp = app.make_response(render_template("brief.html", user=safe_user(), tab=None, b=v, base=config.BASE_URL))
+        resp.headers["X-Robots-Tag"] = "noindex"
+        return resp
+
+    @app.route("/brief/<day>/<symbol>/<kind>.png")
+    def brief_image(day, symbol, kind):
+        if kind not in ("story", "link", "chart"):
+            abort(404)
+        v = _brief_or_404(day, symbol)
+        if len(v["values"]) < 10:
+            abort(404)
+        png = card.render_brief({"name": v["name"], "market": v["market"], "headline": v["headline"], "series": v["values"],
+                                 "tone": v["tone"], "move": v["move"], "signals": v["signals"]}, kind)
+        resp = Response(png, mimetype="image/png")
+        resp.headers["Cache-Control"] = "public, max-age=300"
+        resp.headers["X-Robots-Tag"] = "noindex"
+        if request.args.get("download"):
+            resp.headers["Content-Disposition"] = f'attachment; filename="buydips-{symbol.split(".")[0].lower()}.png"'
+        return resp
 
     @app.route("/performance/share", methods=["POST"])
     def performance_share():

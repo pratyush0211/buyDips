@@ -8,7 +8,7 @@ import json
 from datetime import date, timedelta
 from typing import Dict, List, Optional
 
-from . import catalog, markets
+from . import catalog, markets, signals
 
 WINDOWS = {"r1w": 7, "r1m": 30, "r3m": 91, "r1y": 365}      # calendar days looked back
 BENCH = {"India": "^NSEI", "US": "^NDX"}                     # what each market is compared with
@@ -17,7 +17,7 @@ LABELS = {"r1w": "1 week", "r1m": "1 month", "r3m": "3 months", "r1y": "1 year"}
 
 def metrics(closes: List[tuple]) -> Optional[dict]:
     """Figures from [(YYYY-MM-DD, close)] oldest first, or None if there isn't enough history to say anything."""
-    pts = [(date.fromisoformat(d), float(c)) for d, c in closes if c and c == c and c > 0]
+    pts = [(date.fromisoformat(r[0]), float(r[1])) for r in closes if r[1] and r[1] == r[1] and r[1] > 0]
     if len(pts) < 5:
         return None
     pts.sort()
@@ -31,6 +31,17 @@ def metrics(closes: List[tuple]) -> Optional[dict]:
     year = [c for d, c in pts if d >= last_day - timedelta(days=365)]
     out["from_high"] = (last / max(year) - 1) * 100 if year else None
     return out
+
+
+def snapshot(rows: List[tuple]) -> Optional[dict]:
+    """metrics() plus what the daily brief and the charts need: the year's closes and today's technical signals."""
+    m = metrics(rows)
+    if m is None:
+        return None
+    good = [r for r in rows if r[1] and r[1] == r[1] and r[1] > 0]
+    m["series"] = json.dumps([[r[0], round(float(r[1]), 2)] for r in good[-260:]], separators=(",", ":"))
+    m["signals"] = json.dumps(signals.compute(good), separators=(",", ":"))
+    return m
 
 
 def pct(x: Optional[float]) -> str:

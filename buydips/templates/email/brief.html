@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>buyDips brief</title>
+</head>
+<body style="margin:0;padding:0;background:#f7f6f1;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f7f6f1;">{{ items[0].headline }}{% if n > 1 %} &middot; and {{ n - 1 }} more{% endif %}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f1;padding:28px 12px 36px;">
+<tr><td align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:540px;">
+    <tr><td style="padding:0 4px 16px;font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:26px;line-height:1;color:#11201e;">buy<span style="color:#0f766e;font-style:italic;">Dips</span></td></tr>
+    <tr><td style="background:#ffffff;border:1px solid #e3e0d6;border-radius:16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:30px 32px 4px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#0f766e;font-weight:600;">Today&rsquo;s brief &middot; {{ day }}</td></tr>
+        <tr><td style="padding:6px 32px 10px;">
+          <h1 style="margin:0;font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-weight:400;font-size:30px;line-height:1.15;color:#11201e;">{% if n == 1 %}One of your stocks is <em style="color:#0f766e;">in the news.</em>{% else %}{{ n }} of your stocks are <em style="color:#0f766e;">in the news.</em>{% endif %}</h1>
+        </td></tr>
+        {% for i in items %}
+        <tr><td style="padding:0 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e3e0d6;">
+            <tr>
+              <td valign="top" style="padding:22px 0 4px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                <div style="font-size:17px;font-weight:600;line-height:1.3;color:#11201e;">{{ i.name }}</div>
+                <div style="padding-top:2px;font-size:12.5px;color:#7a8480;">{{ i.symbol }} &middot; {{ i.market }}</div>
+              </td>
+              {% if i.move %}<td align="right" valign="top" style="padding:20px 0 4px 12px;white-space:nowrap;">
+                <div style="font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:26px;line-height:1;color:{{ '#166534' if i.tone == 'up' else '#c62828' }};">{{ i.move }}</div>
+                <div style="padding-top:3px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;color:#7a8480;text-align:right;">past year</div>
+              </td>{% endif %}
+            </tr>
+            {% if i.signals %}<tr><td colspan="2" style="padding:6px 0 0;">{% for s in i.signals[:3] %}<span style="display:inline-block;background:#f0eee6;color:#5c6764;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;padding:3px 10px;border-radius:99px;margin:0 6px 6px 0;">{{ s }}</span>{% endfor %}</td></tr>{% endif %}
+            <tr><td colspan="2" style="padding:10px 0 12px;font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:23px;line-height:1.28;color:#11201e;">{{ i.headline }}</td></tr>
+            {% if i.chart %}<tr><td colspan="2" style="padding:0 0 14px;"><a href="{{ i.url }}"><img src="{{ i.chart_url }}" width="476" alt="Price over the past year" style="display:block;width:100%;max-width:476px;height:auto;border:1px solid #e3e0d6;border-radius:12px;"></a></td></tr>{% endif %}
+            {% for p in i.points %}
+            <tr><td colspan="2" style="padding:0 0 8px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.55;color:#34423f;">&bull; {{ p.t }} <a href="{{ p.u }}" style="color:#0f766e;text-decoration:none;white-space:nowrap;">{{ p.d }} &#8599;</a></td></tr>
+            {% endfor %}
+            {% if i.targets or i.consensus %}<tr><td colspan="2" style="padding:6px 0 4px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#5c6764;">
+              {% for t in i.targets %}Reported by {{ t.by }}: {{ t.price }} <a href="{{ t.u }}" style="color:#0f766e;text-decoration:none;">{{ t.d }} &#8599;</a><br>{% endfor %}
+              {% if i.consensus %}{{ i.consensus }}{% endif %}
+            </td></tr>{% endif %}
+            <tr><td colspan="2" style="padding:10px 0 24px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"><a href="{{ i.url }}" style="color:#0f766e;font-weight:600;font-size:14.5px;text-decoration:none;">Read and share &rarr;</a></td></tr>
+          </table>
+        </td></tr>
+        {% endfor %}
+        <tr><td style="padding:2px 32px 28px;border-top:1px solid #e3e0d6;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#7a8480;"><div style="padding-top:16px;">Written by AI from the sources linked above. Links, figures and any broker targets come from those sources, not from buyDips.</div></td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="padding:20px 8px 0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.65;color:#7a8480;">
+      {{ disclaimer }}<br><br>
+      You&rsquo;re getting this because you turned on the daily brief. <a href="{{ settings_url }}" style="color:#5c6764;">Stop brief emails</a> &middot; <a href="{{ unsubscribe_url }}" style="color:#5c6764;">Unsubscribe</a> from all buyDips emails.
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>

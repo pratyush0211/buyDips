@@ -34,4 +34,5 @@ jobs:
           EMAIL_PROVIDER: resend
           EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
           MAIL_FROM: alerts@buydips.in
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python run_check.py

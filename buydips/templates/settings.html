@@ -6,7 +6,7 @@
     <h1>Settings</h1>
   </header>
 
-  {% if changed == "on" %}<div class="notice" role="status">Alerts are on.</div>{% elif changed == "off" %}<div class="warnbox" role="status">Alerts are paused. We won't email you until you turn them back on.</div>{% endif %}
+  {% if changed == "on" %}<div class="notice" role="status">Alerts are on.</div>{% elif changed == "off" %}<div class="warnbox" role="status">Alerts are paused. We won't email you until you turn them back on.</div>{% elif changed == "brief_on" %}<div class="notice" role="status">Daily brief emails are on.</div>{% elif changed == "brief_off" %}<div class="notice" role="status">Daily brief emails are off. Briefs still appear in the app.</div>{% endif %}
 
   <h2 class="lgroup-title">Account</h2>
   <ul class="lrows">
@@ -17,6 +17,14 @@
         <input type="hidden" name="csrf" value="{{ csrf_token() }}">
         <label class="lmain" for="alerts-on"><span class="lname">Email alerts</span><span class="lsub">{{ "On: you'll be emailed when something falls past your level." if active else "Paused: nothing will be sent." }}</span></label>
         <input type="checkbox" class="switch" id="alerts-on" name="on" value="1" data-autosubmit {% if active %}checked{% endif %}>
+        <noscript><button class="btn btn-ghost btn-sm">Save</button></noscript>
+      </form>
+    </li>
+    <li class="lrow">
+      <form method="post" action="/settings/brief" class="rowform">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label class="lmain" for="brief-on"><span class="lname">Daily brief by email</span><span class="lsub">{{ "On: one email on mornings when something notable happens to a stock you follow. Quiet days send nothing." if user.brief_email else "Off: briefs only appear in the app." }}</span></label>
+        <input type="checkbox" class="switch" id="brief-on" name="on" value="1" data-autosubmit {% if user.brief_email %}checked{% endif %}>
         <noscript><button class="btn btn-ghost btn-sm">Save</button></noscript>
       </form>
     </li>

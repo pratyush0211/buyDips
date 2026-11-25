@@ -84,8 +84,12 @@ MAX_BUCKET_ITEMS = 25
 # Alert levels offered on the first-run screen (percent fall from the previous close).
 START_LEVELS = (2.0, 3.0, 5.0)
 
-# Written performance summaries. With no key set, the page uses a plain template sentence instead.
+# The daily brief: once each morning, Claude researches the few followed stocks that triggered a technical signal.
+# With no key set nothing is researched and pages simply have no brief.
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", "claude-haiku-5-5").strip()
-SUMMARY_PER_USER_PER_DAY = 5      # new summaries one person can trigger in a day (a changed watchlist makes a new one)
-SUMMARY_PER_DAY_TOTAL = 500       # a hard daily ceiling across everyone: the most the API can ever cost
+BRIEF_MODEL = os.getenv("BRIEF_MODEL", "claude-sonnet-5-5").strip()
+BRIEF_MAX_PER_DAY = int(os.getenv("BRIEF_MAX_PER_DAY", "60"))   # hard ceiling on stocks researched per day (the cost cap)
+BRIEF_MIN_MATERIAL = 6                                            # 0-10 significance a brief needs before anyone sees it
+BRIEF_RUN_AFTER_UTC_HOUR = 3                                      # first job run at or after this hour (08:30 IST) does the day's research
+BRIEF_TIME_BUDGET_SECONDS = 480                                   # stop researching after this long in one run (the job has a 10 minute limit); the next run resumes
+BRIEF_MAX_FAILURES = 3                                            # stop for the hour after this many failed requests in a row

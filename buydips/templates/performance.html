@@ -1,12 +1,21 @@
 {% extends "base.html" %}
-{% block title %}How they've done · buyDips{% endblock %}
+{% from "_brief_card.html" import brief_card %}
+{% block title %}Your brief · buyDips{% endblock %}
 {% block body %}
 <div class="container app-page">
   <a class="backlink" href="/watchlist?start=india">Watchlist</a>
   <header class="large-head">
-    <h1>How they've done</h1>
-    {% if m.as_of %}<p>Daily closing prices up to {{ m.as_of }}, adjusted for splits and dividends.</p>{% endif %}
+    <h1>Your brief</h1>
+    <p>A short brief on what you follow, and how it has done.</p>
   </header>
+
+  {% if m.n %}
+  <h2 class="lgroup-title">Today&rsquo;s brief</h2>
+  {% for b in cards %}{{ brief_card(b) }}{% else %}
+  <div class="quiet"><span class="quiet-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2z"/></svg></span>
+    <div><strong>Nothing notable today.</strong><p>Each morning we check what you follow for big moves and news, and show a brief only when something matters.</p></div></div>
+  {% endfor %}
+  {% endif %}
 
   {% if not m.n %}
     <div class="warnbox">You aren't following anything yet. <a href="/watchlist?start=india">Choose what to follow</a> and its history appears here.</div>
@@ -16,11 +25,12 @@
   {% if summary %}
   <section class="sumcard" aria-label="Summary">
     <p>{{ summary }}</p>
-    <p class="sumnote">{% if by_ai %}Written by AI from the figures below, which are the only facts it was given. {% endif %}Past performance says nothing about the future. For information only, not investment advice.</p>
+    <p class="sumnote">Calculated from the figures below. Past performance says nothing about the future. For information only, not investment advice.</p>
   </section>
   {% endif %}
 
-  <h2 class="lgroup-title">Your list <span class="cap">best month first</span></h2>
+  <h2 class="lgroup-title">How they've done <span class="cap">best month first</span></h2>
+  {% if m.as_of %}<p class="fine tight">Daily closing prices up to {{ m.as_of }}, adjusted for splits and dividends.</p>{% endif %}
   <ul class="lrows perf">
     {% for r in m.rows %}
     <li class="lrow">

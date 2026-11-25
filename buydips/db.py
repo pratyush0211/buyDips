@@ -1,6 +1,7 @@
 """Database layer (SQLAlchemy Core). SQLite locally, Postgres in production, same code."""
 
 import base64
+import json
 import time
 import hashlib
 import secrets
@@ -10,7 +11,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import event, exc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import (
-    Boolean, Column, Date, DateTime, false, Float, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
+    Boolean, Column, Date, DateTime, false, Float, Text, ForeignKey, Index, Integer, MetaData, PrimaryKeyConstraint,
     String, Table, bindparam, create_engine, delete, exists, func, insert, inspect, literal, select, text, update,
 )
 
@@ -29,6 +30,8 @@ users = Table(
     Column("alerts_seen_at", DateTime),   # when they last opened Alerts: newer alerts show as a badge on the bell
     Column("buckets_seen_at", DateTime),  # when they last opened Buckets: newer red flags show as a badge on the tab
     Column("perf_share_token", String(32), unique=True),  # set only while they share "how my list has done"; NULL = private
+    Column("brief_email", Boolean, nullable=False, default=False, server_default=false()),  # opted in to the daily brief email
+    Column("brief_sent_on", String(10)),                  # the day the last daily brief email went out
 )
 
 subscriptions = Table(
@@ -83,16 +86,22 @@ perf_cache = Table(
     Column("last_price", Float),
     Column("r1w", Float), Column("r1m", Float), Column("r3m", Float), Column("r1y", Float),
     Column("from_high", Float),
+    Column("series", Text),      # JSON [[date, close], ...] for the last year: draws the charts
+    Column("signals", Text),     # JSON [{k, text, s}, ...] technical signals found today
     Column("updated_at", DateTime, nullable=False),
 )
 
-# Written summaries already produced, keyed by a digest of the exact facts they describe.
-summaries = Table(
-    "summaries", metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("digest", String(40), primary_key=True),
-    Column("text", String(1000), nullable=False),
-    Column("created_at", DateTime, nullable=False, index=True),
+# One researched brief per stock per day, shared by everyone who follows that stock. A row with worthy = false records
+# "looked, nothing notable" so the stock is not researched again that day. symbol "_run" marks the day's run complete.
+briefs = Table(
+    "briefs", metadata,
+    Column("symbol", String(40), primary_key=True),
+    Column("day", String(10), primary_key=True),
+    Column("worthy", Boolean, nullable=False, default=False),
+    Column("material", Integer, nullable=False, default=0),
+    Column("headline", String(200)),
+    Column("body", Text),        # JSON {points:[{t,u,d}], targets:[{by,p,u,d}], consensus:{...}, signals:[...]}
+    Column("created_at", DateTime, nullable=False),
 )
 
 quotes_cache = Table(
@@ -180,7 +189,9 @@ def _migrate() -> None:
               ("bucket_items", "split_through", "DATE"), ("bucket_items", "split_checked_at", "TIMESTAMP"),
               ("users", "alerts_seen_at", "TIMESTAMP"), ("users", "buckets_seen_at", "TIMESTAMP"),
               ("buckets", "share_token", "VARCHAR(32)"), ("buckets", "share_perf", "BOOLEAN DEFAULT FALSE"),
-              ("users", "perf_share_token", "VARCHAR(32)")]
+              ("users", "perf_share_token", "VARCHAR(32)"),
+              ("perf_cache", "series", "TEXT"), ("perf_cache", "signals", "TEXT"),
+              ("users", "brief_email", "BOOLEAN DEFAULT FALSE"), ("users", "brief_sent_on", "VARCHAR(10)")]
     for table, column, ddl in wanted:
         if column in {c["name"] for c in inspect(engine()).get_columns(table)}:
             continue
@@ -302,7 +313,6 @@ def delete_user(user_id: int) -> None:
         if row:   # anything still waiting to sign this address in
             conn.execute(delete(signin_pins).where(signin_pins.c.email == row[0]))
             conn.execute(delete(login_codes).where(login_codes.c.email == row[0]))
-        conn.execute(delete(summaries).where(summaries.c.user_id == user_id))
         ids = [r[0] for r in conn.execute(select(buckets.c.id).where(buckets.c.user_id == user_id))]
         if ids:
             conn.execute(delete(bucket_items).where(bucket_items.c.bucket_id.in_(ids)))
@@ -659,7 +669,7 @@ def save_perf(rows: Dict[str, Optional[dict]]) -> None:
     hour. One delete and one bulk insert."""
     if not rows:
         return
-    keys = ("last_date", "last_price", "r1w", "r1m", "r3m", "r1y", "from_high")
+    keys = ("last_date", "last_price", "r1w", "r1m", "r3m", "r1y", "from_high", "series", "signals")
     now = _now()
     batch = [{"symbol": s, "updated_at": now, **{k: (m or {}).get(k) for k in keys}} for s, m in rows.items()]
     with engine().begin() as conn:
@@ -667,26 +677,62 @@ def save_perf(rows: Dict[str, Optional[dict]]) -> None:
         conn.execute(insert(perf_cache), batch)
 
 
-def get_summary(user_id: int, digest: str) -> Optional[str]:
-    with _auto() as conn:
-        row = conn.execute(select(summaries.c.text).where((summaries.c.user_id == user_id) & (summaries.c.digest == digest))).first()
-    return row[0] if row else None
+# ---------- daily briefs ----------
+
+RUN_MARK = "_run"
 
 
-def save_summary(user_id: int, digest: str, text: str) -> None:
+def save_brief(symbol: str, day: str, worthy: bool, material: int, headline: Optional[str], body: Optional[dict]) -> None:
     with engine().begin() as conn:
-        conn.execute(delete(summaries).where(summaries.c.created_at < _now() - timedelta(days=14)))   # tidy up
-        conn.execute(delete(summaries).where((summaries.c.user_id == user_id) & (summaries.c.digest == digest)))
-        conn.execute(insert(summaries).values(user_id=user_id, digest=digest, text=text, created_at=_now()))
+        conn.execute(delete(briefs).where(briefs.c.created_at < _now() - timedelta(days=30)))   # tidy up
+        conn.execute(delete(briefs).where((briefs.c.symbol == symbol) & (briefs.c.day == day)))
+        conn.execute(insert(briefs).values(symbol=symbol, day=day, worthy=worthy, material=material, headline=headline,
+                                           body=json.dumps(body, separators=(",", ":")) if body else None, created_at=_now()))
 
 
-def summaries_today(user_id: Optional[int] = None) -> int:
-    """How many summaries were written in the last 24 hours (for one person, or for everyone)."""
-    cond = summaries.c.created_at >= _now() - timedelta(hours=24)
-    if user_id is not None:
-        cond = cond & (summaries.c.user_id == user_id)
+def _brief_row(r) -> dict:
+    d = dict(r)
+    d["body"] = json.loads(d["body"]) if d.get("body") else {}
+    return d
+
+
+def get_brief(symbol: str, day: str) -> Optional[dict]:
     with _auto() as conn:
-        return conn.execute(select(func.count()).select_from(summaries).where(cond)).scalar() or 0
+        row = conn.execute(select(briefs).where((briefs.c.symbol == symbol) & (briefs.c.day == day))).mappings().first()
+    return _brief_row(row) if row else None
+
+
+def worthy_briefs(symbols, since_day: str) -> Dict[str, dict]:
+    """The newest worthy brief (on or after `since_day`) for each of `symbols`."""
+    symbols = list(symbols)
+    if not symbols:
+        return {}
+    with _auto() as conn:
+        rows = conn.execute(select(briefs).where(briefs.c.symbol.in_(symbols) & briefs.c.worthy & (briefs.c.day >= since_day))
+                            .order_by(briefs.c.day)).mappings().all()
+    return {r["symbol"]: _brief_row(r) for r in rows}      # later days overwrite earlier ones
+
+
+def brief_run_done(day: str) -> bool:
+    return get_brief(RUN_MARK, day) is not None
+
+
+def users_for_brief_email(day: str) -> List[dict]:
+    """Active people who opted in to the daily brief email and haven't had today's."""
+    with _auto() as conn:
+        rows = conn.execute(select(users.c.id, users.c.email).where(
+            users.c.active.is_(True) & users.c.brief_email & (func.coalesce(users.c.brief_sent_on, "") != day))).all()
+    return [{"user_id": r[0], "email": r[1]} for r in rows]
+
+
+def mark_brief_sent(user_id: int, day: str) -> None:
+    with _auto() as conn:
+        conn.execute(update(users).where(users.c.id == user_id).values(brief_sent_on=day))
+
+
+def set_brief_email(user_id: int, on: bool) -> None:
+    with _auto() as conn:
+        conn.execute(update(users).where(users.c.id == user_id).values(brief_email=on))
 
 
 def prune_quotes(days: int = 30) -> int:

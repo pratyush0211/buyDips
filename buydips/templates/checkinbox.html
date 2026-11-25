@@ -6,7 +6,7 @@
     <div class="icon-badge{% if error %} bad{% endif %}" aria-hidden="true">{% if error %}!{% else %}&#9993;{% endif %}</div>
     <h1>{% if error %}That code didn't work{% else %}Check your inbox{% endif %}</h1>
     <p>{% if error %}Check the digits and try again. A code works for {{ minutes }} minutes and is cancelled after 5 wrong tries, so you may need to ask for a new link.{% else %}If {{ email }} is valid, a sign-in link is on its way. It expires in {{ minutes }} minutes.{% endif %}</p>
-    <form method="post" action="/login/code" class="pinform">
+    <form method="post" action="/login/code" class="pinform" data-busy="Checking&hellip;">
       <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="email" value="{{ email }}">
       <label for="pin" class="pinlabel">Signing in on a different device? Type the 6-digit code from the email.</label>
       <input class="pininput" id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="14" placeholder="123 456" required>

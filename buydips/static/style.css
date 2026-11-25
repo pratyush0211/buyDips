@@ -585,3 +585,32 @@ a.lval { color: var(--brand); }
   .item.is-on .item-main { flex: 1 1 0; }
   .tab-sel { display: none; }   /* per-tab counts only on wide screens; the Selected total stays */
 }
+
+/* "working on it" state for forms marked data-busy */
+.btn.is-busy { opacity: .85; pointer-events: none; }
+.spinner { display: inline-block; width: 1em; height: 1em; margin-right: .55em; vertical-align: -.14em; border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+
+/* daily brief cards */
+.bcard { margin: 0 0 22px; padding: 18px 18px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.bc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.chip { font-size: 14px; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.bc-head { margin: 12px 0 10px; font: 400 clamp(22px, 5vw, 26px)/1.25 var(--serif, "Instrument Serif", Georgia, serif); }
+.bc-head a { color: inherit; text-decoration: none; }
+.chart-svg { display: block; width: 100%; height: 120px; margin: 4px 0 8px; }
+.chart-svg .cs-line { stroke: var(--ok); stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.chart-svg .cs-area { fill: var(--ok); opacity: .1; }
+.chart-svg .cs-dot { fill: var(--surface); stroke: var(--ok); stroke-width: 2; }
+.chart-svg.tone-down .cs-line, .chart-svg.tone-down .cs-dot { stroke: var(--down); }
+.chart-svg.tone-down .cs-area { fill: var(--down); }
+.bc-points { margin: 6px 0 0; padding-left: 20px; font-size: 16px; line-height: 1.5; }
+.bc-points li { margin: 0 0 6px; }
+.bc-points a, .bc-targets a { color: var(--brand); text-decoration: none; white-space: nowrap; }
+.bc-targets { margin: 8px 0 0; font-size: 14.5px; color: var(--muted); line-height: 1.6; }
+.bcard .sharebtns { margin-top: 14px; }
+.quiet { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 22px; padding: 16px 18px; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }
+.quiet p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+.quiet-ico { color: var(--brand); padding-top: 2px; }

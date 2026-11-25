@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from buydips import config, db, performance, summarize
+from buydips import config, db, performance
 from buydips.checker import run_check
 from tests.test_checker import FakeProvider, IN_OPEN, Outbox, q, user
 from tests.test_web import client, csrf, sign_in  # noqa: F401  (client is a fixture)
@@ -76,138 +76,6 @@ def test_the_template_sentence_and_the_facts_use_the_same_numbers():
     assert "averaged +1.0%, against +1.0% for the Nifty 50" in text
     assert "Strongest: Reliance Industries +4.0%." in facts and "Weakest: Tata Consultancy Services -2.0%." in facts
     assert performance.template_summary(performance.build({}, {})) == "" and performance.facts(performance.build({}, {})) == ""
-
-
-# ---------------- the written summary and its safety checks ----------------
-
-FACTS = "Period: the past month, up to 2026-11-20.\nFollowed with a figure: 3. Up: 2. Down: 1.\nStrongest: Apple +9.1%.\nWeakest: HDFC Bank -4.2%."
-
-
-@pytest.mark.parametrize("text", [
-    "Over the past month, 2 of the 3 items you follow are up and 1 is down.",
-    "Apple was the strongest at +9.1% and HDFC Bank the weakest at -4.2%.",
-])
-def test_plain_descriptions_pass(text):
-    assert summarize.ok(text, FACTS)
-
-
-@pytest.mark.parametrize("text", [
-    "", "   ", "x" * 500,
-    "Apple is up +9.1%, a good time to buy more.",              # advice
-    "Apple at +9.1% looks undervalued.",                         # a view on value
-    "HDFC Bank at -4.2% should recover next month.",             # a forecast
-    "HDFC Bank will likely bounce from -4.2%.",
-    "Consider holding Apple, up +9.1%.",
-    "Apple is up +12.0% this month.",                            # a number that is not in the facts
-    "Apple is up +9.1% and 7 others are flat.",                  # an invented count
-    "Apple is up +9.1%.\nHDFC Bank is down -4.2%.",              # more than one paragraph
-    "See https://example.com for more: Apple +9.1%.",            # a link
-    "Email me@x.com: Apple +9.1%.",
-    "The best performer was Apple at +9.1%, a risk-free gain.",
-])
-def test_anything_that_sounds_like_advice_or_invents_a_figure_is_rejected(text):
-    assert not summarize.ok(text, FACTS)
-
-
-def _model(n=3):
-    perf = {"RELIANCE.NS": {"r1m": 4.0, "last_date": "2026-11-20"}, "TCS.NS": {"r1m": -2.0, "last_date": "2026-11-20"},
-            "AAPL": {"r1m": 9.0, "last_date": "2026-11-20"}}
-    return performance.build({k: 3.0 for k in list(perf)[:n]}, perf)
-
-
-@pytest.fixture
-def ai_on(monkeypatch):
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
-    calls = []
-    def fake(facts):
-        calls.append(facts)                       # a reply built only from numbers present in the facts
-        n = facts.split("Followed with a figure: ")[1].split(".")[0]
-        return f"Over the past month, {n} items you follow had a figure."
-    monkeypatch.setattr(summarize, "_ask", fake)
-    return calls
-
-
-def test_without_a_key_the_template_is_used_and_nothing_is_called(monkeypatch):
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "")
-    monkeypatch.setattr(summarize, "_ask", lambda f: pytest.fail("must not call the API without a key"))
-    text, by_ai = summarize.get(db.get_or_create_user("a@x.com")["id"], _model())
-    assert by_ai is False and "are up" in text
-
-
-def test_a_valid_reply_is_used_cached_and_not_asked_for_again(ai_on):
-    uid = db.get_or_create_user("a@x.com")["id"]
-    first = summarize.get(uid, _model())
-    second = summarize.get(uid, _model())
-    assert first == second == ("Over the past month, 3 items you follow had a figure.", True)
-    assert len(ai_on) == 1                                                         # the second view cost nothing
-    assert "@" not in ai_on[0] and "a@x.com" not in ai_on[0]                       # no email ever goes to the service
-    assert set(ai_on[0].split("\n")[0:1]) == {"Period: the past month, up to 2026-11-20."}
-
-
-def test_a_changed_watchlist_makes_a_new_summary(ai_on):
-    uid = db.get_or_create_user("a@x.com")["id"]
-    summarize.get(uid, _model(3))
-    summarize.get(uid, _model(2))
-    assert len(ai_on) == 2
-
-
-@pytest.mark.parametrize("reply", [None, "Apple is a great buy at +9.1%.", "Apple is up +55%.", ""])
-def test_a_bad_or_missing_reply_falls_back_to_the_template(monkeypatch, reply):
-    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
-    monkeypatch.setattr(summarize, "_ask", lambda f: reply)
-    uid = db.get_or_create_user("a@x.com")["id"]
-    text, by_ai = summarize.get(uid, _model())
-    assert by_ai is False and text == performance.template_summary(_model())
-    assert db.summaries_today(uid) == 0                                           # a rejected reply is never stored
-
-
-def test_a_cached_summary_is_rechecked_before_it_is_shown(ai_on):
-    uid = db.get_or_create_user("a@x.com")["id"]
-    m = _model()
-    db.save_summary(uid, performance.digest(m), "Apple is a good buy at +9.1%.")      # something bad somehow stored
-    text, by_ai = summarize.get(uid, m)
-    assert "buy" not in text.lower() or by_ai is True and "buy" not in text.lower()
-    assert "good buy" not in text
-
-
-def test_spending_limits_stop_new_calls(ai_on, monkeypatch):
-    uid = db.get_or_create_user("a@x.com")["id"]
-    monkeypatch.setattr(config, "SUMMARY_PER_USER_PER_DAY", 2)
-    for n in (3, 2):
-        assert summarize.get(uid, _model(n))[1] is True
-    assert summarize.get(uid, _model(1)) [1] is False and len(ai_on) == 2           # the third distinct watchlist is not sent
-    other = db.get_or_create_user("b@x.com")["id"]
-    monkeypatch.setattr(config, "SUMMARY_PER_DAY_TOTAL", 2)
-    assert summarize.get(other, _model(3))[1] is False and len(ai_on) == 2           # and a global ceiling holds for everyone
-
-
-def test_the_request_to_claude_carries_only_the_facts(monkeypatch):
-    sent = {}
-    def create(**kw):
-        sent.update(kw)
-        return SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="text", text=" Two items are up. ")])
-    monkeypatch.setattr(summarize, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create)))
-    assert summarize._ask(FACTS) == "Two items are up."
-    assert sent["model"] == config.SUMMARY_MODEL == "claude-haiku-5-5" and sent["messages"] == [{"role": "user", "content": FACTS}]
-    assert sent["thinking"] == {"type": "disabled"} and sent["output_config"] == {"effort": "low"} and sent["max_tokens"] <= 400
-    assert "buy" in sent["system"] and "predict" in sent["system"]
-
-
-@pytest.mark.parametrize("stop", ["refusal", "max_tokens", "tool_use"])
-def test_a_reply_that_did_not_finish_normally_is_never_used(monkeypatch, stop):
-    reply = SimpleNamespace(stop_reason=stop, content=[SimpleNamespace(type="text", text="Two items are up.")])
-    monkeypatch.setattr(summarize, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=lambda **kw: reply)))
-    assert summarize._ask(FACTS) is None
-
-
-def test_service_errors_and_missing_text_mean_none_not_a_crash(monkeypatch):
-    def boom(**kw):
-        raise TimeoutError("slow")
-    monkeypatch.setattr(summarize, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=boom)))
-    assert summarize._ask(FACTS) is None
-    empty = SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="thinking", text="")])
-    monkeypatch.setattr(summarize, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=lambda **kw: empty)))
-    assert summarize._ask(FACTS) is None
 
 
 # ---------------- the daily refresh in the alert job ----------------
@@ -283,7 +151,7 @@ def test_empty_and_waiting_states_say_what_is_going_on(client):
     assert "gathering the price history" in html and "<ul class=\"lrows perf\">" not in html
 
 
-def test_the_page_shows_figures_the_summary_and_honest_labels(client, ai_on):
+def test_the_page_shows_figures_the_summary_and_honest_labels(client):
     sign_in(client)
     uid = db.get_or_create_user("a@x.com")["id"]
     db.set_subscriptions(uid, {"RELIANCE.NS": 3.0, "TCS.NS": 3.0, "AAPL": 3.0})
@@ -291,9 +159,11 @@ def test_the_page_shows_figures_the_summary_and_honest_labels(client, ai_on):
     seed("^NSEI", r1m=1.0); seed("^NDX", r1m=3.0)
     html = client.get("/performance").get_data(as_text=True)
     assert "+9.0%" in html and "-2.0%" in html and "12% below its 1-year high" in html
-    assert html.index("Apple") < html.index("Reliance Industries") < html.index("Tata Consultancy Services")   # best month first
+    rows = html[html.index('<ul class="lrows perf">'):]
+    assert rows.index("Apple") < rows.index("Reliance Industries") < rows.index("Tata Consultancy Services")   # best month first
     assert "For comparison" in html and "Nifty 50" in html and "Nasdaq-100" in html
-    assert "Written by AI from the figures below" in html and "not investment advice" in html and "SEBI-registered" in html
+    assert "Calculated from the figures below" in html and "not investment advice" in html and "SEBI-registered" in html
+    assert "Nothing notable today" in html
     assert 'class="ico' in html and "adjusted for splits and dividends" in html
 
 
@@ -309,7 +179,7 @@ def test_without_a_key_the_page_works_and_does_not_claim_ai(client, monkeypatch)
 
 def test_privacy_page_discloses_the_service_and_what_it_gets(client):
     html = client.application.test_client().get("/privacy").get_data(as_text=True)
-    assert "Anthropic" in html and "never your email" in html
+    assert "Anthropic" in html and "never your email" in html and "searches the web" in html
 
 
 # ---------------- sharing how the list has done ----------------
