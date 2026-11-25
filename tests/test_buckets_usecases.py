@@ -858,7 +858,7 @@ def test_the_landing_page_mentions_gold_and_silver_accurately(client):
 
 
 def test_copy_matches_what_the_code_actually_does(client):
-    """Claims that were once wrong: links are not one-time, checks are about hourly, email goes through Resend, the
+    """Claims that were once wrong (links are now single-use, which the copy says): checks are about hourly, email goes through Resend, the
     delete button lives in Settings, and more than the watchlist is stored. Keep them honest."""
     import re
     from buydips import config
@@ -866,7 +866,7 @@ def test_copy_matches_what_the_code_actually_does(client):
     def text(html):
         return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
     home, privacy = text(anon.get("/").get_data(as_text=True)), text(anon.get("/privacy").get_data(as_text=True))
-    assert "one-time" not in home and f"works for {config.LOGIN_LINK_MINUTES} minutes" in home
+    assert f"good for {config.LOGIN_LINK_MINUTES} minutes" in home and "one use" in home and "6-digit code" in home
     assert "every 20 minutes" not in home and "moment they do" not in home and "about once an hour" in home
     assert "Only your email address and your watchlist" not in home and "your buckets" in home and "in Settings" in home
     assert "Brevo" not in privacy and "Google Mail" not in privacy and "Resend" in privacy and "cron-job.org" in privacy

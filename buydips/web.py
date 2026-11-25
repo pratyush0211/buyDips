@@ -277,10 +277,12 @@ def create_app() -> Flask:
         """Sign in with the 6-digit code from the email (for when the link is opened on a different device)."""
         check_csrf()
         email = db.normalize_email(request.form.get("email", ""))
-        pin = "".join(request.form.get("pin", "").split())
+        pin = re.sub(r"[^0-9]", "", request.form.get("pin", "")[:40])      # spaces, hyphens and odd copied characters are fine
         if not EMAIL_RE.match(email) or len(email) > 254:
             return page("Check your email address", "That doesn't look like a valid email address.", 400)
-        if not (len(pin) == 6 and pin.isascii() and pin.isdigit()) or not db.check_login_pin(email, pin, config.LOGIN_PIN_TRIES):
+        result = db.pin_result(email, pin, config.LOGIN_PIN_TRIES) if len(pin) == 6 else "malformed"
+        if result != "ok":
+            log.info("sign-in code not accepted: %s", result)      # the reason only, never the code or the address
             # one message for every failure: wrong, expired, used up, or an address that has no code
             return render_template("checkinbox.html", email=email, minutes=config.LOGIN_LINK_MINUTES, error=True, user=safe_user()), 400
         return _finish_signin(email)

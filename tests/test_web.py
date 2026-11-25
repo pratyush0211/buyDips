@@ -515,3 +515,10 @@ def test_cards_cope_with_long_names_and_many_stocks():
     for kind in ("story", "link"):
         png = card.render({"name": "x" * 40, "n": 30, "stocks": stocks, "avg_text": "−11.40%", "tone": "down"}, kind)
         assert png[:4] == b"\x89PNG"
+
+
+def test_wording_matches_how_sign_in_and_performance_now_work(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "6-digit code" in html and "How do I sign in?" in html and "Can I see how my stocks have done?" in html
+    priv = client.get("/privacy").get_data(as_text=True)
+    assert "sign-in codes" in priv and "How your list has done" in priv

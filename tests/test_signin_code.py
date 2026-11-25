@@ -45,13 +45,59 @@ def test_spaces_in_the_code_are_fine_and_email_case_does_not_matter(client):
     assert enter(client, "MIXED@x.com", f"{pin[:3]} {pin[3:]}").status_code == 302
 
 
-@pytest.mark.parametrize("bad", ["", "12345", "1234567", "abcdef", "12 34 5", "１２３４５６", "123456\n7"])
+@pytest.mark.parametrize("bad", ["", "12345", "1234567", "abcdef", "12 34 5", "１２３４５６", "123456\n7", "1" * 500])
 def test_malformed_codes_fail_without_using_a_try(client, bad):
     request_link(client)
     assert enter(client, "a@x.com", bad).status_code == 400
     with db.engine().connect() as c:
         from sqlalchemy import select
-        assert c.execute(select(db.login_pins.c.tries)).scalar() == 0
+        assert c.execute(select(db.signin_pins.c.tries)).scalar() == 0
+
+
+@pytest.mark.parametrize("fmt", ["{a}{b}", "{a} {b}", " {a} {b} ", "{a}-{b}", "{a}\u00a0{b}", "{a}\u200b{b}", "\t{a}{b}\n"])
+def test_a_code_copied_with_odd_spacing_still_works(client, fmt):
+    _, pin = request_link(client)
+    assert enter(client, "a@x.com", fmt.format(a=pin[:3], b=pin[3:])).status_code == 302
+
+
+def test_a_code_from_an_earlier_email_still_works_after_asking_again(client):
+    _, first = request_link(client)
+    _, second = request_link_after_cooldown(client)
+    _, third = request_link_after_cooldown(client)
+    assert enter(client, "a@x.com", first).status_code == 302
+
+
+def test_only_the_newest_few_codes_are_kept(client):
+    pins = [db.create_login_pin("a@x.com", 15) for _ in range(db.PINS_KEPT + 2)]
+    with db.engine().connect() as c:
+        from sqlalchemy import func, select
+        assert c.execute(select(func.count()).select_from(db.signin_pins)).scalar() == db.PINS_KEPT
+    assert db.check_login_pin("a@x.com", pins[-1], 5) is True
+
+
+def test_the_failure_reason_is_logged_without_the_code_or_the_address(client, caplog):
+    import logging
+    caplog.set_level(logging.INFO, logger="buyDips.web")
+    _, pin = request_link(client, "secret.person@x.com")
+    wrong = "000000" if pin != "000000" else "111111"
+    enter(client, "secret.person@x.com", wrong)
+    enter(client, "nobody@x.com", "123456")
+    enter(client, "secret.person@x.com", "12")
+    text = caplog.text
+    assert "wrong" in text and "none" in text and "malformed" in text
+    assert wrong not in text and "secret.person" not in text and pin not in text
+
+
+def test_deleting_an_account_removes_waiting_codes_and_summaries(client):
+    uid = db.get_or_create_user("a@x.com")["id"]
+    db.create_login_pin("a@x.com", 15)
+    db.create_login_code("a@x.com", 15)
+    db.save_summary(uid, "abc", "Two items are up.")
+    db.delete_user(uid)
+    from sqlalchemy import func, select
+    with db.engine().connect() as c:
+        for table in (db.signin_pins, db.login_codes, db.summaries):
+            assert c.execute(select(func.count()).select_from(table)).scalar() == 0
 
 
 def test_a_wrong_code_fails_and_the_real_one_still_works_after(client):
@@ -99,13 +145,13 @@ def test_unknown_emails_get_the_same_failure_and_no_account_is_made(client):
         assert c.execute(select(db.users.c.id).where(db.users.c.email == "nobody@x.com")).first() is None
 
 
-def test_codes_are_not_stored_in_clear_and_a_new_request_replaces_the_old_code(client):
+def test_codes_are_not_stored_in_clear_and_each_works_once(client):
     first = db.create_login_pin("a@x.com", 15)
     second = db.create_login_pin("a@x.com", 15)
     with db.engine().connect() as c:
         from sqlalchemy import select
-        rows = c.execute(select(db.login_pins.c.pin_hash, db.login_pins.c.email)).all()
-    assert len(rows) == 1 and first not in rows[0][0] and second not in rows[0][0]
+        rows = c.execute(select(db.signin_pins.c.pin_hash, db.signin_pins.c.email)).all()
+    assert len(rows) == (2 if first != second else 1) and all(first not in r[0] and second not in r[0] for r in rows)
     assert db.check_login_pin("a@x.com", second, 5) is True
     assert db.check_login_pin("a@x.com", second, 5) is False        # and it works once
 
