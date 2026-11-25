@@ -58,8 +58,10 @@ def run_check(
 
 
 def _attach_briefs(hits: list, now: Optional[datetime]) -> None:
-    """Give a dip alert the researched reason behind the fall, when today's brief for that stock is notable."""
-    found = db.worthy_briefs([h["symbol"] for h in hits], briefs.since_day(now))
+    """Give a dip alert the researched reason behind the fall, when today's brief for that stock is notable. Only
+    today's: yesterday's news does not explain today's move."""
+    today = (now or datetime.now(timezone.utc)).date().isoformat()
+    found = db.worthy_briefs([h["symbol"] for h in hits], today)
     for h in hits:
         b = found.get(h["symbol"])
         if b:

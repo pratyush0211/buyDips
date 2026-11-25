@@ -493,3 +493,11 @@ def test_figures_saved_before_charts_existed_are_refreshed_at_once_but_empty_one
     db.save_perf({"TCS.NS": None})                                                                    # looked, no usable history
     seed_perf("INFY.NS")                                                                              # complete row
     assert db.perf_stale(["RELIANCE.NS", "TCS.NS", "INFY.NS"]) == ["RELIANCE.NS"]
+
+
+def test_a_dip_alert_never_carries_yesterdays_brief():
+    user("a@x.com", {"RELIANCE.NS": 1.0}); seed_perf("RELIANCE.NS")
+    make_brief(day=(IN_OPEN - timedelta(days=1)).date().isoformat())
+    seen = []
+    run_check(P_with_quote(), lambda to, s, b, **kw: seen.append((b, kw.get("html", ""))) or True, now=IN_OPEN)
+    assert "What's behind it" not in seen[0][0] and "behind it" not in seen[0][1]
