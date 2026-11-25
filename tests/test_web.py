@@ -522,3 +522,12 @@ def test_wording_matches_how_sign_in_and_performance_now_work(client):
     assert "6-digit code" in html and "How do I sign in?" in html and "Can I see how my stocks have done?" in html
     priv = client.get("/privacy").get_data(as_text=True)
     assert "sign-in codes" in priv and "How your list has done" in priv
+
+
+def test_watchlist_header_has_an_ai_icon_and_import_and_no_clutter(client):
+    sign_in(client)
+    html = client.get("/watchlist?start=india").get_data(as_text=True)
+    assert 'class="pill pill-ai" href="/performance"' in html and "How they've done: AI summary" in html
+    assert 'class="pill" href="/import"' in html
+    assert "Import from your broker" not in html and "Indian indexes" not in html and "US indexes" not in html
+    assert 'id="clearall"' in html and html.count("Clear all") == 1

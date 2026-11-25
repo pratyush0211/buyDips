@@ -14,7 +14,7 @@
   var empty = document.getElementById("empty");
   var current = "india";
   var savebar = form.querySelector(".savebar");
-  var quick = Array.prototype.slice.call(form.querySelectorAll(".toolbar [data-symbols]"));
+  var clearAll = document.getElementById("clearall");
   var initiallyOn = items.filter(function (it) { return it.querySelector("input.switch").checked; }).length;
   var jump = document.getElementById("jump");
   var navbar = form.querySelector(".navbar");
@@ -26,13 +26,18 @@
   function box(item) { return item.querySelector("input.switch"); }
   function num(item) { return item.querySelector("input[type=number]"); }
 
+  function syncChip(it) {   // the collapsed "Alert -3%" button always shows the number in the field
+    var v = it.querySelector(".thr-val");
+    if (v) v.textContent = String(parseFloat(num(it).value) || "");
+  }
+
   function refresh() {
     var n = 0;
     items.forEach(function (it) {
       var on = box(it).checked;
       it.classList.toggle("is-on", on);
       num(it).disabled = !on;
-      if (on) n++;
+      if (on) { n++; syncChip(it); } else { it.classList.remove("open"); }
     });
     countEl.textContent = n + " of " + LIMIT + " selected";
     countEl.classList.toggle("over", n > LIMIT);
@@ -50,11 +55,12 @@
       badge.hidden = c === 0;
     });
     selTotal.textContent = n ? String(n) : "";
-    quick.forEach(function (b) { b.hidden = n === 0; });   // presets and Clear all mean nothing until something is picked
+    clearAll.hidden = !(n > 0 && current === "selected" && filterEl.value.trim() === "");   // only where you review your picks
     if (savebar) savebar.hidden = n === 0 && initiallyOn === 0;   // nothing to save yet: keep the screen clear
   }
 
   form.addEventListener("change", function (e) { if (e.target.classList.contains("switch")) refresh(); });
+  form.addEventListener("input", function (e) { if (e.target.type === "number") syncChip(e.target.closest(".item")); });
 
   form.addEventListener("click", function (e) {
     var step = e.target.closest(".stepper");
@@ -63,6 +69,14 @@
       var v = parseFloat(input.value) || 1;
       v = Math.min(MAX, Math.max(MIN, Math.round((v + parseFloat(step.dataset.step)) * 10) / 10));
       input.value = String(v);
+      syncChip(step.closest(".item"));
+      return;
+    }
+    var chip = e.target.closest(".thr-chip");
+    if (chip) {   // phones: the stepper is tucked away until you tap the level
+      var row = chip.closest(".item");
+      var open = row.classList.toggle("open");
+      chip.setAttribute("aria-expanded", open ? "true" : "false");
       return;
     }
     var preset = e.target.closest("[data-symbols]");
@@ -90,6 +104,8 @@
       g.hidden = any === 0;
       shown += any;
     });
+    form.classList.toggle("show-heads", q !== "" || current === "selected");   // list headings only where lists are mixed
+    clearAll.hidden = !(current === "selected" && q === "" && form.querySelectorAll(".item.is-on").length > 0);
     tabs.forEach(function (t) { t.setAttribute("aria-selected", q === "" && t.dataset.tab === current ? "true" : "false"); });
     buildJump(q === "");
     var active = tabs.filter(function (t) { return t.getAttribute("aria-selected") === "true"; })[0];

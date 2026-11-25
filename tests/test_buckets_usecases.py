@@ -924,13 +924,7 @@ def test_only_nifty_and_nasdaq_indexes_are_offered_and_the_landing_count_says_so
     page = client.get("/watchlist?start=india").get_data(as_text=True)
     assert "Nasdaq-100" in page and "^NDX" in page
     assert not any(f'value="{s}"' in page for s in RETIRED)           # not offered to someone who doesn't follow them
-    presets = dict(web_presets())
-    assert presets["US indexes"] == "^IXIC|^NDX" and presets["Indian indexes"] == "^NSEI|^NSEBANK|^CNXIT"
-
-
-def web_presets():
-    from buydips import web
-    return web._presets()
+    assert 'data-symbols="^NSEI' not in page and "Indian indexes</button>" not in page      # no quick-pick chips: the Indexes tab covers it
 
 
 def test_someone_already_following_a_retired_index_keeps_it_and_its_alerts(client):
@@ -1105,7 +1099,7 @@ def test_a_brand_new_account_sees_the_two_question_start_screen_not_the_whole_li
 def test_choosing_a_start_opens_that_tab_with_the_chosen_alert_level_as_default(client):
     sign_in(client)
     page = client.get("/watchlist?start=metals&lvl=5").get_data(as_text=True)
-    assert 'data-start="metals"' in page and "Alerts are set to 5% for stocks" in _text(page)
+    assert 'data-start="metals"' in page and "Alerts at 5% for stocks" in _text(page)
     import re
     def level(sym):
         return re.search(r'name="th_%s"[^>]*value="([0-9.]+)"' % re.escape(sym), page, re.S).group(1)
@@ -1116,7 +1110,7 @@ def test_choosing_a_start_opens_that_tab_with_the_chosen_alert_level_as_default(
     assert bad.status_code == 200 and "<script>" not in bad.get_data(as_text=True).split("</head>")[1].split("<script src")[0]
     assert "Let's set up your alerts" in _text(bad.get_data(as_text=True))   # ignored, so a new account just sees the start screen
     assert client.get("/watchlist?start=india&lvl=99").status_code == 200
-    assert "Alerts are set to" not in _text(client.get("/watchlist?start=india&lvl=99").get_data(as_text=True))
+    assert "Alerts at 99%" not in _text(client.get("/watchlist?start=india&lvl=99").get_data(as_text=True))
 
 
 def test_people_with_a_watchlist_or_who_just_saved_never_see_the_start_screen(client):
@@ -1158,8 +1152,9 @@ def test_text_is_never_below_13px_and_tap_targets_are_44px():
     assert ".stepper { width: 44px; height: 44px; }" in css
 
 
-def test_quick_pick_buttons_are_hidden_by_the_script_until_something_is_selected(client):
+def test_clear_all_only_shows_where_you_review_your_picks(client):
     sign_in(client)
     js = client.get("/static/watchlist.js").get_data(as_text=True)
-    assert "b.hidden = n === 0" in js
-    assert ".toolbar .btn[hidden]" in client.get("/static/style.css").get_data(as_text=True)
+    assert 'clearAll.hidden = !(current === "selected" && q === ""' in js and "n > 0 && current" in js
+    css = client.get("/static/style.css").get_data(as_text=True)
+    assert ".clearall[hidden]" in css and "#wl .group > h2 { display: none; }" in css and "#wl.show-heads .group > h2" in css

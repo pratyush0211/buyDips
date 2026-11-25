@@ -43,13 +43,6 @@ def _announce_new_user(email: str) -> None:
         log.error("Could not send new-user notice: %s", exc)
 
 
-def _presets() -> list:
-    """Quick-pick buttons on the watchlist page: (label, 'SYM|SYM|...')."""
-    india = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "India" and catalog.offered(i)]
-    us = [i["symbol"] for i in catalog.ITEMS if i["type"] == "index" and i["group"] == "US" and catalog.offered(i)]
-    return [("Indian indexes", "|".join(india)), ("US indexes", "|".join(us))]
-
-
 _price_pool = ThreadPoolExecutor(2)
 
 
@@ -357,7 +350,7 @@ def create_app() -> Flask:
         return render_template(
             "watchlist.html", first_run=first_run, start=start or "india", lvl=lvl, levels=config.START_LEVELS, user=user, tab="watchlist", sections=catalog.grouped(keep=subs), totals=catalog.tab_totals(), subs=subs,
             default_threshold=catalog.default_threshold, saved=bool(request.args.get("saved")),
-            limit=config.MAX_WATCHLIST_ITEMS, active=user["active"], presets=_presets(),
+            limit=config.MAX_WATCHLIST_ITEMS, active=user["active"],
             mkts=[markets.market_status(m, datetime.now(timezone.utc)) for m in ("India", "US")],
         )
 

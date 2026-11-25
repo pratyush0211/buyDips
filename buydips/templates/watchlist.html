@@ -24,9 +24,14 @@
   </form>
   {% else %}
   <header class="large-head">
-    <h1>Watchlist</h1>
-    <p>{% if lvl %}Alerts are set to {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what you want to follow, then set how far it must fall from the previous close before you're emailed.</p>
-    <p class="fine tight"><a href="/import">Import from your broker</a> &middot; <a href="/performance">How they've done</a></p>
+    <div class="hdr-row">
+      <h1>Watchlist</h1>
+      <div class="hdr-actions">
+        <a class="pill" href="/import" aria-label="Import the stocks you own from your broker's file"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M5 20h14"/></svg>Import</a>
+        <a class="pill pill-ai" href="/performance" aria-label="How they've done: AI summary of your list"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13zM5 14l.7 2 2 .7-2 .7L5 19.4l-.7-2-2-.7 2-.7L5 14z"/></svg>AI</a>
+      </div>
+    </div>
+    <p>{% if lvl %}Alerts at {{ '%g' % lvl }}% for stocks. {% endif %}Switch on what to follow.</p>
   </header>
 
   <a class="mstrip" href="/markets" aria-label="Market hours and holidays">
@@ -43,23 +48,20 @@
     <div class="toolbar">
       <label class="sr-only" for="filter">Search</label>
       <input type="search" id="filter" placeholder="Search, e.g. Reliance or Gold" autocomplete="off">
-      {% for label, symbols in presets %}
-        <button type="button" class="btn btn-ghost btn-sm" data-symbols="{{ symbols }}">{{ label }}</button>
-      {% endfor %}
-      <button type="button" class="btn btn-ghost btn-sm" data-symbols="">Clear all</button>
     </div>
 
     <div class="navbar">
     <div class="tabs" role="tablist" aria-label="What to browse">
-      <button type="button" role="tab" class="tab" data-tab="india">Indian stocks <span class="tab-n">{{ totals.india }}</span><span class="tab-sel" hidden></span></button>
-      <button type="button" role="tab" class="tab" data-tab="us">US stocks <span class="tab-n">{{ totals.us }}</span><span class="tab-sel" hidden></span></button>
-      <button type="button" role="tab" class="tab" data-tab="metals">Gold &amp; silver <span class="tab-n">{{ totals.metals }}</span><span class="tab-sel" hidden></span></button>
+      <button type="button" role="tab" class="tab" data-tab="india"><span class="tl">Indian stocks</span><span class="ts">India</span> <span class="tab-n">{{ totals.india }}</span><span class="tab-sel" hidden></span></button>
+      <button type="button" role="tab" class="tab" data-tab="us"><span class="tl">US stocks</span><span class="ts">US</span> <span class="tab-n">{{ totals.us }}</span><span class="tab-sel" hidden></span></button>
+      <button type="button" role="tab" class="tab" data-tab="metals"><span class="tl">Gold &amp; silver</span><span class="ts">Gold</span> <span class="tab-n">{{ totals.metals }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="indexes">Indexes <span class="tab-n">{{ totals.indexes }}</span><span class="tab-sel" hidden></span></button>
       <button type="button" role="tab" class="tab" data-tab="selected">Selected <span class="tab-sel-total" id="sel-total"></span></button>
     </div>
     <div class="jump" id="jump" role="navigation" aria-label="Jump to a letter" hidden></div>
     </div>
     <p class="view-note" id="view-note" hidden></p>
+    <button type="button" class="btn btn-ghost btn-sm clearall" id="clearall" data-symbols="" hidden>Clear all</button>
 
     {% for sec in sections %}
     <section class="group" data-tab="{{ sec.tab }}">
@@ -74,6 +76,7 @@
             {{ icon(it.symbol) }}
             <span class="item-text"><span class="item-name">{{ it.name }}</span><span class="item-sym">{{ it.symbol }}{% if it.retired %} &middot; no longer offered to new followers{% endif %}</span></span>
           </label>
+          <button type="button" class="thr-chip" aria-expanded="false" aria-label="Change the alert level for {{ it.name }}">Alert &minus;<span class="thr-val">{{ '%g' % (subs[it.symbol] if on else (lvl if (lvl and it.type != 'index') else default_threshold(it.symbol))) }}</span>%</button>
           <div class="thr">
             <span class="thr-label">Alert at &minus;</span>
             <button type="button" class="stepper" data-step="-0.5" aria-label="Lower alert level for {{ it.name }}">−</button>
