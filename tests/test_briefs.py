@@ -486,3 +486,10 @@ def test_the_ai_icon_page_title_and_privacy_describe_the_new_flow(client):
     assert "Your brief" in client.get("/performance").get_data(as_text=True)
     priv = client.application.test_client().get("/privacy").get_data(as_text=True)
     assert "doesn't know who follows what" in priv and "30 days" in priv
+
+
+def test_figures_saved_before_charts_existed_are_refreshed_at_once_but_empty_ones_are_not_retried():
+    db.save_perf({"RELIANCE.NS": {"last_date": "2026-11-20", "last_price": 100.0, "r1m": 2.0}})      # old row: a price, no series
+    db.save_perf({"TCS.NS": None})                                                                    # looked, no usable history
+    seed_perf("INFY.NS")                                                                              # complete row
+    assert db.perf_stale(["RELIANCE.NS", "TCS.NS", "INFY.NS"]) == ["RELIANCE.NS"]

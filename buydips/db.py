@@ -659,8 +659,11 @@ def perf_stale(symbols, max_age_hours: int = 20) -> list:
         return []
     fresh_after = _now() - timedelta(hours=max_age_hours)
     with _auto() as conn:
+        # Figures saved before charts and signals existed (a price but no series) are refreshed at once; a symbol
+        # with no usable history (no price either) is trusted for the day so it isn't retried every hour.
         fresh = {r[0] for r in conn.execute(select(perf_cache.c.symbol).where(
-            perf_cache.c.symbol.in_(symbols) & (perf_cache.c.updated_at >= fresh_after)))}
+            perf_cache.c.symbol.in_(symbols) & (perf_cache.c.updated_at >= fresh_after)
+            & (perf_cache.c.series.isnot(None) | perf_cache.c.last_date.is_(None))))}
     return [s for s in symbols if s not in fresh]
 
 
