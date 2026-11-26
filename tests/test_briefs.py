@@ -127,13 +127,32 @@ def test_points_without_a_real_source_are_dropped_and_no_points_means_no_brief()
 
 
 @pytest.mark.parametrize("text", [
-    "Analysts say it is a good time to buy Reliance", "Shares will likely rally after results", "The stock looks undervalued",
-    "Brokerages expect further gains", "Net profit rose 77 percent", "See https://x.example for more", "Mail me@x.com",
-    "x" * 300, "", None,
+    "Analysts say it is a good time to buy Reliance", "The stock looks undervalued", "Investors should accumulate on dips",
+    "A promising pick for the long run", "See https://x.example for more", "Mail me@x.com", "x" * 300, "", None,
 ])
-def test_advice_forecasts_invented_numbers_links_and_junk_are_dropped(text):
+def test_recommendations_valuation_calls_links_and_junk_are_dropped(text):
     raw = good(points=[{"t": text, "u": "https://economictimes.com/a"}])
     assert briefs.validate(raw, URLS, CITED, FACTS) is None
+
+
+def test_forecast_wording_is_fine_in_a_sourced_point_but_never_in_the_headline():
+    soft = good(headline="Reliance shares will rally after results",
+                points=[{"t": "Brokerages expect further gains and the company may raise guidance", "u": "https://economictimes.com/a"}])
+    report = {}
+    b = briefs.validate(soft, URLS, CITED, FACTS, report, "Reliance Industries")
+    assert b["points"][0]["t"].startswith("Brokerages expect") and report["why"] == {"headline_advice_words:will": 1, "headline_replaced": 1}
+    assert b["headline"] == "Reliance Industries is in the news"             # the point is not promoted: it has forecast wording too
+    calm = good(headline="Reliance shares will rally",
+                points=[{"t": "Net profit came in at 18540 crore", "u": "https://economictimes.com/a"}])
+    assert briefs.validate(calm, URLS, CITED, FACTS, {}, "Reliance Industries")["headline"] == "Net profit came in at 18540 crore"
+
+
+def test_figures_are_trusted_with_their_source_by_default_and_checked_when_strict(monkeypatch):
+    raw = good(points=[{"t": "Net profit rose 77 percent", "u": "https://economictimes.com/a"}], headline="Reliance reports quarterly results")
+    assert briefs.validate(raw, URLS, CITED, FACTS)["points"][0]["t"] == "Net profit rose 77 percent"
+    monkeypatch.setattr(config, "BRIEF_STRICT_NUMBERS", True)
+    assert briefs.validate(raw, URLS, CITED, FACTS) is None
+    assert briefs.validate(good(targets=[{"by": "Motilal Oswal", "p": 2100, "u": "https://www.moneycontrol.com/b"}]), URLS, CITED, FACTS)["targets"] == []
 
 
 def test_broker_targets_must_appear_in_a_cited_passage_and_be_sourced():
@@ -147,7 +166,9 @@ def test_material_is_clamped_and_garbage_is_rejected():
     assert briefs.validate(good(material=99), URLS, CITED, FACTS)["material"] == 10
     assert briefs.validate(good(material=-4), URLS, CITED, FACTS)["material"] == 0
     assert briefs.validate(good(material="high"), URLS, CITED, FACTS) is None
-    assert briefs.validate(good(headline=""), URLS, CITED, FACTS) is None
+    b = briefs.validate(good(headline=""), URLS, CITED, FACTS, {}, "Reliance Industries")      # a sourced point survives a bad headline
+    assert b["headline"] == "Net profit came in at 18540 crore"
+    assert briefs.validate(good(headline="", points=[]), URLS, CITED, FACTS) is None             # but no sourced point, no brief
 
 
 def test_parse_handles_code_fences_chatter_and_junk():
@@ -266,9 +287,19 @@ def test_a_brief_below_the_bar_is_recorded_but_never_worthy(monkeypatch):
 
 def test_a_reply_that_fails_the_checks_is_not_worthy(monkeypatch):
     monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
-    monkeypatch.setattr(briefs, "ask", lambda f: (json.dumps(good(headline="A great time to buy Reliance")), URLS, CITED))
+    bad = good(headline="A great time to buy Reliance", points=[{"t": "Analysts say you should buy Reliance now", "u": "https://economictimes.com/a"}])
+    monkeypatch.setattr(briefs, "ask", lambda f: (json.dumps(bad), URLS, CITED))
     user("a@x.com", {"RELIANCE.NS": 3.0}); seed_perf("RELIANCE.NS")
     assert briefs.run_daily(P(), IN_OPEN)["worthy"] == 0 and db.worthy_briefs(["RELIANCE.NS"], DAY) == {}
+
+
+def test_a_bad_headline_alone_does_not_cost_a_sourced_brief_and_never_reaches_the_page(monkeypatch):
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setattr(briefs, "ask", lambda f: (json.dumps(good(headline="A great time to buy Reliance")), URLS, CITED))
+    user("a@x.com", {"RELIANCE.NS": 3.0}); seed_perf("RELIANCE.NS")
+    assert briefs.run_daily(P(), IN_OPEN)["worthy"] == 1
+    saved = db.worthy_briefs(["RELIANCE.NS"], DAY)["RELIANCE.NS"]
+    assert "buy" not in saved["headline"].lower() and saved["headline"] == "Net profit came in at 18540 crore"
 
 
 def test_repeated_failures_stop_the_run_and_it_resumes_next_hour(monkeypatch):
@@ -591,15 +622,16 @@ def test_the_run_reports_what_it_spent(monkeypatch):
     assert (out["tokens_in"], out["tokens_out"], out["searches"]) == (18000, 600, 2)
 
 
-def test_validate_reports_why_things_were_dropped():
+def test_validate_reports_why_things_were_dropped(monkeypatch):
     raw = good(points=[{"t": "Net profit came in at 18540 crore", "u": "https://economictimes.com/a"},
-                       {"t": "Shares will rally from here", "u": "https://economictimes.com/a"},
+                       {"t": "Investors should buy more", "u": "https://economictimes.com/a"},
                        {"t": "Revenue was 99999 crore", "u": "https://economictimes.com/a"},
                        {"t": "Invented", "u": "https://invented.example"}])
     report = {}
+    monkeypatch.setattr(config, "BRIEF_STRICT_NUMBERS", True)
     b = briefs.validate(raw, URLS, CITED, FACTS, report)
     assert len(b["points"]) == 1 and report["kept"] == 1 and report["seen"] == 3        # only the first three are read
-    assert report["why"] == {"advice_words": 1, "unsupported_number": 1} and report["material"] == 8
+    assert report["why"] == {"advice_words:should": 1, "unsupported_number": 1} and report["material"] == 8
     report2 = {}
     briefs.validate(good(points=[{"t": "x", "u": "https://invented.example"}]), URLS, CITED, FACTS, report2)
     assert report2["why"] == {"not_in_search_results": 1}
@@ -618,12 +650,12 @@ def test_the_log_says_what_happened_to_each_brief_without_secrets(monkeypatch, c
     import logging
     caplog.set_level(logging.INFO, logger="buyDips.briefs")
     monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
-    replies = iter([(json.dumps(good(points=[{"t": "Shares will rally", "u": "https://economictimes.com/a"}])), URLS, CITED),
+    replies = iter([(json.dumps(good(points=[{"t": "Investors should buy now", "u": "https://economictimes.com/a"}])), URLS, CITED),
                     ("sorry, I could not find anything", URLS, CITED)])
     monkeypatch.setattr(briefs, "ask", lambda f: next(replies))
     user("a@x.com", {"RELIANCE.NS": 3.0, "AAPL": 3.0}); seed_perf("RELIANCE.NS"); seed_perf("AAPL")
     briefs.run_daily(P(), IN_OPEN)
-    assert "points kept 0 of 1" in caplog.text and "advice_words" in caplog.text and "not valid JSON" in caplog.text
+    assert "points kept 0 of 1" in caplog.text and "advice_words:should" in caplog.text and "not valid JSON" in caplog.text
     assert "test-key-not-real" not in caplog.text and "a@x.com" not in caplog.text
 
 

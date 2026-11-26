@@ -29,17 +29,21 @@ SYSTEM = (
     '{"material":0-10,"headline":"max 90 chars","points":[{"t":"max 150 chars","u":"source URL"}],'
     '"targets":[{"by":"broker","p":number,"u":"source URL"}]}. '
     "material is how significant the news is for a long-term holder; use 0 if nothing new in the last 3 days. "
-    "Up to 3 points, each a fact already reported, taken from a page you found, with that page's URL. "
+    "Up to 3 points, each a fact already reported, taken from a page you found, with that page's URL; only quote figures "
+    "that appear on that page. "
     "targets only if a named broker's target price appears in a source. "
     "No predictions, no advice, no buy/sell/hold, no opinion on whether the price is high or low."
 )
 
-# Words that make text sound like advice, a forecast or a pitch. (Broker targets live in their own field.)
-_ADVICE = re.compile(
-    r"\b(buy|buying|sell|selling|hold|holding|accumulate|invest|investing|investment|should|recommend\w*|advis\w*|"
-    r"target|targets|undervalued|overvalued|bargain|opportunit\w*|outlook|forecast\w*|expect\w*|likely|unlikely|"
-    r"bullish|bearish|upside|downside|rally|rebound|will|would|could|may|might|going to|poised|set to|"
-    r"promising|attractive|safe|risky|must|don't miss|multibagger)\b", re.I)
+# Words that make text a recommendation, a valuation call or a pitch. Refused anywhere.
+_HARD = re.compile(
+    r"\b(buy|buying|sell|selling|accumulate|should|recommend\w*|advis\w*|undervalued|overvalued|bargain|opportunit\w*|"
+    r"multibagger|must|attractive|safe|risky|promising|bullish|bearish|good time|time to|don't miss)\b", re.I)
+# Forecast and outlook wording. Ordinary in a reported news point (which carries its source link), but not allowed in the
+# headline, which is shown large and goes on the share card.
+_SOFT = re.compile(
+    r"\b(will|would|could|may|might|expect\w*|likely|unlikely|forecast\w*|outlook|upside|downside|rally|rebound|"
+    r"poised|set to|going to|target|targets)\b", re.I)
 _NUM = re.compile(r"\d+(?:\.\d+)?")
 
 
@@ -52,24 +56,21 @@ def _domain(url: str) -> str:
     return host[4:] if host.startswith("www.") else host
 
 
-def _check(text, max_len: int, known: Set[str]) -> Tuple[Optional[str], Optional[str]]:
-    """(clean text, None) or (None, why it was refused)."""
+def _check(text, max_len: int, known: Set[str], headline: bool = False) -> Tuple[Optional[str], Optional[str]]:
+    """(clean text, None) or (None, why it was refused). The reason names the offending word, for tuning from the log."""
     t = " ".join(text.split()) if isinstance(text, str) else ""
     if not t:
         return None, "empty"
     if len(t) > max_len:
         return None, "too_long"
-    if _ADVICE.search(t):
-        return None, "advice_words"
+    m = _HARD.search(t) or (_SOFT.search(t) if headline else None)
+    if m:
+        return None, f"advice_words:{m.group(0).lower()}"
     if "http" in t.lower() or "@" in t:
         return None, "link"
-    if not _numbers(t) <= known:
+    if config.BRIEF_STRICT_NUMBERS and not _numbers(t) <= known:
         return None, "unsupported_number"
     return t, None
-
-
-def _clean(text: str, max_len: int, known: Set[str]) -> Optional[str]:
-    return _check(text, max_len, known)[0]
 
 
 # ---------------------------------------------------------------- choosing what to research
@@ -191,7 +192,7 @@ def parse(text: str) -> Optional[dict]:
     return data if isinstance(data, dict) else None
 
 
-def validate(raw: dict, urls: Set[str], cited: str, facts: str, report: Optional[dict] = None) -> Optional[dict]:
+def validate(raw: dict, urls: Set[str], cited: str, facts: str, report: Optional[dict] = None, name: str = "This stock") -> Optional[dict]:
     """The brief that is safe to keep, or None. Drops anything unsourced, invented or advice-like. If `report` is given
     it is filled with how many points were seen and kept and why the rest were dropped (for the job log)."""
     why: Dict[str, int] = {}
@@ -202,7 +203,7 @@ def validate(raw: dict, urls: Set[str], cited: str, facts: str, report: Optional
         if report is not None:
             report.update(material=None, why={"bad_material": 1})
         return None
-    headline, h_why = _check(raw.get("headline"), 110, known)
+    headline, h_why = _check(raw.get("headline"), 110, known, headline=True)
     if h_why:
         why["headline_" + h_why] = 1
     seen = (raw.get("points") or [])[:3] if isinstance(raw.get("points"), list) else []
@@ -211,7 +212,7 @@ def validate(raw: dict, urls: Set[str], cited: str, facts: str, report: Optional
         if not isinstance(p, dict) or p.get("u") not in urls:
             why["not_in_search_results"] = why.get("not_in_search_results", 0) + 1
             continue
-        t, w = _check(p.get("t"), 180, known)
+        t, w = _check(p.get("t"), 180, set() if not config.BRIEF_STRICT_NUMBERS else known)
         if w:
             why[w] = why.get(w, 0) + 1
             continue
@@ -224,10 +225,14 @@ def validate(raw: dict, urls: Set[str], cited: str, facts: str, report: Optional
         except (KeyError, TypeError, ValueError):
             continue
         if (t.get("u") in urls and 0 < price < 1e8 and 0 < len(by) <= 40 and re.fullmatch(r"[\w .&'-]+", by)
-                and f"{price:g}" in cited.replace(",", "") and not _ADVICE.search(by)):
+                and f"{price:g}" in cited.replace(",", "") and not (_HARD.search(by) or _SOFT.search(by))):
             targets.append({"by": by, "p": price, "u": t["u"], "d": _domain(t["u"])})
         else:
             why["target_unsupported"] = why.get("target_unsupported", 0) + 1
+    if points and not headline:
+        # the model's headline broke a rule: use the first sourced point that passes the headline rules, else a neutral line
+        headline = next((p["t"] for p in points if _check(p["t"], 110, known, headline=True)[0]), f"{name} is in the news")
+        why["headline_replaced"] = 1
     if report is not None:
         report.update(material=material, seen=len(seen), kept=len(points), why=why, urls=len(urls))
     if not headline or not points:
@@ -277,7 +282,7 @@ def run_daily(provider, now: Optional[datetime] = None, dipped: Set[str] = froze
         failures = 0
         raw = parse(got[0])
         report: dict = {}
-        brief = validate(raw, got[1], got[2], facts, report) if raw else None
+        brief = validate(raw, got[1], got[2], facts, report, catalog.BY_SYMBOL[sym]["name"]) if raw else None
         if raw is None:
             log.info("brief %s: reply was not valid JSON: %.120s", sym, got[0].replace("\n", " "))
         else:

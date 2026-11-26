@@ -91,6 +91,7 @@ BRIEF_MODEL = os.getenv("BRIEF_MODEL", "claude-haiku-5-5").strip()   # the cheap
 BRIEF_MAX_PER_DAY = int(os.getenv("BRIEF_MAX_PER_DAY", "25"))   # hard ceiling on stocks researched per day (the cost cap)
 BRIEF_MAX_SEARCHES = int(os.getenv("BRIEF_MAX_SEARCHES", "1"))             # web pages read are most of the cost: one search is usually enough
 BRIEF_FORCE = os.getenv("BRIEF_FORCE", "").strip().lower() in ("1", "true")   # a manual run only: research again even if today is done
+BRIEF_STRICT_NUMBERS = os.getenv("BRIEF_STRICT_NUMBERS", "").strip().lower() in ("1", "true")   # drop any figure we cannot find in a quoted passage or headline
 BRIEF_MIN_SIGNAL = 2                                              # a stock needs a signal at least this strong (1 minor to 3 major), or a dip
 BRIEF_MIN_MATERIAL = 6                                            # 0-10 significance a brief needs before anyone sees it
 BRIEF_RUN_AFTER_UTC_HOUR = 3                                      # first job run at or after this hour (08:30 IST) does the day's research
