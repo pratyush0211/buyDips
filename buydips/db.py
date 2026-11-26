@@ -716,6 +716,16 @@ def worthy_briefs(symbols, since_day: str) -> Dict[str, dict]:
     return {r["symbol"]: _brief_row(r) for r in rows}      # later days overwrite earlier ones
 
 
+def briefs_on(symbols, day: str) -> List[dict]:
+    """Which of `symbols` were researched on `day` (worthy or not): [{symbol, worthy}]."""
+    symbols = list(symbols)
+    if not symbols:
+        return []
+    with _auto() as conn:
+        rows = conn.execute(select(briefs.c.symbol, briefs.c.worthy).where(briefs.c.symbol.in_(symbols) & (briefs.c.day == day))).all()
+    return [{"symbol": r[0], "worthy": bool(r[1])} for r in rows]
+
+
 def brief_run_done(day: str) -> bool:
     return get_brief(RUN_MARK, day) is not None
 

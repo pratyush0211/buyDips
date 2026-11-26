@@ -13,14 +13,18 @@
   <h2 class="lgroup-title">Today&rsquo;s brief</h2>
   {% for b in cards %}{{ brief_card(b) }}{% else %}
   <div class="quiet"><span class="quiet-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2z"/></svg></span>
-    <div><strong>Nothing notable today.</strong><p>Each morning we check what you follow for big moves and news, and show a brief only when something matters.</p></div></div>
+    <div><strong>Nothing notable today.</strong>
+      <p>{% if status.ran and not status.researched %}Today's check has run. None of the {{ status.followed }} stock{{ "" if status.followed == 1 else "s" }} you follow had an unusual move, so there was nothing to research.
+         {% elif status.ran %}Today's check has run. {{ status.researched }} of your {{ status.followed }} stock{{ "" if status.followed == 1 else "s" }} stood out and {{ "was" if status.researched == 1 else "were" }} researched, but none had news worth showing.
+         {% elif status.researched %}Today's check is still running. Look again in a few minutes.
+         {% else %}Today's check hasn't run yet. It runs once, early each morning (after about 8:30 AM IST), and shows a brief only when something matters.{% endif %}</p></div></div>
   {% endfor %}
   {% endif %}
 
   {% if not m.n %}
     <div class="warnbox">You aren't following anything yet. <a href="/watchlist?start=india">Choose what to follow</a> and its history appears here.</div>
   {% elif not m.n_have %}
-    <div class="notice" role="status">We're gathering the price history for what you follow. It updates once a day, so check back tomorrow.</div>
+    <div class="notice" role="status">We're gathering the price history for what you follow. It's collected during the hourly check, so look again within the hour.</div>
   {% else %}
   {% if summary %}
   <section class="sumcard" aria-label="Summary">

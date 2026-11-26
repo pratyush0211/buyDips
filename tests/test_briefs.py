@@ -173,8 +173,8 @@ def test_the_request_is_small_capped_and_has_thinking_off(monkeypatch):
         return fake_response()
     monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create)))
     text, urls, cited = briefs.ask("Reliance Industries (RELIANCE.NS)")
-    assert sent["model"] == config.BRIEF_MODEL == "claude-sonnet-5-5" and sent["max_tokens"] <= 700
-    assert sent["thinking"] == {"type": "disabled"} and sent["output_config"] == {"effort": "low"}
+    assert sent["model"] == config.BRIEF_MODEL == "claude-sonnet-5-5" and sent["max_tokens"] <= 900
+    assert sent["thinking"] == {"type": "between_tools"} and sent["output_config"] == {"effort": "low"}    # "disabled" is a 400 on this model
     assert sent["tools"][0]["name"] == "web_search" and sent["tools"][0]["max_uses"] == 2
     assert len(sent["system"].split()) < 160 and sent["messages"] == [{"role": "user", "content": "Reliance Industries (RELIANCE.NS)"}]
     assert urls == {"https://economictimes.com/a"} and "18,540" in cited and text == '{"material": 7}'
@@ -501,3 +501,50 @@ def test_a_dip_alert_never_carries_yesterdays_brief():
     seen = []
     run_check(P_with_quote(), lambda to, s, b, **kw: seen.append((b, kw.get("html", ""))) or True, now=IN_OPEN)
     assert "What's behind it" not in seen[0][0] and "behind it" not in seen[0][1]
+
+
+def _page_with_one_followed(client):
+    sign_in(client)
+    uid = db.get_or_create_user("a@x.com")["id"]
+    db.set_subscriptions(uid, {"RELIANCE.NS": 3.0}); seed_perf("RELIANCE.NS")
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def test_the_empty_ai_page_says_which_state_it_is_in(client):
+    today = _page_with_one_followed(client)
+    html = client.get("/performance").get_data(as_text=True)
+    assert "hasn't run yet" in html and "after about 8:30 AM IST" in html                       # nothing has run
+    db.save_brief("RELIANCE.NS", today, False, 3, None, None)
+    assert "still running" in client.get("/performance").get_data(as_text=True)                  # a stock done, run not complete
+    db.save_brief(db.RUN_MARK, today, False, 0, None, None)
+    html = client.get("/performance").get_data(as_text=True)
+    assert "1 of your 1 stock stood out and was researched, but none had news worth showing" in html
+    db.save_perf({"RELIANCE.NS": None})
+    db.set_subscriptions(db.get_or_create_user("a@x.com")["id"], {"RELIANCE.NS": 3.0, "TCS.NS": 3.0}); seed_perf("RELIANCE.NS"); seed_perf("TCS.NS")
+    with db.engine().begin() as conn:
+        from sqlalchemy import delete
+        conn.execute(delete(db.briefs).where(db.briefs.c.symbol == "RELIANCE.NS"))
+    html = client.get("/performance").get_data(as_text=True)
+    assert "None of the 2 stocks you follow had an unusual move" in html                         # ran, nothing stood out
+
+
+def test_the_page_never_claims_a_run_that_did_not_happen_for_yesterday(client):
+    _page_with_one_followed(client)
+    db.save_brief(db.RUN_MARK, (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat(), False, 0, None, None)
+    assert "hasn't run yet" in client.get("/performance").get_data(as_text=True)
+
+
+def test_thinking_blocks_between_searches_are_ignored_and_only_the_answer_is_used(monkeypatch):
+    reply = SimpleNamespace(stop_reason="end_turn",
+                            content=[SimpleNamespace(type="thinking", text="Let me search for that."),
+                                     SimpleNamespace(type="text", text='{"material": 7}')],
+                            model_dump=lambda: {"content": []}, usage=SimpleNamespace(input_tokens=1, output_tokens=1))
+    monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=lambda **kw: reply)))
+    assert briefs.ask("x")[0] == '{"material": 7}'
+
+
+def test_funds_get_no_analyst_lookup_but_are_still_researched(keyed):
+    user("a@x.com", {"GOLDBEES.NS": 2.0, "RELIANCE.NS": 3.0}); seed_perf("GOLDBEES.NS"); seed_perf("RELIANCE.NS")
+    p = P()
+    out = briefs.run_daily(p, IN_OPEN)
+    assert out["researched"] == 2 and p.analyst_calls == [["RELIANCE.NS"]]

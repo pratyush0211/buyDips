@@ -119,8 +119,10 @@ def ask(facts: str) -> Optional[Tuple[str, Set[str], str]]:
     try:
         r = _client().messages.create(
             model=config.BRIEF_MODEL,
-            max_tokens=700,
-            thinking={"type": "disabled"},
+            max_tokens=900,
+            # This model does not think before answering; "between_tools" is how it is told not to think at length.
+            # The short updates it writes between searches come back as thinking blocks, which are ignored below.
+            thinking={"type": "between_tools"},
             output_config={"effort": "low"},
             system=SYSTEM,
             tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 2}],
@@ -206,7 +208,8 @@ def run_daily(provider, now: Optional[datetime] = None, dipped: Set[str] = froze
     followed = {s["symbol"] for s in db.active_subscriptions()}
     perf = db.perf_for(followed)
     todo = [s for s in candidates({s: perf[s] for s in followed if s in perf}, dipped) if not db.get_brief(s, day)]
-    consensus = provider.analyst(todo) if todo and hasattr(provider, "analyst") else {}
+    stocks = [s for s in todo if catalog.BY_SYMBOL[s]["type"] == "stock"]       # funds like gold ETFs have no analyst targets
+    consensus = provider.analyst(stocks) if stocks and hasattr(provider, "analyst") else {}
     failures = 0
     started = time.monotonic()
     for sym in todo:

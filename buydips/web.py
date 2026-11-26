@@ -631,8 +631,12 @@ def create_app() -> Flask:
         found = db.worthy_briefs(list(subs), briefs.since_day())
         perf = db.perf_for(list(found))
         cards = sorted((briefs.view(s, b, perf.get(s)) for s, b in found.items()), key=lambda v: (-v["material"], v["name"]))
+        today = datetime.now(timezone.utc).date().isoformat()
+        looked = db.briefs_on(subs, today)
+        status = {"ran": db.brief_run_done(today), "followed": len([s for s in subs if catalog.BY_SYMBOL.get(s, {}).get("type") != "index"]),
+                  "researched": len(looked)}
         token = user.get("perf_share_token")
-        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, cards=cards, pct=performance.pct,
+        return render_template("performance.html", user=user, tab="watchlist", m=model, summary=text, cards=cards, pct=performance.pct, status=status,
                                can_share=performance.share_model(model) is not None, token=token,
                                share_url=f"{config.BASE_URL}/p/{token}" if token else None, changed=request.args.get("changed"))
 
