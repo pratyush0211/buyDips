@@ -77,9 +77,10 @@ def perf_row(symbol, sigs=(), r1m=0.0):
 
 def test_only_stocks_with_a_signal_or_a_dip_are_researched_and_never_indexes():
     followed = {"RELIANCE.NS": perf_row("RELIANCE.NS", [("At a 52-week high", 3)]), "TCS.NS": perf_row("TCS.NS"),
-                "^NSEI": perf_row("^NSEI", [("At a 52-week high", 3)]), "AAPL": perf_row("AAPL", [("RSI at 80 (above 75)", 1)])}
-    assert briefs.candidates(followed) == ["RELIANCE.NS", "AAPL"]                # strongest first; TCS quiet; index skipped
-    assert briefs.candidates(followed, dipped={"TCS.NS"}) == ["RELIANCE.NS", "TCS.NS", "AAPL"]   # a dip counts even without a signal
+                "^NSEI": perf_row("^NSEI", [("At a 52-week high", 3)]), "AAPL": perf_row("AAPL", [("Down 6.4% in one day", 2)]),
+                "INFY.NS": perf_row("INFY.NS", [("RSI at 80 (above 75)", 1)])}
+    assert briefs.candidates(followed) == ["RELIANCE.NS", "AAPL"]    # strongest first; TCS quiet; INFY's lone minor signal is not worth reading the web for; index skipped
+    assert briefs.candidates(followed, dipped={"TCS.NS"}) == ["RELIANCE.NS", "AAPL", "TCS.NS"]   # a dip counts even without a signal (ties sort by symbol)
     assert briefs.candidates({"TCS.NS": perf_row("TCS.NS")}) == []                # nothing: zero requests
 
 
@@ -173,9 +174,10 @@ def test_the_request_is_small_capped_and_has_thinking_off(monkeypatch):
         return fake_response()
     monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create)))
     text, urls, cited = briefs.ask("Reliance Industries (RELIANCE.NS)")
-    assert sent["model"] == config.BRIEF_MODEL == "claude-sonnet-5-5" and sent["max_tokens"] <= 900
-    assert sent["thinking"] == {"type": "between_tools"} and sent["output_config"] == {"effort": "low"}    # "disabled" is a 400 on this model
-    assert sent["tools"][0]["name"] == "web_search" and sent["tools"][0]["max_uses"] == 2
+    assert sent["model"] == config.BRIEF_MODEL == "claude-haiku-5-5" and sent["max_tokens"] <= 900
+    assert sent["thinking"] == {"type": "disabled"} and sent["output_config"] == {"effort": "low"}
+    assert sent["tools"] == [{"type": "web_search_20250305", "name": "web_search", "max_uses": config.BRIEF_MAX_SEARCHES}]
+    assert config.BRIEF_MAX_SEARCHES == 1
     assert len(sent["system"].split()) < 160 and sent["messages"] == [{"role": "user", "content": "Reliance Industries (RELIANCE.NS)"}]
     assert urls == {"https://economictimes.com/a"} and "18,540" in cited and text == '{"material": 7}'
 
@@ -232,7 +234,7 @@ def test_one_request_per_stock_shared_by_everyone_who_follows_it(keyed):
     user("c@x.com", {"RELIANCE.NS": 2.0})
     seed_perf("RELIANCE.NS"); seed_perf("TCS.NS", sigs=())
     out = briefs.run_daily(P(), IN_OPEN)
-    assert out == {"researched": 1, "worthy": 1, "skipped": None} and len(keyed) == 1      # three followers, one request; quiet TCS none
+    assert (out["researched"], out["worthy"], out["skipped"]) == (1, 1, None) and len(keyed) == 1      # three followers, one request; quiet TCS none
     assert "a@x.com" not in keyed[0] and "@" not in keyed[0]
 
 
@@ -548,3 +550,98 @@ def test_funds_get_no_analyst_lookup_but_are_still_researched(keyed):
     p = P()
     out = briefs.run_daily(p, IN_OPEN)
     assert out["researched"] == 2 and p.analyst_calls == [["RELIANCE.NS"]]
+
+
+def test_the_larger_models_get_the_newer_search_tool_and_their_own_thinking_setting(monkeypatch):
+    sent = {}
+    monkeypatch.setattr(config, "BRIEF_MODEL", "claude-sonnet-5-5")
+    monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=lambda **kw: sent.update(kw) or fake_response())))
+    briefs.ask("x")
+    assert sent["thinking"] == {"type": "between_tools"} and sent["tools"][0]["type"] == "web_search_20260209"
+
+
+def test_a_thinking_setting_the_model_refuses_is_retried_once_with_the_other(monkeypatch):
+    class BadRequestError(Exception):
+        pass
+    seen = []
+    def create(**kw):
+        seen.append(kw["thinking"]["type"])
+        if len(seen) == 1:
+            raise BadRequestError("To turn thinking off on this model, send between_tools instead")
+        return fake_response()
+    monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create)))
+    assert briefs.ask("x") is not None and seen == ["disabled", "between_tools"]
+    seen.clear()
+    def always_bad(**kw):
+        seen.append(1)
+        raise BadRequestError("something else is wrong")
+    monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=always_bad)))
+    assert briefs.ask("x") is None and len(seen) == 1                       # an unrelated 400 is not retried
+
+
+def test_the_run_reports_what_it_spent(monkeypatch):
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
+    def create(**kw):
+        r = fake_response(text=json.dumps(good()), urls=tuple(URLS), cited=CITED)
+        r.usage = SimpleNamespace(input_tokens=9000, output_tokens=300, server_tool_use=SimpleNamespace(web_search_requests=1))
+        return r
+    monkeypatch.setattr(briefs, "_client", lambda: SimpleNamespace(messages=SimpleNamespace(create=create)))
+    user("a@x.com", {"RELIANCE.NS": 3.0, "AAPL": 3.0}); seed_perf("RELIANCE.NS"); seed_perf("AAPL")
+    out = briefs.run_daily(P(), IN_OPEN)
+    assert (out["tokens_in"], out["tokens_out"], out["searches"]) == (18000, 600, 2)
+
+
+def test_validate_reports_why_things_were_dropped():
+    raw = good(points=[{"t": "Net profit came in at 18540 crore", "u": "https://economictimes.com/a"},
+                       {"t": "Shares will rally from here", "u": "https://economictimes.com/a"},
+                       {"t": "Revenue was 99999 crore", "u": "https://economictimes.com/a"},
+                       {"t": "Invented", "u": "https://invented.example"}])
+    report = {}
+    b = briefs.validate(raw, URLS, CITED, FACTS, report)
+    assert len(b["points"]) == 1 and report["kept"] == 1 and report["seen"] == 3        # only the first three are read
+    assert report["why"] == {"advice_words": 1, "unsupported_number": 1} and report["material"] == 8
+    report2 = {}
+    briefs.validate(good(points=[{"t": "x", "u": "https://invented.example"}]), URLS, CITED, FACTS, report2)
+    assert report2["why"] == {"not_in_search_results": 1}
+
+
+def test_a_search_result_headline_counts_as_quoted_text_for_checking_numbers():
+    urls, cited = set(), []
+    briefs._walk({"content": [{"type": "web_search_result", "url": "https://economictimes.com/a",
+                               "title": "Reliance Q2 profit rises 12% to Rs 18,540 crore"}]}, urls, cited)
+    assert urls == {"https://economictimes.com/a"} and "18,540" in " ".join(cited)
+    raw = good(points=[{"t": "Quarterly profit rose 12 percent", "u": "https://economictimes.com/a"}], targets=[])
+    assert briefs.validate(raw, urls, " ".join(cited), FACTS)["points"][0]["t"] == "Quarterly profit rose 12 percent"
+
+
+def test_the_log_says_what_happened_to_each_brief_without_secrets(monkeypatch, caplog):
+    import logging
+    caplog.set_level(logging.INFO, logger="buyDips.briefs")
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
+    replies = iter([(json.dumps(good(points=[{"t": "Shares will rally", "u": "https://economictimes.com/a"}])), URLS, CITED),
+                    ("sorry, I could not find anything", URLS, CITED)])
+    monkeypatch.setattr(briefs, "ask", lambda f: next(replies))
+    user("a@x.com", {"RELIANCE.NS": 3.0, "AAPL": 3.0}); seed_perf("RELIANCE.NS"); seed_perf("AAPL")
+    briefs.run_daily(P(), IN_OPEN)
+    assert "points kept 0 of 1" in caplog.text and "advice_words" in caplog.text and "not valid JSON" in caplog.text
+    assert "test-key-not-real" not in caplog.text and "a@x.com" not in caplog.text
+
+
+def test_a_manual_forced_run_researches_again_even_when_the_day_is_done(keyed, monkeypatch):
+    user("a@x.com", {"RELIANCE.NS": 3.0}); seed_perf("RELIANCE.NS")
+    briefs.run_daily(P(), IN_OPEN)
+    assert briefs.run_daily(P(), IN_OPEN + timedelta(hours=1))["skipped"] == "done" and len(keyed) == 1
+    monkeypatch.setattr(config, "BRIEF_FORCE", True)
+    assert briefs.run_daily(P(), IN_OPEN + timedelta(hours=2))["researched"] == 1 and len(keyed) == 2
+    assert config.BRIEF_FORCE is True
+
+
+def test_forcing_is_off_by_default_and_only_the_manual_workflow_input_turns_it_on():
+    import pathlib
+    wf = (pathlib.Path(__file__).resolve().parent.parent / ".github/workflows/check.yml").read_text()
+    assert "BRIEF_FORCE: ${{ inputs.force_brief }}" in wf and "default: false" in wf
+    import importlib
+    import os
+    os.environ.pop("BRIEF_FORCE", None)
+    importlib.reload(config)
+    assert config.BRIEF_FORCE is False

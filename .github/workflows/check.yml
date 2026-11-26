@@ -7,6 +7,11 @@ on:
     # GitHub can delay scheduled runs by several minutes.
     - cron: "7,27,47 3-22 * * 1-5"
   workflow_dispatch:
+    inputs:
+      force_brief:
+        description: "Research today's AI brief again, even if it was already done (costs tokens)"
+        type: boolean
+        default: false
 
 concurrency:
   group: buydips
@@ -35,4 +40,5 @@ jobs:
           EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
           MAIL_FROM: alerts@buydips.in
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BRIEF_FORCE: ${{ inputs.force_brief }}
         run: python run_check.py

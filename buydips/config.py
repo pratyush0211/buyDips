@@ -87,8 +87,11 @@ START_LEVELS = (2.0, 3.0, 5.0)
 # The daily brief: once each morning, Claude researches the few followed stocks that triggered a technical signal.
 # With no key set nothing is researched and pages simply have no brief.
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-BRIEF_MODEL = os.getenv("BRIEF_MODEL", "claude-sonnet-5-5").strip()
-BRIEF_MAX_PER_DAY = int(os.getenv("BRIEF_MAX_PER_DAY", "60"))   # hard ceiling on stocks researched per day (the cost cap)
+BRIEF_MODEL = os.getenv("BRIEF_MODEL", "claude-haiku-5-5").strip()   # the cheapest model; set claude-sonnet-5-5 for sharper judgement at ~20x the token price
+BRIEF_MAX_PER_DAY = int(os.getenv("BRIEF_MAX_PER_DAY", "25"))   # hard ceiling on stocks researched per day (the cost cap)
+BRIEF_MAX_SEARCHES = int(os.getenv("BRIEF_MAX_SEARCHES", "1"))             # web pages read are most of the cost: one search is usually enough
+BRIEF_FORCE = os.getenv("BRIEF_FORCE", "").strip().lower() in ("1", "true")   # a manual run only: research again even if today is done
+BRIEF_MIN_SIGNAL = 2                                              # a stock needs a signal at least this strong (1 minor to 3 major), or a dip
 BRIEF_MIN_MATERIAL = 6                                            # 0-10 significance a brief needs before anyone sees it
 BRIEF_RUN_AFTER_UTC_HOUR = 3                                      # first job run at or after this hour (08:30 IST) does the day's research
 BRIEF_TIME_BUDGET_SECONDS = 480                                   # stop researching after this long in one run (the job has a 10 minute limit); the next run resumes
